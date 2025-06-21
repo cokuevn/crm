@@ -333,15 +333,18 @@ frontend:
 
   - task: "Advanced Filtering"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/src/App.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "testing"
         -comment: "Initial testing of improved client filtering with search integration."
+        -working: true
+        -agent: "testing"
+        -comment: "Advanced filtering is working correctly. The filter buttons (Все клиенты, Сегодня, Завтра, Просрочено) are displayed with correct counts in parentheses. Filters work correctly when clicked, showing the appropriate clients. Search and filters work together seamlessly - when a search term is applied and then a filter is selected, the results are correctly filtered by both criteria. Empty state messages are displayed appropriately when no results are found, with a 'Очистить поиск' button that works correctly."
 
   - task: "Visual Analytics Components"
     implemented: true
