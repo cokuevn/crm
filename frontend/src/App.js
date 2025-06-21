@@ -31,6 +31,25 @@ const googleProvider = new GoogleAuthProvider();
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Helper function to get authorization headers
+const getAuthHeaders = async (user) => {
+  if (user) {
+    try {
+      const token = await user.getIdToken();
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+    } catch (error) {
+      console.error('Error getting ID token:', error);
+    }
+  }
+  
+  return {
+    'Content-Type': 'application/json'
+  };
+};
+
 // Auth Context
 const AuthContext = createContext();
 
