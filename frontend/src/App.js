@@ -87,6 +87,57 @@ const useAuth = () => {
   return context;
 };
 
+// Navigation Component
+const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange }) => {
+  return (
+    <nav className="bg-white border-b border-gray-200 px-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center space-x-8">
+            <button
+              onClick={() => onPageChange('dashboard')}
+              className={`px-3 py-2 text-sm font-medium rounded-md ${
+                currentPage === 'dashboard'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Дашборд
+            </button>
+            <button
+              onClick={() => onPageChange('add-client')}
+              className={`px-3 py-2 text-sm font-medium rounded-md ${
+                currentPage === 'add-client'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              + Добавить клиента
+            </button>
+          </div>
+          
+          {capitals.length > 0 && (
+            <select
+              value={selectedCapital?.id || ''}
+              onChange={(e) => {
+                const capital = capitals.find(c => c.id === e.target.value);
+                onCapitalChange(capital);
+              }}
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
+            >
+              {capitals.map(capital => (
+                <option key={capital.id} value={capital.id}>
+                  {capital.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+};
+
 // Login Component
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -196,6 +247,214 @@ const LoginPage = () => {
             {isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Add Client Form Component
+const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
+  const [formData, setFormData] = useState({
+    capital_id: selectedCapital?.id || '',
+    name: '',
+    product: '',
+    total_amount: '',
+    monthly_payment: '',
+    months: '',
+    start_date: new Date().toISOString().split('T')[0]
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    if (selectedCapital) {
+      setFormData(prev => ({ ...prev, capital_id: selectedCapital.id }));
+    }
+  }, [selectedCapital]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await axios.post(`${API}/clients`, {
+        ...formData,
+        total_amount: parseFloat(formData.total_amount),
+        monthly_payment: parseFloat(formData.monthly_payment),
+        months: parseInt(formData.months)
+      });
+
+      setSuccess('Клиент успешно добавлен!');
+      setFormData({
+        capital_id: selectedCapital?.id || '',
+        name: '',
+        product: '',
+        total_amount: '',
+        monthly_payment: '',
+        months: '',
+        start_date: new Date().toISOString().split('T')[0]
+      });
+      
+      if (onClientAdded) {
+        onClientAdded(response.data);
+      }
+    } catch (error) {
+      setError(error.response?.data?.detail || 'Ошибка при добавлении клиента');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="bg-white rounded-lg shadow-sm p-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Добавить нового клиента</h2>
+        
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            {error}
+          </div>
+        )}
+        
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
+            {success}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Капитал
+            </label>
+            <select
+              name="capital_id"
+              value={formData.capital_id}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="">Выберите капитал</option>
+              {capitals.map(capital => (
+                <option key={capital.id} value={capital.id}>
+                  {capital.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Имя клиента
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Товар
+              </label>
+              <input
+                type="text"
+                name="product"
+                value={formData.product}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Общая сумма (₽)
+              </label>
+              <input
+                type="number"
+                name="total_amount"
+                value={formData.total_amount}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ежемесячный платёж (₽)
+              </label>
+              <input
+                type="number"
+                name="monthly_payment"
+                value={formData.monthly_payment}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Количество месяцев
+              </label>
+              <input
+                type="number"
+                name="months"
+                value={formData.months}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+                min="1"
+                max="60"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Дата начала рассрочки
+            </label>
+            <input
+              type="date"
+              name="start_date"
+              value={formData.start_date}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div className="flex justify-end space-x-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Добавление...' : 'Добавить клиента'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
