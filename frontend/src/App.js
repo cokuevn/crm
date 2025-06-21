@@ -35,13 +35,14 @@ const API = `${BACKEND_URL}/api`;
 const getAuthHeaders = async (user) => {
   if (user) {
     try {
-      const token = await user.getIdToken();
+      // Use user.uid as the permanent user identifier
+      // This remains constant for the user, unlike tokens which change
       return {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${user.uid}`
       };
     } catch (error) {
-      console.error('Error getting ID token:', error);
+      console.error('Error getting user UID:', error);
     }
   }
   
