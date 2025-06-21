@@ -582,7 +582,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "User Isolation"
+    - "User Data Persistence with user.uid"
   stuck_tasks:
   test_all: false
   test_priority: "high_first"
