@@ -1152,8 +1152,13 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
     capital_id: selectedCapital?.id || '',
     name: '',
     product: '',
-    total_amount: '',
+    purchase_amount: '',
+    debt_amount: '',
     monthly_payment: '',
+    guarantor_name: '',
+    client_address: '',
+    client_phone: '',
+    guarantor_phone: '',
     months: '',
     start_date: new Date().toISOString().split('T')[0]
   });
@@ -1176,7 +1181,8 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
     try {
       const response = await axios.post(`${API}/clients`, {
         ...formData,
-        total_amount: parseFloat(formData.total_amount),
+        purchase_amount: parseFloat(formData.purchase_amount),
+        debt_amount: parseFloat(formData.debt_amount),
         monthly_payment: parseFloat(formData.monthly_payment),
         months: parseInt(formData.months)
       });
@@ -1186,8 +1192,13 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
         capital_id: selectedCapital?.id || '',
         name: '',
         product: '',
-        total_amount: '',
+        purchase_amount: '',
+        debt_amount: '',
         monthly_payment: '',
+        guarantor_name: '',
+        client_address: '',
+        client_phone: '',
+        guarantor_phone: '',
         months: '',
         start_date: new Date().toISOString().split('T')[0]
       });
@@ -1208,9 +1219,9 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="bg-white rounded-lg shadow-sm p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Добавить нового клиента</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">👤 Добавить нового клиента</h2>
         
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
@@ -1245,107 +1256,204 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
             </select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Имя клиента
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
+          {/* Основная информация клиента */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">📋 Основная информация</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ФИО клиента *
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Иванов Иван Иванович"
+                  required
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Товар
-              </label>
-              <input
-                type="text"
-                name="product"
-                value={formData.product}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Товар *
+                </label>
+                <input
+                  type="text"
+                  name="product"
+                  value={formData.product}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="iPhone 15 Pro"
+                  required
+                />
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Общая сумма (₽)
-              </label>
-              <input
-                type="number"
-                name="total_amount"
-                value={formData.total_amount}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-                min="0"
-                step="0.01"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Адрес клиента
+                </label>
+                <input
+                  type="text"
+                  name="client_address"
+                  value={formData.client_address}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="г. Москва, ул. Ленина, д. 1, кв. 1"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ежемесячный платёж (₽)
-              </label>
-              <input
-                type="number"
-                name="monthly_payment"
-                value={formData.monthly_payment}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-                min="0"
-                step="0.01"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Количество месяцев
-              </label>
-              <input
-                type="number"
-                name="months"
-                value={formData.months}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-                min="1"
-                max="60"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Телефон клиента
+                </label>
+                <input
+                  type="tel"
+                  name="client_phone"
+                  value={formData.client_phone}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="+7 (123) 456-78-90"
+                />
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Дата начала рассрочки
-            </label>
-            <input
-              type="date"
-              name="start_date"
-              value={formData.start_date}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
+          {/* Финансовая информация */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">💰 Финансовая информация</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Сумма покупки (₽) *
+                </label>
+                <input
+                  type="number"
+                  name="purchase_amount"
+                  value={formData.purchase_amount}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  min="0"
+                  step="0.01"
+                  placeholder="120000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Долг клиента (₽) *
+                </label>
+                <input
+                  type="number"
+                  name="debt_amount"
+                  value={formData.debt_amount}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  min="0"
+                  step="0.01"
+                  placeholder="120000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ежемесячный платёж (₽) *
+                </label>
+                <input
+                  type="number"
+                  name="monthly_payment"
+                  value={formData.monthly_payment}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  min="0"
+                  step="0.01"
+                  placeholder="10000"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Количество месяцев *
+                </label>
+                <input
+                  type="number"
+                  name="months"
+                  value={formData.months}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  min="1"
+                  max="60"
+                  placeholder="12"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Дата начала рассрочки *
+                </label>
+                <input
+                  type="date"
+                  name="start_date"
+                  value={formData.start_date}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="flex justify-end space-x-4">
+          {/* Информация о гаранте */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">🤝 Информация о гаранте</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ФИО гаранта
+                </label>
+                <input
+                  type="text"
+                  name="guarantor_name"
+                  value={formData.guarantor_name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Петров Петр Петрович"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Телефон гаранта
+                </label>
+                <input
+                  type="tel"
+                  name="guarantor_phone"
+                  value={formData.guarantor_phone}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="+7 (123) 456-78-91"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-4 pt-6">
             <button
               type="submit"
               disabled={loading}
               className="bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Добавление...' : 'Добавить клиента'}
+              {loading ? 'Добавление...' : '✅ Добавить клиента'}
             </button>
           </div>
         </form>
