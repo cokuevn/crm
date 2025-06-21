@@ -167,7 +167,7 @@ backend:
 
   - task: "Analytics with New Fields"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 1
     priority: "high"
@@ -179,6 +179,9 @@ backend:
         -working: false
         -agent: "testing"
         -comment: "The analytics endpoint is failing with a KeyError: 'debt_amount'. This is because some existing clients in the database don't have the 'debt_amount' field, which was added in the new model. The endpoint needs to be updated to handle clients with the old data model."
+        -working: true
+        -agent: "testing"
+        -comment: "Fixed the analytics endpoint to handle both old and new data models. The endpoint now correctly uses debt_amount if available, otherwise falls back to total_amount. Successfully tested with mixed client data (some with total_amount, some with debt_amount) and verified that calculations are accurate."
 
   - task: "Client CRUD Operations with Extended Fields"
     implemented: true
