@@ -619,17 +619,6 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange })
     }
   };
 
-  const initMockData = async () => {
-    try {
-      const response = await axios.post(`${API}/init-mock-data`);
-      console.log('Mock data initialized:', response.data);
-      // Refresh page to load new data
-      window.location.reload();
-    } catch (error) {
-      console.error('Error initializing mock data:', error);
-    }
-  };
-
   const getFilteredClients = () => {
     if (!dashboardData) return [];
     
