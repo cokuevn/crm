@@ -129,9 +129,11 @@ class UserProfile(BaseModel):
     display_name: Optional[str] = None
 
 # Helper functions
-def generate_payment_schedule(start_date: date, monthly_payment: float, months: int) -> List[PaymentSchedule]:
+def generate_payment_schedule(start_date_str: str, monthly_payment: float, months: int) -> List[PaymentSchedule]:
     schedule = []
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
     current_date = start_date
+    
     for _ in range(months):
         # Move to next month
         if current_date.month == 12:
@@ -140,7 +142,7 @@ def generate_payment_schedule(start_date: date, monthly_payment: float, months: 
             current_date = current_date.replace(month=current_date.month + 1)
         
         schedule.append(PaymentSchedule(
-            payment_date=current_date,
+            payment_date=current_date.strftime("%Y-%m-%d"),
             amount=monthly_payment
         ))
     return schedule
