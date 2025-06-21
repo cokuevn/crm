@@ -496,26 +496,41 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
     # Create mock clients for capital 1
     clients_data1 = [
         {
-            "name": "Иван Петров",
+            "name": "Петров Иван Сергеевич",
             "product": "iPhone 15 Pro",
-            "total_amount": 120000.0,
+            "purchase_amount": 120000.0,
+            "debt_amount": 120000.0,
             "monthly_payment": 10000.0,
+            "guarantor_name": "Петрова Мария Ивановна",
+            "client_address": "г. Москва, ул. Ленина, д. 15, кв. 23",
+            "client_phone": "+7 (123) 456-78-90",
+            "guarantor_phone": "+7 (123) 456-78-91",
             "months": 12,
             "start_date": "2024-11-01"
         },
         {
-            "name": "Мария Сидорова", 
+            "name": "Сидорова Мария Петровна", 
             "product": "MacBook Air M3",
-            "total_amount": 150000.0,
+            "purchase_amount": 150000.0,
+            "debt_amount": 150000.0,
             "monthly_payment": 12500.0,
+            "guarantor_name": "Сидоров Петр Иванович",
+            "client_address": "г. Москва, пр. Мира, д. 45, кв. 67",
+            "client_phone": "+7 (234) 567-89-01",
+            "guarantor_phone": "+7 (234) 567-89-02",
             "months": 12,
             "start_date": "2024-10-15"
         },
         {
-            "name": "Александр Козлов",
+            "name": "Козлов Александр Дмитриевич",
             "product": "iPad Pro",
-            "total_amount": 80000.0,
+            "purchase_amount": 80000.0,
+            "debt_amount": 80000.0,
             "monthly_payment": 8000.0,
+            "guarantor_name": "Козлова Елена Александровна",
+            "client_address": "г. Москва, ул. Тверская, д. 12, кв. 89",
+            "client_phone": "+7 (345) 678-90-12",
+            "guarantor_phone": "+7 (345) 678-90-13",
             "months": 10,
             "start_date": "2024-12-01"
         }
@@ -524,18 +539,28 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
     # Create mock clients for capital 2
     clients_data2 = [
         {
-            "name": "Елена Морозова",
+            "name": "Морозова Елена Викторовна",
             "product": "Samsung Galaxy S24",
-            "total_amount": 90000.0,
+            "purchase_amount": 90000.0,
+            "debt_amount": 90000.0,
             "monthly_payment": 7500.0,
+            "guarantor_name": "Морозов Виктор Алексеевич",
+            "client_address": "г. Москва, ул. Арбат, д. 34, кв. 12",
+            "client_phone": "+7 (456) 789-01-23",
+            "guarantor_phone": "+7 (456) 789-01-24",
             "months": 12,
             "start_date": "2024-11-10"
         },
         {
-            "name": "Дмитрий Волков",
+            "name": "Волков Дмитрий Андреевич",
             "product": "PlayStation 5",
-            "total_amount": 60000.0,
+            "purchase_amount": 60000.0,
+            "debt_amount": 60000.0,
             "monthly_payment": 6000.0,
+            "guarantor_name": "Волкова Анна Сергеевна",
+            "client_address": "г. Москва, ул. Чистые Пруды, д. 78, кв. 45",
+            "client_phone": "+7 (567) 890-12-34",
+            "guarantor_phone": "+7 (567) 890-12-35",
             "months": 10,
             "start_date": "2024-09-20"
         }
