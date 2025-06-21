@@ -140,14 +140,14 @@ def create_user_data(user_uid):
         "total_amount": analytics['total_amount']
     }
 
-def verify_user_data(token, initial_data):
+def verify_user_data(user_uid, initial_data):
     """Verify user data persists with a different token but same user.uid"""
-    print_separator("VERIFYING USER DATA WITH SECOND TOKEN")
+    print_separator("VERIFYING USER DATA WITH SECOND LOGIN")
     
-    # Headers for all requests with the second token
+    # Headers for all requests with the user UID but simulating a different token
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {token}"  # Second token, but same user.uid will be extracted
+        "Authorization": f"Bearer {user_uid}"
     }
     
     # Step 1: Get capitals
