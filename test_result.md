@@ -107,63 +107,93 @@ user_problem_statement: "Test the capital creation functionality in the CRM syst
 backend:
   - task: "Mock Data Initialization"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "testing"
         -comment: "Initial testing of POST /api/init-mock-data endpoint to initialize 2 capitals with mock clients and payment schedules."
+        -working: true
+        -agent: "testing"
+        -comment: "Successfully tested GET /api/auto-init endpoint. It correctly returns existing data for users who already have capitals. The endpoint works as expected, returning the list of capitals in the response."
 
   - task: "Client Creation"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "testing"
         -comment: "Initial testing of POST /api/clients endpoint to create new client with payment schedule generation."
+        -working: true
+        -agent: "testing"
+        -comment: "Successfully tested POST /api/clients endpoint. Client creation works correctly with string dates. The payment schedule is generated properly with the correct number of payments. All dates are stored as strings in MongoDB, which fixes the serialization issues."
 
   - task: "Capital Retrieval"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "testing"
         -comment: "Initial testing of GET /api/capitals endpoint to get user capitals (should return 2 mock capitals)."
+        -working: true
+        -agent: "testing"
+        -comment: "Successfully tested GET /api/capitals endpoint. It correctly returns the user's capitals. The MongoDB ObjectId serialization issue has been fixed by adding a helper function to convert ObjectIds to strings."
 
   - task: "Dashboard Data"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "testing"
         -comment: "Initial testing of GET /api/dashboard endpoint to get dashboard data with filtering."
+        -working: true
+        -agent: "testing"
+        -comment: "Successfully tested GET /api/dashboard endpoint. It correctly filters payments by today, tomorrow, and overdue status. The string date filtering works properly, and the endpoint returns the expected data structure."
 
   - task: "Client Retrieval"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "testing"
         -comment: "Initial testing of GET /api/clients endpoint to get all clients across capitals."
+        -working: true
+        -agent: "testing"
+        -comment: "Successfully tested GET /api/clients endpoint. It correctly returns clients filtered by capital_id if provided, or all clients across the user's capitals otherwise. The MongoDB ObjectId serialization issue has been fixed."
+        
+  - task: "Capital Deletion"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of DELETE /api/capitals/{capital_id} endpoint with cascade deletion."
+        -working: true
+        -agent: "testing"
+        -comment: "Successfully tested DELETE /api/capitals/{capital_id} endpoint. It correctly deletes the capital and all associated clients and payments (cascade deletion). The endpoint also properly handles error cases for non-existent capitals."
 
 frontend:
   - task: "Authentication Flow"
