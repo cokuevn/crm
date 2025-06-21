@@ -114,7 +114,7 @@ class ClientCreate(BaseModel):
     product: str
     total_amount: float
     monthly_payment: float
-    start_date: date
+    start_date: str  # Changed from date to str
     months: int
 
 class PaymentCreate(BaseModel):
