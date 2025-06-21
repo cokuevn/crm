@@ -120,7 +120,7 @@ class ClientCreate(BaseModel):
 class PaymentCreate(BaseModel):
     client_id: str
     amount: float
-    payment_date: date
+    payment_date: str  # Changed from date to str
 
 class UserProfile(BaseModel):
     uid: str
