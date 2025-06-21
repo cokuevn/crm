@@ -136,12 +136,29 @@ class CapitalCreate(BaseModel):
 
 class ClientCreate(BaseModel):
     capital_id: str
-    name: str
+    name: str  # ФИО клиента
     product: str
-    total_amount: float
+    purchase_amount: float  # Сумма покупки
+    debt_amount: float  # Долг клиента
     monthly_payment: float
-    start_date: str  # Changed from date to str
+    guarantor_name: Optional[str] = None  # ФИО гаранта
+    client_address: Optional[str] = None  # Адрес клиента
+    client_phone: Optional[str] = None  # Телефон клиента
+    guarantor_phone: Optional[str] = None  # Телефон гаранта
+    start_date: str  # Дата начала рассрочки
     months: int
+
+class ClientUpdate(BaseModel):
+    name: Optional[str] = None
+    product: Optional[str] = None
+    purchase_amount: Optional[float] = None
+    debt_amount: Optional[float] = None
+    monthly_payment: Optional[float] = None
+    guarantor_name: Optional[str] = None
+    client_address: Optional[str] = None
+    client_phone: Optional[str] = None
+    guarantor_phone: Optional[str] = None
+    status: Optional[ClientStatus] = None
 
 class PaymentCreate(BaseModel):
     client_id: str
