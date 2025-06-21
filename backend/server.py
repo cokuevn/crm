@@ -373,7 +373,7 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
     # Check if mock data already exists
     existing_capitals = await db.capitals.find({"owner_id": current_user}).to_list(10)
     if existing_capitals:
-        return {"message": "Mock data already exists", "capitals": existing_capitals}
+        return {"message": "Mock data already exists", "capitals": [mongo_to_dict(capital) for capital in existing_capitals]}
     
     # Create 2 capitals
     capital1 = Capital(
@@ -481,7 +481,7 @@ async def auto_init_data(current_user: str = Depends(get_current_user)):
     existing_capitals = await db.capitals.find({"owner_id": current_user}).to_list(10)
     if not existing_capitals:
         return await init_mock_data(current_user)
-    return {"message": "Data already exists", "capitals": existing_capitals}
+    return {"message": "Data already exists", "capitals": [mongo_to_dict(capital) for capital in existing_capitals]}
 
 # Delete capital
 @api_router.delete("/capitals/{capital_id}")
