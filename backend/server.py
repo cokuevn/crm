@@ -358,10 +358,20 @@ async def delete_client(client_id: str, current_user: str = Depends(get_current_
 @api_router.put("/clients/{client_id}/payments/{payment_date}")
 async def update_payment_status(
     client_id: str, 
-    payment_date: str, 
-    status: PaymentStatus, 
+    payment_date: str,
+    request: dict,
     current_user: str = Depends(get_current_user)
 ):
+    # Get status from request body
+    status = request.get("status")
+    if not status:
+        raise HTTPException(status_code=400, detail="Status is required")
+    
+    # Validate status
+    valid_statuses = ["pending", "paid", "overdue"]
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+    
     # Get user's capitals
     user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
     capital_ids = [cap["id"] for cap in user_capitals]
@@ -377,8 +387,8 @@ async def update_payment_status(
     
     for payment in schedule:
         if payment["payment_date"] == payment_date:
-            payment["status"] = status.value  # Use .value for enum
-            if status.value == "paid":
+            payment["status"] = status
+            if status == "paid":
                 payment["paid_date"] = date.today().strftime("%Y-%m-%d")
             else:
                 payment["paid_date"] = None
