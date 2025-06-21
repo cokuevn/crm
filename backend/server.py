@@ -285,7 +285,87 @@ async def get_client(client_id: str, current_user: str = Depends(get_current_use
     return Client(**mongo_to_dict(client))
 
 @api_router.put("/clients/{client_id}", response_model=Client)
-async def update_client(client_id: str, updates: dict, current_user: str = Depends(get_current_user)):
+async def update_client(client_id: str, updates: ClientUpdate, current_user: str = Depends(get_current_user)):
+    # Get user's capitals
+    user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+    capital_ids = [cap["id"] for cap in user_capitals]
+    
+    # Convert updates to dict and filter out None values
+    update_dict = {k: v for k, v in updates.dict().items() if v is not None}
+    update_dict["updated_at"] = datetime.utcnow()
+    
+    result = await db.clients.update_one(
+        {"client_id": client_id, "capital_id": {"$in": capital_ids}},
+        {"$set": update_dict}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    client = await db.clients.find_one({"client_id": client_id})
+    return Client(**mongo_to_dict(client))
+
+@api_router.delete("/clients/{client_id}")
+async def delete_client(client_id: str, current_user: str = Depends(get_current_user)):
+    # Get user's capitals
+    user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+    capital_ids = [cap["id"] for cap in user_capitals]
+    
+    # Delete client
+    result = await db.clients.delete_one({"client_id": client_id, "capital_id": {"$in": capital_ids}})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Delete related payments
+    await db.payments.delete_many({"client_id": client_id})
+    
+    return {"message": "Client and related payments deleted successfully"}
+
+# Update payment status
+@api_router.put("/clients/{client_id}/payments/{payment_date}")
+async def update_payment_status(
+    client_id: str, 
+    payment_date: str, 
+    status: PaymentStatus, 
+    current_user: str = Depends(get_current_user)
+):
+    # Get user's capitals
+    user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+    capital_ids = [cap["id"] for cap in user_capitals]
+    
+    # Find the client
+    client = await db.clients.find_one({"client_id": client_id, "capital_id": {"$in": capital_ids}})
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Update the payment status in schedule
+    schedule = client.get("schedule", [])
+    updated = False
+    
+    for payment in schedule:
+        if payment["payment_date"] == payment_date:
+            payment["status"] = status
+            if status == "paid":
+                payment["paid_date"] = date.today().strftime("%Y-%m-%d")
+            else:
+                payment["paid_date"] = None
+            updated = True
+            break
+    
+    if not updated:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    # Update the client with new schedule
+    await db.clients.update_one(
+        {"client_id": client_id},
+        {"$set": {"schedule": schedule, "updated_at": datetime.utcnow()}}
+    )
+    
+    return {"message": "Payment status updated successfully"}
+
+@api_router.put("/clients/{client_id}", response_model=Client)
+async def update_client_old(client_id: str, updates: dict, current_user: str = Depends(get_current_user)):
     # Get user's capitals
     user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
     capital_ids = [cap["id"] for cap in user_capitals]
