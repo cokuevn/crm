@@ -575,8 +575,8 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
       setFormData({
         name: client.name || '',
         product: client.product || '',
-        purchase_amount: client.purchase_amount || '',
-        debt_amount: client.debt_amount || '',
+        purchase_amount: client.purchase_amount || client.total_amount || '',
+        debt_amount: client.debt_amount || client.total_amount || '',
         monthly_payment: client.monthly_payment || '',
         guarantor_name: client.guarantor_name || '',
         client_address: client.client_address || '',
