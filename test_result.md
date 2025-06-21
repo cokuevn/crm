@@ -309,9 +309,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Add Capital Button"
-    - "Add Capital Modal"
-    - "Capital Creation"
+    - "Mock Data Initialization"
+    - "Client Creation"
+    - "Capital Deletion"
+    - "Dashboard Data"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
