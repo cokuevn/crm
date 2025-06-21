@@ -357,10 +357,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Mock Data Initialization"
-    - "Client Creation"
-    - "Capital Deletion"
-    - "Dashboard Data"
+    - "Client Details Component"
+    - "Payment Schedule Visualization"
+    - "Payment Status Management"
+    - "Client Details Navigation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
