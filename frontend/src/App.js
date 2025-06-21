@@ -87,6 +87,281 @@ const useAuth = () => {
   return context;
 };
 
+// Analytics Component
+const Analytics = ({ capitals, selectedCapital }) => {
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (selectedCapital) {
+      fetchAnalyticsData();
+    }
+  }, [selectedCapital]);
+
+  const fetchAnalyticsData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API}/analytics/${selectedCapital.id}`);
+      setAnalyticsData(response.data);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Загружаем аналитику...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!analyticsData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">📊</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Нет данных для аналитики</h3>
+          <p className="text-gray-600">Выберите капитал или добавьте клиентов для просмотра статистики</p>
+        </div>
+      </div>
+    );
+  }
+
+  const MetricCard = ({ title, value, subtitle, color, icon }) => (
+    <div className={`bg-white rounded-lg shadow-sm p-6 border-l-4 ${color}`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-600 mb-1">{title}</p>
+          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+        </div>
+        <div className="text-3xl">{icon}</div>
+      </div>
+    </div>
+  );
+
+  const ProgressRing = ({ percentage, size = 120, strokeWidth = 8 }) => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const strokeDasharray = `${circumference} ${circumference}`;
+    const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+    return (
+      <div className="relative">
+        <svg
+          height={size}
+          width={size}
+          className="transform -rotate-90"
+        >
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#E5E7EB"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#10B981"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={strokeDasharray}
+            strokeDashoffset={strokeDashoffset}
+            className="transition-all duration-300 ease-in-out"
+            strokeLinecap="round"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xl font-bold text-gray-900">{percentage.toFixed(1)}%</span>
+        </div>
+      </div>
+    );
+  };
+
+  const PaymentChart = () => {
+    const totalBars = 12;
+    const maxAmount = Math.max(analyticsData.total_amount, analyticsData.total_paid, analyticsData.outstanding);
+    
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-6">📈 Финансовый обзор</h3>
+        
+        <div className="space-y-6">
+          {/* Total Amount */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700">💰 Общая сумма</span>
+              <span className="text-sm font-bold text-blue-600">{analyticsData.total_amount?.toLocaleString()}₽</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div 
+                className="bg-blue-500 h-3 rounded-full transition-all duration-300"
+                style={{ width: '100%' }}
+              />
+            </div>
+          </div>
+
+          {/* Total Paid */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700">✅ Получено</span>
+              <span className="text-sm font-bold text-green-600">{analyticsData.total_paid?.toLocaleString()}₽</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div 
+                className="bg-green-500 h-3 rounded-full transition-all duration-300"
+                style={{ width: `${(analyticsData.total_paid / analyticsData.total_amount) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Outstanding */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700">⏳ Остаток</span>
+              <span className="text-sm font-bold text-orange-600">{analyticsData.outstanding?.toLocaleString()}₽</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div 
+                className="bg-orange-500 h-3 rounded-full transition-all duration-300"
+                style={{ width: `${(analyticsData.outstanding / analyticsData.total_amount) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          📊 Аналитика: {selectedCapital?.name}
+        </h1>
+        <p className="text-gray-600">Подробная статистика по выбранному капиталу</p>
+      </div>
+
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <MetricCard
+          title="Всего клиентов"
+          value={analyticsData.total_clients}
+          subtitle={`${analyticsData.active_clients} активных`}
+          color="border-blue-500"
+          icon="👥"
+        />
+        
+        <MetricCard
+          title="Общая сумма"
+          value={`${analyticsData.total_amount?.toLocaleString()}₽`}
+          subtitle="Все договоры"
+          color="border-purple-500"
+          icon="💰"
+        />
+        
+        <MetricCard
+          title="Собрано средств"
+          value={`${analyticsData.total_paid?.toLocaleString()}₽`}
+          subtitle={`${analyticsData.collection_rate?.toFixed(1)}% от общей суммы`}
+          color="border-green-500"
+          icon="✅"
+        />
+        
+        <MetricCard
+          title="Просроченные платежи"
+          value={analyticsData.overdue_payments}
+          subtitle="Требуют внимания"
+          color="border-red-500"
+          icon="⚠️"
+        />
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Collection Rate Chart */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-6 text-center">🎯 Процент сборов</h3>
+          <div className="flex justify-center">
+            <ProgressRing percentage={analyticsData.collection_rate || 0} />
+          </div>
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-600">
+              Собрано {analyticsData.total_paid?.toLocaleString()}₽ из {analyticsData.total_amount?.toLocaleString()}₽
+            </p>
+          </div>
+        </div>
+
+        {/* Payment Chart */}
+        <PaymentChart />
+      </div>
+
+      {/* Detailed Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Client Status Breakdown */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-6">👥 Статусы клиентов</h3>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="font-medium text-green-800">Активные клиенты</span>
+              </div>
+              <span className="font-bold text-green-800">{analyticsData.active_clients}</span>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                <span className="font-medium text-gray-800">Завершённые</span>
+              </div>
+              <span className="font-bold text-gray-800">{analyticsData.total_clients - analyticsData.active_clients}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Financial Summary */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-6">💸 Финансовая сводка</h3>
+          
+          <div className="space-y-4">
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">💰 Общая сумма договоров:</span>
+              <span className="font-bold text-gray-900">{analyticsData.total_amount?.toLocaleString()}₽</span>
+            </div>
+            
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">✅ Получено платежей:</span>
+              <span className="font-bold text-green-600">{analyticsData.total_paid?.toLocaleString()}₽</span>
+            </div>
+            
+            <div className="flex justify-between items-center py-2 border-b border-gray-100">
+              <span className="text-gray-600">⏳ Ожидается к получению:</span>
+              <span className="font-bold text-orange-600">{analyticsData.outstanding?.toLocaleString()}₽</span>
+            </div>
+            
+            <div className="flex justify-between items-center py-2 pt-4">
+              <span className="text-gray-600 font-medium">📈 Эффективность сборов:</span>
+              <span className="font-bold text-blue-600">{analyticsData.collection_rate?.toFixed(1)}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Client Details Component
 const ClientDetails = ({ clientId, onBack, capitals }) => {
   const [client, setClient] = useState(null);
