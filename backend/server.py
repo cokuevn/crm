@@ -105,12 +105,17 @@ class PaymentSchedule(BaseModel):
 class Client(BaseModel):
     client_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     capital_id: str
-    name: str
+    name: str  # ФИО клиента
     product: str
-    total_amount: float
+    purchase_amount: float  # Сумма покупки
+    debt_amount: float  # Долг клиента (заменяет total_amount)
     monthly_payment: float
-    start_date: str  # Changed from date to str
-    end_date: str  # Changed from date to str
+    guarantor_name: Optional[str] = None  # ФИО гаранта
+    client_address: Optional[str] = None  # Адрес клиента
+    client_phone: Optional[str] = None  # Телефон клиента
+    guarantor_phone: Optional[str] = None  # Телефон гаранта
+    start_date: str  # Дата начала рассрочки
+    end_date: str
     schedule: List[PaymentSchedule] = []
     status: ClientStatus = ClientStatus.active
     created_at: datetime = Field(default_factory=datetime.utcnow)
