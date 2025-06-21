@@ -2162,8 +2162,9 @@ const MainApp = () => {
 
   const autoInitAndFetchCapitals = async () => {
     try {
+      const headers = await getAuthHeaders(user);
       // Auto-initialize data if needed
-      await axios.get(`${API}/auto-init`);
+      await axios.get(`${API}/auto-init`, { headers });
       // Then fetch capitals
       fetchCapitals();
     } catch (error) {
@@ -2175,7 +2176,8 @@ const MainApp = () => {
 
   const fetchCapitals = async () => {
     try {
-      const response = await axios.get(`${API}/capitals`);
+      const headers = await getAuthHeaders(user);
+      const response = await axios.get(`${API}/capitals`, { headers });
       setCapitals(response.data);
       if (response.data.length > 0 && !selectedCapital) {
         setSelectedCapital(response.data[0]);
