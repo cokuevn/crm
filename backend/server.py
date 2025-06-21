@@ -440,7 +440,7 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
     clients = await db.clients.find({"capital_id": capital_id}).to_list(1000)
     payments = await db.payments.find({"capital_id": capital_id}).to_list(1000)
     
-    total_amount = sum(client["total_amount"] for client in clients)
+    total_debt = sum(client["debt_amount"] for client in clients)
     total_paid = sum(payment["amount"] for payment in payments)
     active_clients = len([c for c in clients if c["status"] == "active"])
     
@@ -454,13 +454,13 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
                 overdue_count += 1
     
     return {
-        "total_amount": total_amount,
+        "total_amount": total_debt,  # Keep API compatibility
         "total_paid": total_paid,
-        "outstanding": total_amount - total_paid,
+        "outstanding": total_debt - total_paid,
         "active_clients": active_clients,
         "total_clients": len(clients),
         "overdue_payments": overdue_count,
-        "collection_rate": (total_paid / total_amount * 100) if total_amount > 0 else 0
+        "collection_rate": (total_paid / total_debt * 100) if total_debt > 0 else 0
     }
 
 # Initialize mock data
