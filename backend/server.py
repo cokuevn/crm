@@ -720,23 +720,26 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
                     payment_date = datetime.strptime(schedule_item["payment_date"], "%Y-%m-%d").date()
                 else:
                     payment_date = schedule_item["payment_date"]
-                    
-                if schedule_item["status"] == "pending":
-                    if payment_date == today:
-                        today_payments.append({
-                            "client": client,
-                            "payment": schedule_item
-                        })
-                    elif payment_date == tomorrow:
-                        tomorrow_payments.append({
-                            "client": client,
-                            "payment": schedule_item
-                        })
-                    elif payment_date < today:
-                        overdue_payments.append({
-                            "client": client,
-                            "payment": schedule_item
-                        })
+                
+                # Check if payment is overdue OR has overdue status
+                is_overdue = (schedule_item["status"] == "overdue" or 
+                            (schedule_item["status"] == "pending" and payment_date < today))
+                
+                if is_overdue:
+                    overdue_payments.append({
+                        "client": client,
+                        "payment": schedule_item
+                    })
+                elif schedule_item["status"] == "pending" and payment_date == today:
+                    today_payments.append({
+                        "client": client,
+                        "payment": schedule_item
+                    })
+                elif schedule_item["status"] == "pending" and payment_date == tomorrow:
+                    tomorrow_payments.append({
+                        "client": client,
+                        "payment": schedule_item
+                    })
             except (ValueError, KeyError) as e:
                 continue  # Skip invalid date entries
     
