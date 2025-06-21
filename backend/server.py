@@ -325,7 +325,7 @@ async def get_payments(capital_id: Optional[str] = None, current_user: str = Dep
         query = {"capital_id": capital_id}
     
     payments = await db.payments.find(query).to_list(1000)
-    return [Payment(**payment) for payment in payments]
+    return [Payment(**mongo_to_dict(payment)) for payment in payments]
 
 # Analytics
 @api_router.get("/analytics/{capital_id}")
