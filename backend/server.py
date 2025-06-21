@@ -517,6 +517,7 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
     query_capital_ids = [capital_id] if capital_id else capital_ids
     
     clients = await db.clients.find({"capital_id": {"$in": query_capital_ids}}).to_list(1000)
+    clients = [mongo_to_dict(client) for client in clients]
     
     today = date.today()
     from datetime import timedelta
