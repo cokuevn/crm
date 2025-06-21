@@ -215,6 +215,9 @@ backend:
         -working: true
         -agent: "testing"
         -comment: "Successfully tested PUT /api/clients/{client_id}/payments/{payment_date} with status in request body. Verified payment status changes between pending, paid, and overdue. Confirmed that paid_date is set when status changes to 'paid' and cleared when status changes to other values."
+        -working: true
+        -agent: "testing"
+        -comment: "Comprehensive testing of payment status update endpoint confirms it's working correctly. Successfully tested with JSON body format ({"status": "paid"}) instead of query parameters. Verified all valid statuses (pending, paid, overdue) work correctly. Confirmed proper error handling for invalid statuses and missing status in request body. Verified that paid_date is set when status changes to 'paid' and cleared when status changes to other values."
 
   - task: "Client Retrieval with Extended Fields"
     implemented: true
