@@ -1685,9 +1685,12 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, o
                                 👤 {client.name}
                               </h3>
                               <p className="text-sm text-gray-500 mt-1">
-                                📱 {client.product} • 💰 {client.total_amount?.toLocaleString()}₽
+                                📱 {client.product} • 💰 {client.debt_amount?.toLocaleString()}₽
                               </p>
                               <p className="text-xs text-gray-400 mt-1">
+                                📞 {client.client_phone || 'Телефон не указан'} • 🏠 {client.client_address ? client.client_address.substring(0, 30) + '...' : 'Адрес не указан'}
+                              </p>
+                              <p className="text-xs text-gray-400">
                                 ID: {client.client_id}
                               </p>
                               {payment && (
