@@ -222,7 +222,7 @@ backend:
         -agent: "testing"
         -comment: "After fixing the backend startup issue with missing Google authentication dependencies, thoroughly tested the payment status change functionality. Confirmed the backend is running properly and responding to requests. Successfully tested changing payment status to all three options (paid, pending, overdue) using the PUT /api/clients/{client_id}/payments/{payment_date} endpoint with JSON body format. Verified that paid_date is correctly set when status changes to 'paid' and cleared when status changes to other values. Also confirmed proper error handling for invalid statuses, missing status in request body, non-existent payment dates, and non-existent clients. All tests passed successfully."
         
-  - task: "User Isolation"
+  - task: "User Data Persistence with user.uid"
     implemented: true
     working: true
     file: "/app/backend/server.py"
@@ -232,10 +232,10 @@ backend:
     status_history:
         -working: "NA"
         -agent: "testing"
-        -comment: "Initial testing of user isolation functionality after the authentication system was fixed."
+        -comment: "Initial testing of user data persistence after switching from Firebase ID token to user.uid."
         -working: true
         -agent: "testing"
-        -comment: "Successfully tested user isolation functionality. Created a dedicated test script (user_isolation_test.py) that creates two different users and tests data isolation between them. All tests passed successfully. Verified that User A cannot access User B's capitals, clients, or payment data, and vice versa. Also confirmed that the demo user (no Authorization header) cannot access data from either User A or User B. The user isolation is working correctly across all endpoints including capitals, clients, payments, dashboard, and analytics."
+        -comment: "Successfully tested user data persistence with user.uid. Created a dedicated test script (user_persistence_test.py) that creates a user with a permanent user.uid, creates capitals and clients, then simulates logging out and back in with a different token but the same user.uid. All tests passed successfully. Verified that all user data (capitals, clients, payments) remains accessible after changing tokens. Also confirmed that all API endpoints (capitals, clients, dashboard, analytics) work correctly with the new token. The fix to use user.uid instead of Firebase ID token is working correctly."
 
   - task: "Client Retrieval with Extended Fields"
     implemented: true
