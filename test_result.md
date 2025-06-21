@@ -164,6 +164,9 @@ backend:
         -working: true
         -agent: "testing"
         -comment: "Successfully tested GET /api/dashboard endpoint. It correctly filters payments by today, tomorrow, and overdue status. The string date filtering works properly, and the endpoint returns the expected data structure."
+        -working: true
+        -agent: "testing"
+        -comment: "Verified that the dashboard endpoint works correctly with mixed client data models. Successfully tested with both old model clients (using total_amount) and new model clients (using debt_amount and purchase_amount). The endpoint correctly includes all clients in the response regardless of their data model."
 
   - task: "Analytics with New Fields"
     implemented: true
