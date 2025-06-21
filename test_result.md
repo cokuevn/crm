@@ -218,6 +218,9 @@ backend:
         -working: true
         -agent: "testing"
         -comment: "Comprehensive testing of payment status update endpoint confirms it's working correctly. Successfully tested with JSON body format ({"status": "paid"}) instead of query parameters. Verified all valid statuses (pending, paid, overdue) work correctly. Confirmed proper error handling for invalid statuses and missing status in request body. Verified that paid_date is set when status changes to 'paid' and cleared when status changes to other values."
+        -working: true
+        -agent: "testing"
+        -comment: "After fixing the backend startup issue with missing Google authentication dependencies, thoroughly tested the payment status change functionality. Confirmed the backend is running properly and responding to requests. Successfully tested changing payment status to all three options (paid, pending, overdue) using the PUT /api/clients/{client_id}/payments/{payment_date} endpoint with JSON body format. Verified that paid_date is correctly set when status changes to 'paid' and cleared when status changes to other values. Also confirmed proper error handling for invalid statuses, missing status in request body, non-existent payment dates, and non-existent clients. All tests passed successfully."
 
   - task: "Client Retrieval with Extended Fields"
     implemented: true
