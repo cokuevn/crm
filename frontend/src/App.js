@@ -833,6 +833,7 @@ const MainApp = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [capitals, setCapitals] = useState([]);
   const [selectedCapital, setSelectedCapital] = useState(null);
+  const [showAddCapitalModal, setShowAddCapitalModal] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -845,7 +846,7 @@ const MainApp = () => {
     try {
       const response = await axios.get(`${API}/capitals`);
       setCapitals(response.data);
-      if (response.data.length > 0) {
+      if (response.data.length > 0 && !selectedCapital) {
         setSelectedCapital(response.data[0]);
       }
     } catch (error) {
@@ -859,6 +860,13 @@ const MainApp = () => {
     if (currentPage === 'add-client') {
       setCurrentPage('dashboard');
     }
+  };
+
+  const handleCapitalAdded = (newCapital) => {
+    console.log('New capital added:', newCapital);
+    setCapitals(prev => [...prev, newCapital]);
+    setSelectedCapital(newCapital);
+    fetchCapitals(); // Refresh to get latest data
   };
 
   const renderCurrentPage = () => {
@@ -892,8 +900,16 @@ const MainApp = () => {
         capitals={capitals}
         selectedCapital={selectedCapital}
         onCapitalChange={setSelectedCapital}
+        onShowAddCapital={() => setShowAddCapitalModal(true)}
       />
+      
       {renderCurrentPage()}
+      
+      <AddCapitalModal
+        isOpen={showAddCapitalModal}
+        onClose={() => setShowAddCapitalModal(false)}
+        onCapitalAdded={handleCapitalAdded}
+      />
     </div>
   );
 };
