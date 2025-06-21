@@ -249,7 +249,7 @@ async def get_clients(capital_id: Optional[str] = None, current_user: str = Depe
         query = {"capital_id": capital_id}
     
     clients = await db.clients.find(query).to_list(1000)
-    return [Client(**client) for client in clients]
+    return [Client(**mongo_to_dict(client)) for client in clients]
 
 @api_router.get("/clients/{client_id}", response_model=Client)
 async def get_client(client_id: str, current_user: str = Depends(get_current_user)):
@@ -260,7 +260,7 @@ async def get_client(client_id: str, current_user: str = Depends(get_current_use
     client = await db.clients.find_one({"client_id": client_id, "capital_id": {"$in": capital_ids}})
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-    return Client(**client)
+    return Client(**mongo_to_dict(client))
 
 @api_router.put("/clients/{client_id}", response_model=Client)
 async def update_client(client_id: str, updates: dict, current_user: str = Depends(get_current_user)):
