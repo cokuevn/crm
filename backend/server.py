@@ -6,13 +6,34 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 import uuid
 from datetime import datetime, date, timedelta
 from enum import Enum
 import firebase_admin
 from firebase_admin import credentials, auth
 import json
+from bson import ObjectId
+from fastapi.encoders import jsonable_encoder
+
+# Custom JSON encoder for MongoDB ObjectId
+class MongoJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        return super().default(obj)
+
+# Helper function to convert MongoDB documents to JSON-serializable format
+def mongo_to_dict(obj: Any) -> Dict:
+    """Convert MongoDB document to dict with string IDs instead of ObjectId."""
+    if isinstance(obj, dict):
+        return {k: mongo_to_dict(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [mongo_to_dict(item) for item in obj]
+    elif isinstance(obj, ObjectId):
+        return str(obj)
+    else:
+        return obj
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
