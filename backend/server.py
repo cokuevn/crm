@@ -76,10 +76,10 @@ class Capital(BaseModel):
     is_active: bool = True
 
 class PaymentSchedule(BaseModel):
-    payment_date: date
+    payment_date: str  # Changed from date to str for MongoDB compatibility
     amount: float
     status: PaymentStatus = PaymentStatus.pending
-    paid_date: Optional[date] = None
+    paid_date: Optional[str] = None  # Changed from date to str
 
 class Client(BaseModel):
     client_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -88,8 +88,8 @@ class Client(BaseModel):
     product: str
     total_amount: float
     monthly_payment: float
-    start_date: date
-    end_date: date
+    start_date: str  # Changed from date to str
+    end_date: str  # Changed from date to str
     schedule: List[PaymentSchedule] = []
     status: ClientStatus = ClientStatus.active
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -100,7 +100,7 @@ class Payment(BaseModel):
     client_id: str
     capital_id: str
     amount: float
-    payment_date: date
+    payment_date: str  # Changed from date to str
     status: PaymentStatus = PaymentStatus.paid
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
