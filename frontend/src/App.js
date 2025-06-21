@@ -231,43 +231,45 @@ const ExportModal = ({ isOpen, onClose, selectedCapital }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-medium text-gray-900">
-            📤 Экспорт данных
+          <h3 className="text-xl font-semibold text-gray-900">
+            Экспорт данных
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl"
+            className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg p-1"
           >
-            ✕
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
             Формат экспорта
           </label>
-          <div className="space-y-2">
-            <label className="flex items-center">
+          <div className="space-y-3">
+            <label className="flex items-center cursor-pointer">
               <input
                 type="radio"
                 value="csv"
                 checked={exportType === 'csv'}
                 onChange={(e) => setExportType(e.target.value)}
-                className="mr-2"
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
               />
-              <span>CSV (Excel)</span>
+              <span className="ml-3 text-sm text-gray-700">CSV (Excel)</span>
             </label>
-            <label className="flex items-center">
+            <label className="flex items-center cursor-pointer">
               <input
                 type="radio"
                 value="json"
                 checked={exportType === 'json'}
                 onChange={(e) => setExportType(e.target.value)}
-                className="mr-2"
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
               />
-              <span>JSON</span>
+              <span className="ml-3 text-sm text-gray-700">JSON</span>
             </label>
           </div>
         </div>
@@ -275,16 +277,16 @@ const ExportModal = ({ isOpen, onClose, selectedCapital }) => {
         <div className="flex justify-end space-x-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
           >
             Отмена
           </button>
           <button
             onClick={handleExport}
             disabled={loading}
-            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+            className="px-6 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Экспортирование...' : '📤 Экспорт'}
+            {loading ? 'Экспортирование...' : 'Экспорт'}
           </button>
         </div>
       </div>
