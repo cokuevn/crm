@@ -160,13 +160,16 @@ const NotificationToast = ({ notifications, onClose }) => {
 const ExportModal = ({ isOpen, onClose, selectedCapital }) => {
   const [exportType, setExportType] = useState('csv');
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   const handleExport = async () => {
     setLoading(true);
     try {
+      const headers = await getAuthHeaders(user);
       // Get all clients for the capital
       const response = await axios.get(`${API}/clients`, {
-        params: { capital_id: selectedCapital?.id }
+        params: { capital_id: selectedCapital?.id },
+        headers
       });
       
       const clients = response.data;
@@ -238,46 +241,35 @@ const ExportModal = ({ isOpen, onClose, selectedCapital }) => {
           </button>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Капитал для экспорта
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Формат экспорта
+          </label>
+          <div className="space-y-2">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="csv"
+                checked={exportType === 'csv'}
+                onChange={(e) => setExportType(e.target.value)}
+                className="mr-2"
+              />
+              <span>CSV (Excel)</span>
             </label>
-            <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-              💰 {selectedCapital?.name || 'Не выбран'}
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Формат экспорта
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="json"
+                checked={exportType === 'json'}
+                onChange={(e) => setExportType(e.target.value)}
+                className="mr-2"
+              />
+              <span>JSON</span>
             </label>
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="csv"
-                  checked={exportType === 'csv'}
-                  onChange={(e) => setExportType(e.target.value)}
-                  className="mr-2"
-                />
-                <span className="text-sm">📊 CSV (Excel)</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="json"
-                  checked={exportType === 'json'}
-                  onChange={(e) => setExportType(e.target.value)}
-                  className="mr-2"
-                />
-                <span className="text-sm">💾 JSON (данные)</span>
-              </label>
-            </div>
           </div>
         </div>
 
-        <div className="flex justify-end space-x-3 pt-6">
+        <div className="flex justify-end space-x-3">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
@@ -286,10 +278,10 @@ const ExportModal = ({ isOpen, onClose, selectedCapital }) => {
           </button>
           <button
             onClick={handleExport}
-            disabled={loading || !selectedCapital}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            disabled={loading}
+            className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Экспорт...' : '📤 Экспортировать'}
+            {loading ? 'Экспортирование...' : '📤 Экспорт'}
           </button>
         </div>
       </div>
@@ -297,24 +289,72 @@ const ExportModal = ({ isOpen, onClose, selectedCapital }) => {
   );
 };
 
+// Progress Ring Component
+const ProgressRing = ({ progress, size = 120, strokeWidth = 8 }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDasharray = `${circumference} ${circumference}`;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg
+        height={size}
+        width={size}
+        className="transform -rotate-90"
+      >
+        <circle
+          stroke="#e2e8f0"
+          fill="transparent"
+          strokeWidth={strokeWidth}
+          strokeDasharray={strokeDasharray}
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+        />
+        <circle
+          stroke="#10b981"
+          fill="transparent"
+          strokeWidth={strokeWidth}
+          strokeDasharray={strokeDasharray}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+          className="transition-all duration-1000 ease-in-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-2xl font-bold text-gray-900">
+          {progress.toFixed(1)}%
+        </span>
+      </div>
+    </div>
+  );
+};
+
 // Analytics Component
-const Analytics = ({ capitals, selectedCapital }) => {
-  const [analyticsData, setAnalyticsData] = useState(null);
+const Analytics = ({ selectedCapital }) => {
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (selectedCapital) {
-      fetchAnalyticsData();
+      fetchAnalytics();
     }
   }, [selectedCapital]);
 
-  const fetchAnalyticsData = async () => {
+  const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API}/analytics/${selectedCapital.id}`);
-      setAnalyticsData(response.data);
+      const headers = await getAuthHeaders(user);
+      const response = await axios.get(`${API}/analytics/${selectedCapital.id}`, { headers });
+      setAnalytics(response.data);
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      setAnalytics(null);
     } finally {
       setLoading(false);
     }
@@ -322,7 +362,7 @@ const Analytics = ({ capitals, selectedCapital }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-2 text-gray-600">Загружаем аналитику...</p>
@@ -331,239 +371,159 @@ const Analytics = ({ capitals, selectedCapital }) => {
     );
   }
 
-  if (!analyticsData) {
+  if (!analytics) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">📊</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Нет данных для аналитики</h3>
-          <p className="text-gray-600">Выберите капитал или добавьте клиентов для просмотра статистики</p>
-        </div>
+      <div className="text-center py-12">
+        <div className="text-6xl mb-4">📊</div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Нет данных для аналитики</h3>
+        <p className="text-gray-600">Добавьте клиентов для отображения аналитики</p>
       </div>
     );
   }
 
-  const MetricCard = ({ title, value, subtitle, color, icon }) => (
-    <div className={`bg-white rounded-lg shadow-sm p-6 border-l-4 ${color}`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
-        </div>
-        <div className="text-3xl">{icon}</div>
-      </div>
-    </div>
-  );
-
-  const ProgressRing = ({ percentage, size = 120, strokeWidth = 8 }) => {
-    const radius = (size - strokeWidth) / 2;
-    const circumference = radius * 2 * Math.PI;
-    const strokeDasharray = `${circumference} ${circumference}`;
-    const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-    return (
-      <div className="relative">
-        <svg
-          height={size}
-          width={size}
-          className="transform -rotate-90"
-        >
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="#E5E7EB"
-            strokeWidth={strokeWidth}
-            fill="transparent"
-          />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="#10B981"
-            strokeWidth={strokeWidth}
-            fill="transparent"
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={strokeDashoffset}
-            className="transition-all duration-300 ease-in-out"
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xl font-bold text-gray-900">{percentage.toFixed(1)}%</span>
-        </div>
-      </div>
-    );
-  };
-
-  const PaymentChart = () => {
-    const totalBars = 12;
-    const maxAmount = Math.max(analyticsData.total_amount, analyticsData.total_paid, analyticsData.outstanding);
-    
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-6">📈 Финансовый обзор</h3>
-        
-        <div className="space-y-6">
-          {/* Total Amount */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">💰 Общая сумма</span>
-              <span className="text-sm font-bold text-blue-600">{analyticsData.total_amount?.toLocaleString()}₽</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div 
-                className="bg-blue-500 h-3 rounded-full transition-all duration-300"
-                style={{ width: '100%' }}
-              />
-            </div>
-          </div>
-
-          {/* Total Paid */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">✅ Получено</span>
-              <span className="text-sm font-bold text-green-600">{analyticsData.total_paid?.toLocaleString()}₽</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div 
-                className="bg-green-500 h-3 rounded-full transition-all duration-300"
-                style={{ width: `${(analyticsData.total_paid / analyticsData.total_amount) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Outstanding */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">⏳ Остаток</span>
-              <span className="text-sm font-bold text-orange-600">{analyticsData.outstanding?.toLocaleString()}₽</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div 
-                className="bg-orange-500 h-3 rounded-full transition-all duration-300"
-                style={{ width: `${(analyticsData.outstanding / analyticsData.total_amount) * 100}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const collectionRate = analytics.collection_rate || 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          📊 Аналитика: {selectedCapital?.name}
-        </h1>
-        <p className="text-gray-600">Подробная статистика по выбранному капиталу</p>
-      </div>
-
+    <div className="space-y-6">
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <MetricCard
-          title="Всего клиентов"
-          value={analyticsData.total_clients}
-          subtitle={`${analyticsData.active_clients} активных`}
-          color="border-blue-500"
-          icon="👥"
-        />
-        
-        <MetricCard
-          title="Общая сумма"
-          value={`${analyticsData.total_amount?.toLocaleString()}₽`}
-          subtitle="Все договоры"
-          color="border-purple-500"
-          icon="💰"
-        />
-        
-        <MetricCard
-          title="Собрано средств"
-          value={`${analyticsData.total_paid?.toLocaleString()}₽`}
-          subtitle={`${analyticsData.collection_rate?.toFixed(1)}% от общей суммы`}
-          color="border-green-500"
-          icon="✅"
-        />
-        
-        <MetricCard
-          title="Просроченные платежи"
-          value={analyticsData.overdue_payments}
-          subtitle="Требуют внимания"
-          color="border-red-500"
-          icon="⚠️"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <span className="text-2xl">👥</span>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm text-gray-600">Всего клиентов</p>
+              <p className="text-2xl font-bold text-gray-900">{analytics.total_clients}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <span className="text-2xl">💰</span>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm text-gray-600">Общая сумма</p>
+              <p className="text-2xl font-bold text-gray-900">{analytics.total_amount?.toLocaleString()}₽</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <span className="text-2xl">✅</span>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm text-gray-600">Собрано средств</p>
+              <p className="text-2xl font-bold text-green-600">{analytics.total_paid?.toLocaleString()}₽</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm text-gray-600">Просроченные</p>
+              <p className="text-2xl font-bold text-red-600">{analytics.overdue_payments}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Collection Rate Chart */}
+      {/* Progress Ring and Financial Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Collection Progress */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-6 text-center">🎯 Процент сборов</h3>
-          <div className="flex justify-center">
-            <ProgressRing percentage={analyticsData.collection_rate || 0} />
+          <h3 className="text-lg font-medium text-gray-900 mb-6">📈 Процент сбора</h3>
+          <div className="flex items-center justify-center">
+            <ProgressRing progress={collectionRate} />
           </div>
-          <div className="text-center mt-4">
+          <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
-              Собрано {analyticsData.total_paid?.toLocaleString()}₽ из {analyticsData.total_amount?.toLocaleString()}₽
+              Собрано {analytics.total_paid?.toLocaleString()}₽ из {analytics.total_amount?.toLocaleString()}₽
             </p>
           </div>
         </div>
 
-        {/* Payment Chart */}
-        <PaymentChart />
+        {/* Financial Overview */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-6">💸 Финансовый обзор</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-blue-600">💰 Общая сумма</span>
+              <div className="flex items-center space-x-2">
+                <div className="w-24 bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                </div>
+                <span className="text-sm font-medium">{analytics.total_amount?.toLocaleString()}₽</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-green-600">✅ Собрано</span>
+              <div className="flex items-center space-x-2">
+                <div className="w-24 bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: `${collectionRate}%` }}></div>
+                </div>
+                <span className="text-sm font-medium">{analytics.total_paid?.toLocaleString()}₽</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-orange-600">⏳ Осталось</span>
+              <div className="flex items-center space-x-2">
+                <div className="w-24 bg-gray-200 rounded-full h-2">
+                  <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${100 - collectionRate}%` }}></div>
+                </div>
+                <span className="text-sm font-medium">{analytics.outstanding?.toLocaleString()}₽</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Detailed Stats */}
+      {/* Detailed Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Client Status Breakdown */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-6">👥 Статусы клиентов</h3>
-          
+          <h3 className="text-lg font-medium text-gray-900 mb-6">👥 Статус клиентов</h3>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="font-medium text-green-800">Активные клиенты</span>
-              </div>
-              <span className="font-bold text-green-800">{analyticsData.active_clients}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-green-600">✅ Активные</span>
+              <span className="text-lg font-semibold">{analytics.active_clients}</span>
             </div>
-            
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-                <span className="font-medium text-gray-800">Завершённые</span>
-              </div>
-              <span className="font-bold text-gray-800">{analyticsData.total_clients - analyticsData.active_clients}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">✔️ Завершённые</span>
+              <span className="text-lg font-semibold">{analytics.total_clients - analytics.active_clients}</span>
             </div>
           </div>
         </div>
 
         {/* Financial Summary */}
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-6">💸 Финансовая сводка</h3>
-          
+          <h3 className="text-lg font-medium text-gray-900 mb-6">📊 Финансовая сводка</h3>
           <div className="space-y-4">
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">💰 Общая сумма договоров:</span>
-              <span className="font-bold text-gray-900">{analyticsData.total_amount?.toLocaleString()}₽</span>
+            <div className="flex items-center justify-between">
+              <span className="text-blue-600">💰 Общая сумма</span>
+              <span className="text-lg font-semibold">{analytics.total_amount?.toLocaleString()}₽</span>
             </div>
-            
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">✅ Получено платежей:</span>
-              <span className="font-bold text-green-600">{analyticsData.total_paid?.toLocaleString()}₽</span>
+            <div className="flex items-center justify-between">
+              <span className="text-green-600">✅ Оплачено</span>
+              <span className="text-lg font-semibold">{analytics.total_paid?.toLocaleString()}₽</span>
             </div>
-            
-            <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-600">⏳ Ожидается к получению:</span>
-              <span className="font-bold text-orange-600">{analyticsData.outstanding?.toLocaleString()}₽</span>
+            <div className="flex items-center justify-between">
+              <span className="text-orange-600">⏳ К оплате</span>
+              <span className="text-lg font-semibold">{analytics.outstanding?.toLocaleString()}₽</span>
             </div>
-            
-            <div className="flex justify-between items-center py-2 pt-4">
-              <span className="text-gray-600 font-medium">📈 Эффективность сборов:</span>
-              <span className="font-bold text-blue-600">{analyticsData.collection_rate?.toFixed(1)}%</span>
+            <div className="flex items-center justify-between border-t pt-4">
+              <span className="text-purple-600">📈 Эффективность</span>
+              <span className="text-lg font-semibold">{collectionRate.toFixed(1)}%</span>
             </div>
           </div>
         </div>
@@ -583,14 +543,14 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
     guarantor_name: '',
     client_address: '',
     client_phone: '',
-    guarantor_phone: '',
-    status: 'active'
+    guarantor_phone: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (client) {
+    if (client && isOpen) {
       setFormData({
         name: client.name || '',
         product: client.product || '',
@@ -600,11 +560,10 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
         guarantor_name: client.guarantor_name || '',
         client_address: client.client_address || '',
         client_phone: client.client_phone || '',
-        guarantor_phone: client.guarantor_phone || '',
-        status: client.status || 'active'
+        guarantor_phone: client.guarantor_phone || ''
       });
     }
-  }, [client]);
+  }, [client, isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -612,15 +571,14 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
     setError('');
 
     try {
-      const updateData = {
+      const headers = await getAuthHeaders(user);
+      const response = await axios.put(`${API}/clients/${client.client_id}`, {
         ...formData,
         purchase_amount: parseFloat(formData.purchase_amount),
         debt_amount: parseFloat(formData.debt_amount),
         monthly_payment: parseFloat(formData.monthly_payment)
-      };
+      }, { headers });
 
-      const response = await axios.put(`${API}/clients/${client.client_id}`, updateData);
-      
       if (onClientUpdated) {
         onClientUpdated(response.data);
       }
@@ -641,7 +599,7 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-medium text-gray-900">
             ✏️ Редактировать клиента
@@ -663,38 +621,39 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Основная информация */}
           <div>
-            <h4 className="text-md font-medium text-gray-900 mb-3">Основная информация</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h4 className="text-md font-medium text-gray-900 mb-4">📋 Основная информация</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ФИО клиента
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ФИО клиента *
                 </label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Товар
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Товар *
                 </label>
                 <input
                   type="text"
                   name="product"
                   value={formData.product}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Адрес клиента
                 </label>
                 <input
@@ -702,12 +661,12 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
                   name="client_address"
                   value={formData.client_address}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Телефон клиента
                 </label>
                 <input
@@ -715,7 +674,7 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
                   name="client_phone"
                   value={formData.client_phone}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -723,18 +682,19 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
 
           {/* Финансовая информация */}
           <div>
-            <h4 className="text-md font-medium text-gray-900 mb-3">Финансовая информация</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <h4 className="text-md font-medium text-gray-900 mb-4">💰 Финансовая информация</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Сумма покупки (₽)
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Сумма покупки (₽) *
                 </label>
                 <input
                   type="number"
                   name="purchase_amount"
                   value={formData.purchase_amount}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                   min="0"
                   step="0.01"
@@ -742,15 +702,15 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Долг клиента (₽)
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Долг клиента (₽) *
                 </label>
                 <input
                   type="number"
                   name="debt_amount"
                   value={formData.debt_amount}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                   min="0"
                   step="0.01"
@@ -758,15 +718,15 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ежемесячный платёж (₽)
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ежемесячный платёж (₽) *
                 </label>
                 <input
                   type="number"
                   name="monthly_payment"
                   value={formData.monthly_payment}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                   min="0"
                   step="0.01"
@@ -777,10 +737,11 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
 
           {/* Информация о гаранте */}
           <div>
-            <h4 className="text-md font-medium text-gray-900 mb-3">Информация о гаранте</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h4 className="text-md font-medium text-gray-900 mb-4">🤝 Информация о гаранте</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   ФИО гаранта
                 </label>
                 <input
@@ -788,12 +749,12 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
                   name="guarantor_name"
                   value={formData.guarantor_name}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Телефон гаранта
                 </label>
                 <input
@@ -801,28 +762,10 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
                   name="guarantor_phone"
                   value={formData.guarantor_phone}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
-          </div>
-
-          {/* Статус */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Статус клиента
-            </label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="active">Активен</option>
-              <option value="completed">Завершён</option>
-              <option value="overdue">Просрочка</option>
-              <option value="archived">Архивирован</option>
-            </select>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">
@@ -1553,6 +1496,7 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const { user } = useAuth();
 
   useEffect(() => {
     if (selectedCapital) {
@@ -1567,13 +1511,14 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
     setSuccess('');
 
     try {
+      const headers = await getAuthHeaders(user);
       const response = await axios.post(`${API}/clients`, {
         ...formData,
         purchase_amount: parseFloat(formData.purchase_amount),
         debt_amount: parseFloat(formData.debt_amount),
         monthly_payment: parseFloat(formData.monthly_payment),
         months: parseInt(formData.months)
-      });
+      }, { headers });
 
       setSuccess('Клиент успешно добавлен!');
       setFormData({
@@ -1815,7 +1760,7 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
                   value={formData.guarantor_name}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Петров Петр Петрович"
+                  placeholder="Иванова Мария Петровна"
                 />
               </div>
 
@@ -1835,13 +1780,13 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
             </div>
           </div>
 
-          <div className="flex justify-end space-x-4 pt-6">
+          <div className="flex justify-end space-x-3 pt-6">
             <button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Добавление...' : '✅ Добавить клиента'}
+              {loading ? 'Добавление...' : '👤 Добавить клиента'}
             </button>
           </div>
         </form>
@@ -1851,300 +1796,313 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
 };
 
 // Dashboard Component
-const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, onViewClientDetails }) => {
-  const [dashboardData, setDashboardData] = useState(null);
+const Dashboard = ({ selectedCapital, onClientClick }) => {
+  const [dashboardData, setDashboardData] = useState({
+    today: [],
+    tomorrow: [],
+    overdue: [],
+    all_clients: []
+  });
+  const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (selectedCapital) {
-      fetchDashboardData();
-    } else if (capitals.length > 0) {
-      setDashboardData({ today: [], tomorrow: [], overdue: [], all_clients: [] });
-    }
-  }, [selectedCapital, capitals]);
+    fetchDashboardData();
+  }, [selectedCapital]);
 
   const fetchDashboardData = async () => {
+    if (!selectedCapital) return;
+    
+    setLoading(true);
     try {
-      setLoading(true);
+      const headers = await getAuthHeaders(user);
       const response = await axios.get(`${API}/dashboard`, {
-        params: { capital_id: selectedCapital?.id }
+        params: { capital_id: selectedCapital.id },
+        headers
       });
       setDashboardData(response.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setDashboardData({ today: [], tomorrow: [], overdue: [], all_clients: [] });
     } finally {
       setLoading(false);
     }
   };
 
   const getFilteredClients = () => {
-    if (!dashboardData) return [];
-    
     let filteredClients = [];
+    
     switch (filter) {
       case 'today':
-        filteredClients = dashboardData.today || [];
+        filteredClients = dashboardData.today?.map(item => ({
+          ...item.client,
+          filterReason: 'Платёж сегодня'
+        })) || [];
         break;
       case 'tomorrow':
-        filteredClients = dashboardData.tomorrow || [];
+        filteredClients = dashboardData.tomorrow?.map(item => ({
+          ...item.client,
+          filterReason: 'Платёж завтра'
+        })) || [];
         break;
       case 'overdue':
-        filteredClients = dashboardData.overdue || [];
+        filteredClients = dashboardData.overdue?.map(item => ({
+          ...item.client,
+          filterReason: 'Просроченный платёж'
+        })) || [];
         break;
       default:
-        filteredClients = (dashboardData.all_clients || []).map(client => ({ client }));
-        break;
+        filteredClients = dashboardData.all_clients || [];
     }
 
     // Apply search filter
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase();
-      filteredClients = filteredClients.filter(item => {
-        const client = item.client;
-        return (
-          client.name?.toLowerCase().includes(searchLower) ||
-          client.product?.toLowerCase().includes(searchLower) ||
-          client.client_id?.toLowerCase().includes(searchLower)
-        );
-      });
+    if (searchTerm) {
+      filteredClients = filteredClients.filter(client =>
+        client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.product?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.client_id?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
 
     return filteredClients;
   };
 
-  const getClientsCount = (filterType) => {
-    if (!dashboardData) return 0;
-    switch (filterType) {
-      case 'today': return (dashboardData.today || []).length;
-      case 'tomorrow': return (dashboardData.tomorrow || []).length;
-      case 'overdue': return (dashboardData.overdue || []).length;
-      default: return (dashboardData.all_clients || []).length;
-    }
-  };
+  const filteredClients = getFilteredClients();
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+  if (!selectedCapital) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-6xl mb-4">💰</div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Выберите капитал</h3>
+        <p className="text-gray-600">Создайте или выберите капитал для просмотра дашборда</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Загружаем дашборд...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-semibold text-gray-900">CRM Рассрочки</h1>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                {user?.email}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="text-sm text-red-600 hover:text-red-500"
-              >
-                Выйти
-              </button>
+    <div className="space-y-6">
+      {/* Search Bar */}
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="flex items-center space-x-4">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              placeholder="Поиск по имени, товару или ID клиента..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span className="text-gray-400">🔍</span>
             </div>
           </div>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="px-3 py-2 text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              ✕
+            </button>
+          )}
         </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Dashboard content when capitals exist */}
-        {capitals.length > 0 && (
-          <>
-            {loading && (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600">Загружаем данные...</p>
-              </div>
-            )}
-
-            {!loading && (
-              <>
-                {/* Search and Filters */}
-                <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                  {/* Search Bar */}
-                  <div className="mb-4">
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <span className="text-gray-400">🔍</span>
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="Поиск по имени, товару или ID клиента..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      {searchTerm && (
-                        <button
-                          onClick={() => setSearchTerm('')}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        >
-                          <span className="text-gray-400 hover:text-gray-600">✕</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Filter Buttons */}
-                  <div className="flex flex-wrap gap-4">
-                    <button
-                      onClick={() => setFilter('all')}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        filter === 'all'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      📋 Все клиенты ({getClientsCount('all')})
-                    </button>
-                    <button
-                      onClick={() => setFilter('today')}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        filter === 'today'
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      📅 Сегодня ({getClientsCount('today')})
-                    </button>
-                    <button
-                      onClick={() => setFilter('tomorrow')}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        filter === 'tomorrow'
-                          ? 'bg-yellow-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      ⏰ Завтра ({getClientsCount('tomorrow')})
-                    </button>
-                    <button
-                      onClick={() => setFilter('overdue')}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        filter === 'overdue'
-                          ? 'bg-red-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      ⚠️ Просрочено ({getClientsCount('overdue')})
-                    </button>
-                  </div>
-
-                  {searchTerm && (
-                    <div className="mt-3 text-sm text-gray-600">
-                      🔍 Поиск: "{searchTerm}" • Найдено: {getFilteredClients().length} клиентов
-                    </div>
-                  )}
-                </div>
-
-                {/* Client List */}
-                <div className="bg-white rounded-lg shadow-sm">
-                  <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-medium text-gray-900">
-                      {filter === 'all' ? 'Все клиенты' :
-                       filter === 'today' ? 'Платежи на сегодня' :
-                       filter === 'tomorrow' ? 'Платежи на завтра' :
-                       'Просроченные платежи'}
-                    </h2>
-                  </div>
-                  
-                  <div className="divide-y divide-gray-200">
-                    {getFilteredClients().map((item, index) => {
-                      const client = item.client;
-                      const payment = item.payment;
-                      
-                      return (
-                        <div key={client.client_id || index} className="p-6 hover:bg-gray-50 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <h3 className="text-lg font-medium text-gray-900">
-                                👤 {client.name}
-                              </h3>
-                              <p className="text-sm text-gray-500 mt-1">
-                                📱 {client.product} • 💰 {(client.debt_amount || client.total_amount || 0).toLocaleString()}₽
-                              </p>
-                              <p className="text-xs text-gray-400 mt-1">
-                                📞 {client.client_phone || 'Телефон не указан'} • 🏠 {client.client_address ? client.client_address.substring(0, 30) + '...' : 'Адрес не указан'}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                ID: {client.client_id}
-                              </p>
-                              {payment && (
-                                <p className="text-sm text-blue-600 mt-1 font-medium">
-                                  💳 Платёж: {payment.amount?.toLocaleString()}₽ на {payment.payment_date}
-                                </p>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center space-x-3">
-                              <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                                client.status === 'active'
-                                  ? 'bg-green-100 text-green-800'
-                                  : client.status === 'overdue'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {client.status === 'active' ? '✅ Активен' : 
-                                 client.status === 'overdue' ? '❌ Просрочка' : '✔️ Завершён'}
-                              </span>
-                              
-                              <button 
-                                onClick={() => onViewClientDetails(client.client_id)}
-                                className="text-blue-600 hover:text-blue-500 text-sm font-medium transition-colors px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50"
-                              >
-                                👁️ Подробнее
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  
-                  {getFilteredClients().length === 0 && (
-                    <div className="p-12 text-center text-gray-500">
-                      <div className="text-4xl mb-4">
-                        {searchTerm ? '🔍' :
-                         filter === 'today' ? '📅' :
-                         filter === 'tomorrow' ? '⏰' :
-                         filter === 'overdue' ? '⚠️' : '📋'}
-                      </div>
-                      <p className="text-lg">
-                        {searchTerm ? `Не найдено клиентов по запросу "${searchTerm}"` :
-                         filter === 'all' ? 'Клиенты не найдены' :
-                         filter === 'today' ? 'На сегодня платежей нет' :
-                         filter === 'tomorrow' ? 'На завтра платежей нет' :
-                         'Просроченных платежей нет'}
-                      </p>
-                      {searchTerm && (
-                        <button
-                          onClick={() => setSearchTerm('')}
-                          className="mt-2 text-blue-600 hover:text-blue-500 font-medium"
-                        >
-                          Очистить поиск
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </>
-        )}
       </div>
+
+      {/* Filter Buttons */}
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            filter === 'all'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+          }`}
+        >
+          📋 Все клиенты ({dashboardData.all_clients?.length || 0})
+        </button>
+        <button
+          onClick={() => setFilter('today')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            filter === 'today'
+              ? 'bg-yellow-600 text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+          }`}
+        >
+          📅 Сегодня ({dashboardData.today?.length || 0})
+        </button>
+        <button
+          onClick={() => setFilter('tomorrow')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            filter === 'tomorrow'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+          }`}
+        >
+          ⏰ Завтра ({dashboardData.tomorrow?.length || 0})
+        </button>
+        <button
+          onClick={() => setFilter('overdue')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            filter === 'overdue'
+              ? 'bg-red-600 text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+          }`}
+        >
+          ⚠️ Просрочено ({dashboardData.overdue?.length || 0})
+        </button>
+      </div>
+
+      {/* Search Results Info */}
+      {searchTerm && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-blue-800">
+              🔍 Поиск: "{searchTerm}" • Найдено: {filteredClients.length} клиентов
+            </span>
+            {filteredClients.length === 0 && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+              >
+                Очистить поиск
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Client List */}
+      {filteredClients.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+          <div className="text-6xl mb-4">
+            {searchTerm ? '🔍' : filter === 'today' ? '📅' : filter === 'tomorrow' ? '⏰' : filter === 'overdue' ? '⚠️' : '👥'}
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {searchTerm 
+              ? 'Клиенты не найдены' 
+              : filter === 'today' 
+                ? 'Нет платежей на сегодня' 
+                : filter === 'tomorrow'
+                  ? 'Нет платежей на завтра'
+                  : filter === 'overdue'
+                    ? 'Нет просроченных платежей'
+                    : 'Нет клиентов'
+            }
+          </h3>
+          <p className="text-gray-600">
+            {searchTerm 
+              ? 'Попробуйте изменить поисковый запрос'
+              : filter === 'all' 
+                ? 'Добавьте первого клиента'
+                : 'Отлично! Все платежи под контролем'
+            }
+          </p>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Очистить поиск
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredClients.map(client => (
+              <div 
+                key={client.client_id}
+                className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => onClientClick(client.client_id)}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">
+                      👤 {client.name}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      📱 {client.product}
+                    </p>
+                  </div>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    client.status === 'active'
+                      ? 'bg-green-100 text-green-800'
+                      : client.status === 'overdue'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {client.status === 'active' ? '✅' : client.status === 'overdue' ? '❌' : '✔️'}
+                  </span>
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">💰 Долг:</span>
+                    <span className="font-medium">{(client.debt_amount || client.total_amount || 0).toLocaleString()}₽</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">📞 Телефон:</span>
+                    <span className="font-medium">{client.client_phone || 'Не указан'}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">🏠 Адрес:</span>
+                    <span className="font-medium text-right">{client.client_address || 'Не указан'}</span>
+                  </div>
+                </div>
+
+                {client.filterReason && (
+                  <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                    ⚠️ {client.filterReason}
+                  </div>
+                )}
+
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <span>📅 Платёж:</span>
+                    <span className="font-medium">{client.monthly_payment?.toLocaleString()}₽/мес</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
+  );
+};
+
+// Header Component
+const Header = () => {
+  const { user, logout } = useAuth();
+
+  return (
+    <header className="bg-white border-b border-gray-200 px-4 py-3">
+      <div className="max-w-7xl mx-auto flex justify-between items-center">
+        <h1 className="text-xl font-bold text-gray-900">💰 CRM Рассрочка</h1>
+        <div className="flex items-center space-x-4">
+          <span className="text-sm text-gray-600">
+            👤 {user?.email}
+          </span>
+          <button
+            onClick={logout}
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Выйти
+          </button>
+        </div>
+      </div>
+    </header>
   );
 };
 
@@ -2194,25 +2152,15 @@ const MainApp = () => {
   };
 
   const showNotification = (type, title, message) => {
-    const notification = { type, title, message, id: Date.now() };
+    const notification = { type, title, message };
     setNotifications(prev => [...prev, notification]);
-    
-    // Auto-remove after 5 seconds
     setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      setNotifications(prev => prev.filter(n => n !== notification));
     }, 5000);
   };
 
   const removeNotification = (index) => {
     setNotifications(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleClientAdded = (newClient) => {
-    console.log('New client added:', newClient);
-    showNotification('success', 'Клиент добавлен', `${newClient.name} успешно добавлен в систему`);
-    if (currentPage === 'add-client') {
-      setCurrentPage('dashboard');
-    }
   };
 
   const handleCapitalAdded = (newCapital) => {
@@ -2241,18 +2189,25 @@ const MainApp = () => {
     }
   };
 
-  const handleViewClientDetails = (clientId) => {
+  const handleClientClick = (clientId) => {
     setSelectedClientId(clientId);
     setCurrentPage('client-details');
   };
 
-  const handleBackFromClientDetails = () => {
+  const handleBackToDashboard = () => {
     setSelectedClientId(null);
+    setCurrentPage('dashboard');
+  };
+
+  const handleClientAdded = (newClient) => {
+    showNotification('success', 'Клиент добавлен', `${newClient.name} успешно добавлен`);
     setCurrentPage('dashboard');
   };
 
   const renderCurrentPage = () => {
     switch (currentPage) {
+      case 'analytics':
+        return <Analytics selectedCapital={selectedCapital} />;
       case 'add-client':
         return (
           <AddClientForm 
@@ -2261,30 +2216,19 @@ const MainApp = () => {
             onClientAdded={handleClientAdded}
           />
         );
-      case 'analytics':
-        return (
-          <Analytics
-            capitals={capitals}
-            selectedCapital={selectedCapital}
-          />
-        );
       case 'client-details':
         return (
           <ClientDetails
             clientId={selectedClientId}
-            onBack={handleBackFromClientDetails}
+            onBack={handleBackToDashboard}
             capitals={capitals}
           />
         );
-      case 'dashboard':
       default:
         return (
           <Dashboard 
-            onPageChange={setCurrentPage}
-            capitals={capitals}
             selectedCapital={selectedCapital}
-            onCapitalChange={setSelectedCapital}
-            onViewClientDetails={handleViewClientDetails}
+            onClientClick={handleClientClick}
           />
         );
     }
@@ -2292,21 +2236,23 @@ const MainApp = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {currentPage !== 'client-details' && (
-        <Navigation 
-          currentPage={currentPage}
-          onPageChange={setCurrentPage}
-          capitals={capitals}
-          selectedCapital={selectedCapital}
-          onCapitalChange={setSelectedCapital}
-          onShowAddCapital={() => setShowAddCapitalModal(true)}
-          onDeleteCapital={(capital) => setShowDeleteConfirm(capital)}
-          onShowExport={() => setShowExportModal(true)}
-        />
-      )}
+      <Header />
+      <Navigation
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        capitals={capitals}
+        selectedCapital={selectedCapital}
+        onCapitalChange={setSelectedCapital}
+        onShowAddCapital={() => setShowAddCapitalModal(true)}
+        onDeleteCapital={(capital) => setShowDeleteConfirm(capital)}
+        onShowExport={() => setShowExportModal(true)}
+      />
       
-      {renderCurrentPage()}
-      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {renderCurrentPage()}
+      </main>
+
+      {/* Modals */}
       <AddCapitalModal
         isOpen={showAddCapitalModal}
         onClose={() => setShowAddCapitalModal(false)}
@@ -2319,11 +2265,6 @@ const MainApp = () => {
         selectedCapital={selectedCapital}
       />
 
-      <NotificationToast
-        notifications={notifications}
-        onClose={removeNotification}
-      />
-
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -2333,7 +2274,7 @@ const MainApp = () => {
             </h3>
             <p className="text-gray-600 mb-6">
               Вы уверены, что хотите удалить капитал <strong>"{showDeleteConfirm.name}"</strong>? 
-              Все клиенты и платежи этого капитала будут также удалены. Это действие нельзя отменить.
+              Все клиенты и платежи будут также удалены. Это действие нельзя отменить.
             </p>
             <div className="flex justify-end space-x-3">
               <button
@@ -2352,10 +2293,14 @@ const MainApp = () => {
           </div>
         </div>
       )}
+
+      {/* Notifications */}
+      <NotificationToast notifications={notifications} onClose={removeNotification} />
     </div>
   );
 };
 
+// Main App Component
 function App() {
   const { user, loading } = useAuth();
 
@@ -2363,8 +2308,8 @@ function App() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Загрузка...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Загрузка...</p>
         </div>
       </div>
     );
@@ -2377,12 +2322,11 @@ function App() {
   );
 }
 
-const AppWithAuth = () => {
+// Export the App wrapped with AuthProvider
+export default function AppWrapper() {
   return (
     <AuthProvider>
       <App />
     </AuthProvider>
   );
-};
-
-export default AppWithAuth;
+}
