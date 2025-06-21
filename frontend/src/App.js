@@ -942,7 +942,7 @@ const AddCapitalModal = ({ isOpen, onClose, onCapitalAdded }) => {
 };
 
 // Navigation Component
-const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onDeleteCapital }) => {
+const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onDeleteCapital, onShowExport }) => {
   return (
     <nav className="bg-white border-b border-gray-200 px-4">
       <div className="max-w-7xl mx-auto">
