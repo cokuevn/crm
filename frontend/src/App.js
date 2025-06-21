@@ -1158,6 +1158,7 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
 const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, onViewClientDetails }) => {
   const [dashboardData, setDashboardData] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const { user, logout } = useAuth();
 
@@ -1187,15 +1188,45 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, o
   const getFilteredClients = () => {
     if (!dashboardData) return [];
     
+    let filteredClients = [];
     switch (filter) {
       case 'today':
-        return dashboardData.today || [];
+        filteredClients = dashboardData.today || [];
+        break;
       case 'tomorrow':
-        return dashboardData.tomorrow || [];
+        filteredClients = dashboardData.tomorrow || [];
+        break;
       case 'overdue':
-        return dashboardData.overdue || [];
+        filteredClients = dashboardData.overdue || [];
+        break;
       default:
-        return (dashboardData.all_clients || []).map(client => ({ client }));
+        filteredClients = (dashboardData.all_clients || []).map(client => ({ client }));
+        break;
+    }
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filteredClients = filteredClients.filter(item => {
+        const client = item.client;
+        return (
+          client.name?.toLowerCase().includes(searchLower) ||
+          client.product?.toLowerCase().includes(searchLower) ||
+          client.client_id?.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    return filteredClients;
+  };
+
+  const getClientsCount = (filterType) => {
+    if (!dashboardData) return 0;
+    switch (filterType) {
+      case 'today': return (dashboardData.today || []).length;
+      case 'tomorrow': return (dashboardData.tomorrow || []).length;
+      case 'overdue': return (dashboardData.overdue || []).length;
+      default: return (dashboardData.all_clients || []).length;
     }
   };
 
@@ -1245,8 +1276,33 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, o
 
             {!loading && (
               <>
-                {/* Filters */}
+                {/* Search and Filters */}
                 <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                  {/* Search Bar */}
+                  <div className="mb-4">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-400">🔍</span>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Поиск по имени, товару или ID клиента..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm('')}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        >
+                          <span className="text-gray-400 hover:text-gray-600">✕</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Filter Buttons */}
                   <div className="flex flex-wrap gap-4">
                     <button
                       onClick={() => setFilter('all')}
@@ -1256,7 +1312,7 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, o
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      📋 Все клиенты ({(dashboardData?.all_clients || []).length})
+                      📋 Все клиенты ({getClientsCount('all')})
                     </button>
                     <button
                       onClick={() => setFilter('today')}
@@ -1266,7 +1322,7 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, o
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      📅 Сегодня ({(dashboardData?.today || []).length})
+                      📅 Сегодня ({getClientsCount('today')})
                     </button>
                     <button
                       onClick={() => setFilter('tomorrow')}
@@ -1276,7 +1332,7 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, o
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      ⏰ Завтра ({(dashboardData?.tomorrow || []).length})
+                      ⏰ Завтра ({getClientsCount('tomorrow')})
                     </button>
                     <button
                       onClick={() => setFilter('overdue')}
@@ -1286,9 +1342,15 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, o
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      ⚠️ Просрочено ({(dashboardData?.overdue || []).length})
+                      ⚠️ Просрочено ({getClientsCount('overdue')})
                     </button>
                   </div>
+
+                  {searchTerm && (
+                    <div className="mt-3 text-sm text-gray-600">
+                      🔍 Поиск: "{searchTerm}" • Найдено: {getFilteredClients().length} клиентов
+                    </div>
+                  )}
                 </div>
 
                 {/* Client List */}
@@ -1317,6 +1379,9 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, o
                               <p className="text-sm text-gray-500 mt-1">
                                 📱 {client.product} • 💰 {client.total_amount?.toLocaleString()}₽
                               </p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                ID: {client.client_id}
+                              </p>
                               {payment && (
                                 <p className="text-sm text-blue-600 mt-1 font-medium">
                                   💳 Платёж: {payment.amount?.toLocaleString()}₽ на {payment.payment_date}
@@ -1338,7 +1403,7 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, o
                               
                               <button 
                                 onClick={() => onViewClientDetails(client.client_id)}
-                                className="text-blue-600 hover:text-blue-500 text-sm font-medium transition-colors"
+                                className="text-blue-600 hover:text-blue-500 text-sm font-medium transition-colors px-3 py-1 border border-blue-200 rounded-lg hover:bg-blue-50"
                               >
                                 👁️ Подробнее
                               </button>
@@ -1352,16 +1417,26 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, o
                   {getFilteredClients().length === 0 && (
                     <div className="p-12 text-center text-gray-500">
                       <div className="text-4xl mb-4">
-                        {filter === 'today' ? '📅' :
+                        {searchTerm ? '🔍' :
+                         filter === 'today' ? '📅' :
                          filter === 'tomorrow' ? '⏰' :
                          filter === 'overdue' ? '⚠️' : '📋'}
                       </div>
                       <p className="text-lg">
-                        {filter === 'all' ? 'Клиенты не найдены' :
+                        {searchTerm ? `Не найдено клиентов по запросу "${searchTerm}"` :
+                         filter === 'all' ? 'Клиенты не найдены' :
                          filter === 'today' ? 'На сегодня платежей нет' :
                          filter === 'tomorrow' ? 'На завтра платежей нет' :
                          'Просроченных платежей нет'}
                       </p>
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm('')}
+                          className="mt-2 text-blue-600 hover:text-blue-500 font-medium"
+                        >
+                          Очистить поиск
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
