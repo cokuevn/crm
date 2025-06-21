@@ -870,7 +870,7 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
 };
 
 // Dashboard Component
-const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange }) => {
+const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, onViewClientDetails }) => {
   const [dashboardData, setDashboardData] = useState(null);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(false);
