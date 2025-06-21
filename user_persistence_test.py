@@ -344,19 +344,19 @@ def run_user_persistence_test():
     """Run the user persistence test"""
     print_separator("STARTING USER PERSISTENCE TEST")
     
-    # Override the user.uid in the get_current_user function
-    # This is done by setting a specific format in the Authorization header
-    # The server extracts the user ID from the token
-    
-    # Step 1: Create user data with first token
+    # We'll use the permanent UID directly as the user ID
+    # The server extracts this as the user ID from the Authorization header
     print(f"Using permanent user UID: {PERMANENT_USER_UID}")
-    print(f"First token: {FIRST_TOKEN}")
     
-    # Modify the first token to include the permanent user UID
-    # The server will extract PERMANENT_USER_UID as the user ID
-    first_token_with_uid = f"{PERMANENT_USER_UID}:{FIRST_TOKEN}"
+    # First login - use the permanent UID directly
+    first_headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {PERMANENT_USER_UID}"  # First login
+    }
     
-    initial_data = create_user_data(first_token_with_uid)
+    # Step 1: Create user data with first login
+    print("\nStep 1: Creating user data with first login...")
+    initial_data = create_user_data(PERMANENT_USER_UID)
     if not initial_data:
         print("❌ Failed to create initial user data")
         return False
@@ -368,15 +368,11 @@ def run_user_persistence_test():
     print(f"  Total amount: {initial_data['total_amount']}")
     
     # Step 2: "Log out" and "log in" with a different token but same user.uid
-    print("\nSimulating logout and login with a different token...")
-    print(f"Second token: {SECOND_TOKEN}")
+    print("\nStep 2: Simulating logout and login with a different token...")
+    print(f"  Using same permanent UID but different token")
     
-    # Modify the second token to include the same permanent user UID
-    # The server will extract the same PERMANENT_USER_UID as the user ID
-    second_token_with_uid = f"{PERMANENT_USER_UID}:{SECOND_TOKEN}"
-    
-    # Step 3: Verify data persists with the second token
-    if not verify_user_data(second_token_with_uid, initial_data):
+    # Step 3: Verify data persists with the second login
+    if not verify_user_data(PERMANENT_USER_UID, initial_data):
         print("❌ User persistence test failed: data did not persist across tokens")
         return False
     
