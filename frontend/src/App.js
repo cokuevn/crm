@@ -1656,7 +1656,9 @@ const MainApp = () => {
   const [selectedCapital, setSelectedCapital] = useState(null);
   const [showAddCapitalModal, setShowAddCapitalModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -1690,8 +1692,23 @@ const MainApp = () => {
     }
   };
 
+  const showNotification = (type, title, message) => {
+    const notification = { type, title, message, id: Date.now() };
+    setNotifications(prev => [...prev, notification]);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+    }, 5000);
+  };
+
+  const removeNotification = (index) => {
+    setNotifications(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleClientAdded = (newClient) => {
     console.log('New client added:', newClient);
+    showNotification('success', 'Клиент добавлен', `${newClient.name} успешно добавлен в систему`);
     if (currentPage === 'add-client') {
       setCurrentPage('dashboard');
     }
@@ -1701,6 +1718,7 @@ const MainApp = () => {
     console.log('New capital added:', newCapital);
     setCapitals(prev => [...prev, newCapital]);
     setSelectedCapital(newCapital);
+    showNotification('success', 'Капитал создан', `${newCapital.name} успешно создан`);
     fetchCapitals();
   };
 
@@ -1713,10 +1731,11 @@ const MainApp = () => {
       const remainingCapitals = capitals.filter(c => c.id !== capitalId);
       setSelectedCapital(remainingCapitals.length > 0 ? remainingCapitals[0] : null);
       
+      showNotification('success', 'Капитал удален', 'Капитал и все связанные данные удалены');
       setShowDeleteConfirm(null);
     } catch (error) {
       console.error('Error deleting capital:', error);
-      alert('Ошибка при удалении капитала');
+      showNotification('error', 'Ошибка', 'Не удалось удалить капитал');
     }
   };
 
@@ -1780,6 +1799,7 @@ const MainApp = () => {
           onCapitalChange={setSelectedCapital}
           onShowAddCapital={() => setShowAddCapitalModal(true)}
           onDeleteCapital={(capital) => setShowDeleteConfirm(capital)}
+          onShowExport={() => setShowExportModal(true)}
         />
       )}
       
@@ -1789,6 +1809,17 @@ const MainApp = () => {
         isOpen={showAddCapitalModal}
         onClose={() => setShowAddCapitalModal(false)}
         onCapitalAdded={handleCapitalAdded}
+      />
+
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        selectedCapital={selectedCapital}
+      />
+
+      <NotificationToast
+        notifications={notifications}
+        onClose={removeNotification}
       />
 
       {/* Delete Confirmation Modal */}
