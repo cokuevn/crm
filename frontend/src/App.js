@@ -988,11 +988,11 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Сумма покупки</p>
-                    <p className="font-medium">🛒 {client.purchase_amount?.toLocaleString()}₽</p>
+                    <p className="font-medium">🛒 {(client.purchase_amount || client.total_amount || 0).toLocaleString()}₽</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Долг клиента</p>
-                    <p className="font-medium">💸 {client.debt_amount?.toLocaleString()}₽</p>
+                    <p className="font-medium">💸 {(client.debt_amount || client.total_amount || 0).toLocaleString()}₽</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Ежемесячный платёж</p>
