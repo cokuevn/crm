@@ -460,7 +460,17 @@ test_plan:
     - "Enhanced Search Functionality"
     - "Advanced Filtering"
     - "Visual Analytics Components"
-  stuck_tasks: []
+    - "Enhanced Client Form with Extended Fields"
+    - "Client Editing Functionality"
+    - "Client Deletion"
+    - "Enhanced Payment Status Management"
+    - "Enhanced Client Display"
+  stuck_tasks:
+    - "Analytics Page"
+    - "Visual Analytics Components"
+    - "Client Editing Functionality"
+    - "Client Deletion"
+    - "Enhanced Payment Status Management"
   test_all: false
   test_priority: "high_first"
 
