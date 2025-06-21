@@ -679,29 +679,6 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange })
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Empty state when no capitals */}
-        {capitals.length === 0 && (
-          <div className="text-center py-12">
-            <div className="max-w-md mx-auto">
-              <div className="bg-white rounded-lg shadow-sm p-8">
-                <div className="text-6xl mb-4">📊</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Добро пожаловать в CRM!
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Для начала работы создайте тестовые данные с клиентами и капиталами
-                </p>
-                <button
-                  onClick={initMockData}
-                  className="bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                >
-                  🚀 Создать тестовые данные
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Dashboard content when capitals exist */}
         {capitals.length > 0 && (
           <>
