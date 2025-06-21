@@ -464,14 +464,16 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
 const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange }) => {
   const [dashboardData, setDashboardData] = useState(null);
   const [filter, setFilter] = useState('all');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { user, logout } = useAuth();
 
   useEffect(() => {
     if (selectedCapital) {
       fetchDashboardData();
+    } else if (capitals.length > 0) {
+      setDashboardData({ today: [], tomorrow: [], overdue: [], all_clients: [] });
     }
-  }, [selectedCapital]);
+  }, [selectedCapital, capitals]);
 
   const fetchDashboardData = async () => {
     try {
@@ -482,6 +484,7 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange })
       setDashboardData(response.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setDashboardData({ today: [], tomorrow: [], overdue: [], all_clients: [] });
     } finally {
       setLoading(false);
     }
@@ -503,13 +506,13 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange })
     
     switch (filter) {
       case 'today':
-        return dashboardData.today;
+        return dashboardData.today || [];
       case 'tomorrow':
-        return dashboardData.tomorrow;
+        return dashboardData.tomorrow || [];
       case 'overdue':
-        return dashboardData.overdue;
+        return dashboardData.overdue || [];
       default:
-        return dashboardData.all_clients.map(client => ({ client }));
+        return (dashboardData.all_clients || []).map(client => ({ client }));
     }
   };
 
@@ -520,17 +523,6 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange })
       console.error('Logout error:', error);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Загрузка...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -562,18 +554,21 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange })
         {capitals.length === 0 && (
           <div className="text-center py-12">
             <div className="max-w-md mx-auto">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Добро пожаловать в CRM!
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Для начала работы инициализируйте тестовые данные
-              </p>
-              <button
-                onClick={initMockData}
-                className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-              >
-                Создать тестовые данные
-              </button>
+              <div className="bg-white rounded-lg shadow-sm p-8">
+                <div className="text-6xl mb-4">📊</div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Добро пожаловать в CRM!
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Для начала работы создайте тестовые данные с клиентами и капиталами
+                </p>
+                <button
+                  onClick={initMockData}
+                  className="bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  🚀 Создать тестовые данные
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -581,110 +576,134 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange })
         {/* Dashboard content when capitals exist */}
         {capitals.length > 0 && (
           <>
-            {/* Filters */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => setFilter('all')}
-                  className={`px-4 py-2 rounded-lg font-medium ${
-                    filter === 'all'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Все клиенты
-                </button>
-                <button
-                  onClick={() => setFilter('today')}
-                  className={`px-4 py-2 rounded-lg font-medium ${
-                    filter === 'today'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Сегодня ({dashboardData?.today?.length || 0})
-                </button>
-                <button
-                  onClick={() => setFilter('tomorrow')}
-                  className={`px-4 py-2 rounded-lg font-medium ${
-                    filter === 'tomorrow'
-                      ? 'bg-yellow-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Завтра ({dashboardData?.tomorrow?.length || 0})
-                </button>
-                <button
-                  onClick={() => setFilter('overdue')}
-                  className={`px-4 py-2 rounded-lg font-medium ${
-                    filter === 'overdue'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Просрочено ({dashboardData?.overdue?.length || 0})
-                </button>
+            {loading && (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Загружаем данные...</p>
               </div>
-            </div>
+            )}
 
-            {/* Client List */}
-            <div className="bg-white rounded-lg shadow-sm">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900">
-                  Список клиентов
-                </h2>
-              </div>
-              
-              <div className="divide-y divide-gray-200">
-                {getFilteredClients().map((item, index) => {
-                  const client = item.client;
-                  const payment = item.payment;
-                  
-                  return (
-                    <div key={client.client_id || index} className="p-6 hover:bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-sm font-medium text-gray-900">
-                            {client.name}
-                          </h3>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {client.product} • {client.total_amount}₽
-                          </p>
-                          {payment && (
-                            <p className="text-sm text-gray-600 mt-1">
-                              Платёж: {payment.amount}₽ на {payment.payment_date}
-                            </p>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            client.status === 'active'
-                              ? 'bg-green-100 text-green-800'
-                              : client.status === 'overdue'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {client.status === 'active' ? 'Активен' : 
-                             client.status === 'overdue' ? 'Просрочка' : 'Завершён'}
-                          </span>
-                          
-                          <button className="text-blue-600 hover:text-blue-500 text-sm font-medium">
-                            Подробнее
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              
-              {getFilteredClients().length === 0 && (
-                <div className="p-6 text-center text-gray-500">
-                  Клиенты не найдены
+            {!loading && (
+              <>
+                {/* Filters */}
+                <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                  <div className="flex flex-wrap gap-4">
+                    <button
+                      onClick={() => setFilter('all')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        filter === 'all'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      📋 Все клиенты ({(dashboardData?.all_clients || []).length})
+                    </button>
+                    <button
+                      onClick={() => setFilter('today')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        filter === 'today'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      📅 Сегодня ({(dashboardData?.today || []).length})
+                    </button>
+                    <button
+                      onClick={() => setFilter('tomorrow')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        filter === 'tomorrow'
+                          ? 'bg-yellow-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      ⏰ Завтра ({(dashboardData?.tomorrow || []).length})
+                    </button>
+                    <button
+                      onClick={() => setFilter('overdue')}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        filter === 'overdue'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      ⚠️ Просрочено ({(dashboardData?.overdue || []).length})
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* Client List */}
+                <div className="bg-white rounded-lg shadow-sm">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h2 className="text-lg font-medium text-gray-900">
+                      {filter === 'all' ? 'Все клиенты' :
+                       filter === 'today' ? 'Платежи на сегодня' :
+                       filter === 'tomorrow' ? 'Платежи на завтра' :
+                       'Просроченные платежи'}
+                    </h2>
+                  </div>
+                  
+                  <div className="divide-y divide-gray-200">
+                    {getFilteredClients().map((item, index) => {
+                      const client = item.client;
+                      const payment = item.payment;
+                      
+                      return (
+                        <div key={client.client_id || index} className="p-6 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <h3 className="text-lg font-medium text-gray-900">
+                                👤 {client.name}
+                              </h3>
+                              <p className="text-sm text-gray-500 mt-1">
+                                📱 {client.product} • 💰 {client.total_amount?.toLocaleString()}₽
+                              </p>
+                              {payment && (
+                                <p className="text-sm text-blue-600 mt-1 font-medium">
+                                  💳 Платёж: {payment.amount?.toLocaleString()}₽ на {payment.payment_date}
+                                </p>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center space-x-3">
+                              <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                                client.status === 'active'
+                                  ? 'bg-green-100 text-green-800'
+                                  : client.status === 'overdue'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {client.status === 'active' ? '✅ Активен' : 
+                                 client.status === 'overdue' ? '❌ Просрочка' : '✔️ Завершён'}
+                              </span>
+                              
+                              <button className="text-blue-600 hover:text-blue-500 text-sm font-medium transition-colors">
+                                👁️ Подробнее
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {getFilteredClients().length === 0 && (
+                    <div className="p-12 text-center text-gray-500">
+                      <div className="text-4xl mb-4">
+                        {filter === 'today' ? '📅' :
+                         filter === 'tomorrow' ? '⏰' :
+                         filter === 'overdue' ? '⚠️' : '📋'}
+                      </div>
+                      <p className="text-lg">
+                        {filter === 'all' ? 'Клиенты не найдены' :
+                         filter === 'today' ? 'На сегодня платежей нет' :
+                         filter === 'tomorrow' ? 'На завтра платежей нет' :
+                         'Просроченных платежей нет'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
