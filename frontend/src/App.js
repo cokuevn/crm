@@ -1025,15 +1025,6 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                 📤 Экспорт
               </button>
             )}
-            
-            {selectedCapital && (
-              <button
-                onClick={onShowExport}
-                className="px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors"
-              >
-                📤 Экспорт
-              </button>
-            )}
           </div>
         </div>
       </div>
