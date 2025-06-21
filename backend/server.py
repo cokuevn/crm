@@ -265,6 +265,22 @@ async def create_client(client: ClientCreate, current_user: str = Depends(get_cu
     end_date = schedule[-1].payment_date if schedule else client.start_date
     
     client_dict = client.dict()
+    
+    # Handle both old and new data models
+    if client.debt_amount is None and client.total_amount is not None:
+        # Old model: use total_amount as debt_amount
+        client_dict["debt_amount"] = client_dict["total_amount"]
+    elif client.total_amount is None and client.debt_amount is not None:
+        # New model: use debt_amount as total_amount for backward compatibility
+        client_dict["total_amount"] = client_dict["debt_amount"]
+    elif client.total_amount is None and client.debt_amount is None:
+        # Neither provided, raise error
+        raise HTTPException(status_code=400, detail="Either debt_amount or total_amount must be provided")
+    
+    # If purchase_amount is not provided, use debt_amount
+    if client_dict["purchase_amount"] is None:
+        client_dict["purchase_amount"] = client_dict["debt_amount"]
+    
     client_obj = Client(
         **{k: v for k, v in client_dict.items() if k != 'months'},
         schedule=[s.dict() for s in schedule],  # Convert to dict for MongoDB
