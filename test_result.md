@@ -225,6 +225,42 @@ frontend:
         -working: true
         -agent: "testing"
         -comment: "Firebase integration is working correctly. We were able to register a new user and login with those credentials, which confirms that Firebase authentication is working. User state management works correctly as the app recognizes the logged-in user and displays their email in the header. Logout functionality also works as expected."
+        
+  - task: "Add Capital Button"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing the green '➕ Создать капитал' button in the navigation bar."
+        
+  - task: "Add Capital Modal"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing the modal popup with form to create new capital."
+        
+  - task: "Capital Creation"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing the integration with the backend API to create and manage capitals."
 
 metadata:
   created_by: "testing_agent"
