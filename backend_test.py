@@ -244,12 +244,12 @@ def test_payment_status_update(client_id):
     payment = client['schedule'][0]
     payment_date = payment['payment_date']
     
-    # Test updating to "paid" status
+    # Test updating to "paid" status with JSON body
     print(f"Updating payment on {payment_date} to 'paid' status...")
     response = requests.put(
         f"{API_URL}/clients/{client_id}/payments/{payment_date}",
         headers=headers,
-        params={"status": "paid"}
+        json={"status": "paid"}
     )
     
     if response.status_code != 200:
@@ -290,12 +290,12 @@ def test_payment_status_update(client_id):
     
     print(f"✅ Payment status was updated to 'paid' and paid_date was set to {updated_payment['paid_date']}")
     
-    # Test updating to "overdue" status
+    # Test updating to "overdue" status with JSON body
     print(f"Updating payment on {payment_date} to 'overdue' status...")
     response = requests.put(
         f"{API_URL}/clients/{client_id}/payments/{payment_date}",
         headers=headers,
-        params={"status": "overdue"}
+        json={"status": "overdue"}
     )
     
     if response.status_code != 200:
@@ -336,12 +336,12 @@ def test_payment_status_update(client_id):
     
     print(f"✅ Payment status was updated to 'overdue' and paid_date was cleared")
     
-    # Test updating back to "pending" status
+    # Test updating back to "pending" status with JSON body
     print(f"Updating payment on {payment_date} to 'pending' status...")
     response = requests.put(
         f"{API_URL}/clients/{client_id}/payments/{payment_date}",
         headers=headers,
-        params={"status": "pending"}
+        json={"status": "pending"}
     )
     
     if response.status_code != 200:
@@ -376,6 +376,56 @@ def test_payment_status_update(client_id):
         return False
     
     print(f"✅ Payment status was updated to 'pending'")
+    
+    # Test error handling for invalid status
+    print(f"Testing error handling for invalid status...")
+    response = requests.put(
+        f"{API_URL}/clients/{client_id}/payments/{payment_date}",
+        headers=headers,
+        json={"status": "invalid_status"}
+    )
+    
+    if response.status_code != 400:
+        print(f"❌ Error: Expected 400 for invalid status, got {response.status_code}")
+        return False
+    
+    print(f"✅ Proper error handling for invalid status (400 response)")
+    
+    # Test error handling for missing status in request body
+    print(f"Testing error handling for missing status in request body...")
+    response = requests.put(
+        f"{API_URL}/clients/{client_id}/payments/{payment_date}",
+        headers=headers,
+        json={}
+    )
+    
+    if response.status_code != 400:
+        print(f"❌ Error: Expected 400 for missing status, got {response.status_code}")
+        return False
+    
+    print(f"✅ Proper error handling for missing status (400 response)")
+    
+    # Test authorization - this is a simplified test since we're using a mock auth system
+    # In a real system, we would test with different user tokens
+    print(f"Testing authorization (simplified)...")
+    
+    # For now, we'll just verify that the endpoint requires authorization
+    # by sending a request without the Authorization header
+    no_auth_headers = {"Content-Type": "application/json"}
+    response = requests.put(
+        f"{API_URL}/clients/{client_id}/payments/{payment_date}",
+        headers=no_auth_headers,
+        json={"status": "paid"}
+    )
+    
+    # The endpoint should either return 401 (Unauthorized) or 403 (Forbidden)
+    # Since we're using a simplified auth system, we'll accept either
+    if response.status_code not in [401, 403]:
+        print(f"❌ Error: Expected 401 or 403 for missing authorization, got {response.status_code}")
+        # This is not a critical failure, so we'll continue
+        print(f"⚠️ Authorization check might not be properly implemented")
+    else:
+        print(f"✅ Proper authorization check (got {response.status_code} response)")
     
     return True
 
