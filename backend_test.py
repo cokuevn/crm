@@ -72,15 +72,20 @@ def test_client_creation(capital_id):
     """Test client creation with payment schedule generation"""
     print_separator("TESTING CLIENT CREATION")
     
-    # Create a new client
+    # Create a new client with extended fields
     client_data = {
         "capital_id": capital_id,
-        "name": "Test Client",
-        "product": "Test Product",
-        "total_amount": 100000.0,
+        "name": "Иванов Сергей Петрович",
+        "product": "Samsung Galaxy S24 Ultra",
+        "purchase_amount": 120000.0,
+        "debt_amount": 120000.0,
         "monthly_payment": 10000.0,
+        "guarantor_name": "Петрова Анна Ивановна",
+        "client_address": "г. Москва, ул. Ленина, д. 42, кв. 56",
+        "client_phone": "+7 (901) 234-56-78",
+        "guarantor_phone": "+7 (901) 234-56-79",
         "start_date": date.today().strftime("%Y-%m-%d"),  # Use string date format
-        "months": 10
+        "months": 12
     }
     
     print(f"Creating client with data: {json.dumps(client_data, indent=2)}")
