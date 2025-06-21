@@ -582,7 +582,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Dashboard Data"
+    - "User Isolation"
   stuck_tasks:
   test_all: false
   test_priority: "high_first"
