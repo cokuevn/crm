@@ -102,7 +102,68 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the CRM frontend application with Firebase authentication. I've built a comprehensive CRM system for installment payment business."
+user_problem_statement: "Test the updated CRM backend API with mock data initialization and client creation endpoints."
+
+backend:
+  - task: "Mock Data Initialization"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of POST /api/init-mock-data endpoint to initialize 2 capitals with mock clients and payment schedules."
+
+  - task: "Client Creation"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of POST /api/clients endpoint to create new client with payment schedule generation."
+
+  - task: "Capital Retrieval"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of GET /api/capitals endpoint to get user capitals (should return 2 mock capitals)."
+
+  - task: "Dashboard Data"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of GET /api/dashboard endpoint to get dashboard data with filtering."
+
+  - task: "Client Retrieval"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of GET /api/clients endpoint to get all clients across capitals."
 
 frontend:
   - task: "Authentication Flow"
