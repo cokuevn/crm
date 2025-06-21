@@ -353,8 +353,8 @@ async def update_payment_status(
     
     for payment in schedule:
         if payment["payment_date"] == payment_date:
-            payment["status"] = status
-            if status == "paid":
+            payment["status"] = status.value  # Use .value for enum
+            if status.value == "paid":
                 payment["paid_date"] = date.today().strftime("%Y-%m-%d")
             else:
                 payment["paid_date"] = None
