@@ -834,13 +834,27 @@ const MainApp = () => {
   const [capitals, setCapitals] = useState([]);
   const [selectedCapital, setSelectedCapital] = useState(null);
   const [showAddCapitalModal, setShowAddCapitalModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
-      fetchCapitals();
+      autoInitAndFetchCapitals();
     }
   }, [user]);
+
+  const autoInitAndFetchCapitals = async () => {
+    try {
+      // Auto-initialize data if needed
+      await axios.get(`${API}/auto-init`);
+      // Then fetch capitals
+      fetchCapitals();
+    } catch (error) {
+      console.error('Error auto-initializing data:', error);
+      // Fallback to just fetching capitals
+      fetchCapitals();
+    }
+  };
 
   const fetchCapitals = async () => {
     try {
@@ -856,7 +870,6 @@ const MainApp = () => {
 
   const handleClientAdded = (newClient) => {
     console.log('New client added:', newClient);
-    // Optionally refresh data or show success message
     if (currentPage === 'add-client') {
       setCurrentPage('dashboard');
     }
@@ -866,7 +879,23 @@ const MainApp = () => {
     console.log('New capital added:', newCapital);
     setCapitals(prev => [...prev, newCapital]);
     setSelectedCapital(newCapital);
-    fetchCapitals(); // Refresh to get latest data
+    fetchCapitals();
+  };
+
+  const handleDeleteCapital = async (capitalId) => {
+    try {
+      await axios.delete(`${API}/capitals/${capitalId}`);
+      setCapitals(prev => prev.filter(c => c.id !== capitalId));
+      
+      // Select first remaining capital or null
+      const remainingCapitals = capitals.filter(c => c.id !== capitalId);
+      setSelectedCapital(remainingCapitals.length > 0 ? remainingCapitals[0] : null);
+      
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting capital:', error);
+      alert('Ошибка при удалении капитала');
+    }
   };
 
   const renderCurrentPage = () => {
@@ -901,6 +930,7 @@ const MainApp = () => {
         selectedCapital={selectedCapital}
         onCapitalChange={setSelectedCapital}
         onShowAddCapital={() => setShowAddCapitalModal(true)}
+        onDeleteCapital={(capital) => setShowDeleteConfirm(capital)}
       />
       
       {renderCurrentPage()}
@@ -910,6 +940,35 @@ const MainApp = () => {
         onClose={() => setShowAddCapitalModal(false)}
         onCapitalAdded={handleCapitalAdded}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              🗑️ Удалить капитал?
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Вы уверены, что хотите удалить капитал <strong>"{showDeleteConfirm.name}"</strong>? 
+              Все клиенты и платежи этого капитала будут также удалены. Это действие нельзя отменить.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => handleDeleteCapital(showDeleteConfirm.id)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                🗑️ Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
