@@ -1223,6 +1223,7 @@ const AddCapitalModal = ({ isOpen, onClose, onCapitalAdded }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { user } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1230,7 +1231,8 @@ const AddCapitalModal = ({ isOpen, onClose, onCapitalAdded }) => {
     setError('');
 
     try {
-      const response = await axios.post(`${API}/capitals`, formData);
+      const headers = await getAuthHeaders(user);
+      const response = await axios.post(`${API}/capitals`, formData, { headers });
       setFormData({ name: '', description: '' });
       if (onCapitalAdded) {
         onCapitalAdded(response.data);
