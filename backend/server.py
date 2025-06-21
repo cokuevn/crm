@@ -145,8 +145,9 @@ class ClientCreate(BaseModel):
     capital_id: str
     name: str  # ФИО клиента
     product: str
-    purchase_amount: float  # Сумма покупки
-    debt_amount: float  # Долг клиента
+    purchase_amount: Optional[float] = None  # Сумма покупки
+    debt_amount: Optional[float] = None  # Долг клиента
+    total_amount: Optional[float] = None  # Старое поле для совместимости
     monthly_payment: float
     guarantor_name: Optional[str] = None  # ФИО гаранта
     client_address: Optional[str] = None  # Адрес клиента
