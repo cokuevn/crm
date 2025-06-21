@@ -854,6 +854,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (clientId) {
@@ -864,7 +865,8 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
   const fetchClientDetails = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API}/clients/${clientId}`);
+      const headers = await getAuthHeaders(user);
+      const response = await axios.get(`${API}/clients/${clientId}`, { headers });
       setClient(response.data);
     } catch (error) {
       console.error('Error fetching client details:', error);
@@ -879,7 +881,8 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
 
   const handleDeleteClient = async () => {
     try {
-      await axios.delete(`${API}/clients/${clientId}`);
+      const headers = await getAuthHeaders(user);
+      await axios.delete(`${API}/clients/${clientId}`, { headers });
       onBack(); // Вернуться к списку после удаления
     } catch (error) {
       console.error('Error deleting client:', error);
@@ -889,7 +892,8 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
 
   const updatePaymentStatus = async (paymentDate, status) => {
     try {
-      const response = await axios.put(`${API}/clients/${clientId}/payments/${paymentDate}`, { status });
+      const headers = await getAuthHeaders(user);
+      const response = await axios.put(`${API}/clients/${clientId}/payments/${paymentDate}`, { status }, { headers });
       
       // Refresh client data
       fetchClientDetails();
