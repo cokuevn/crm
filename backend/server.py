@@ -172,6 +172,14 @@ class UserProfile(BaseModel):
     display_name: Optional[str] = None
 
 # Helper functions
+def mongo_to_dict(mongo_doc):
+    """Convert MongoDB document to dictionary, removing MongoDB ObjectId"""
+    if mongo_doc is None:
+        return None
+    if '_id' in mongo_doc:
+        del mongo_doc['_id']
+    return mongo_doc
+
 def generate_payment_schedule(start_date_str: str, monthly_payment: float, months: int) -> List[PaymentSchedule]:
     schedule = []
     start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
