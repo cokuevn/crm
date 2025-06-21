@@ -1093,6 +1093,7 @@ const MainApp = () => {
   const [selectedCapital, setSelectedCapital] = useState(null);
   const [showAddCapitalModal, setShowAddCapitalModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [selectedClientId, setSelectedClientId] = useState(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -1156,6 +1157,16 @@ const MainApp = () => {
     }
   };
 
+  const handleViewClientDetails = (clientId) => {
+    setSelectedClientId(clientId);
+    setCurrentPage('client-details');
+  };
+
+  const handleBackFromClientDetails = () => {
+    setSelectedClientId(null);
+    setCurrentPage('dashboard');
+  };
+
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'add-client':
@@ -1166,6 +1177,14 @@ const MainApp = () => {
             onClientAdded={handleClientAdded}
           />
         );
+      case 'client-details':
+        return (
+          <ClientDetails
+            clientId={selectedClientId}
+            onBack={handleBackFromClientDetails}
+            capitals={capitals}
+          />
+        );
       case 'dashboard':
       default:
         return (
@@ -1174,6 +1193,7 @@ const MainApp = () => {
             capitals={capitals}
             selectedCapital={selectedCapital}
             onCapitalChange={setSelectedCapital}
+            onViewClientDetails={handleViewClientDetails}
           />
         );
     }
@@ -1181,15 +1201,17 @@ const MainApp = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation 
-        currentPage={currentPage}
-        onPageChange={setCurrentPage}
-        capitals={capitals}
-        selectedCapital={selectedCapital}
-        onCapitalChange={setSelectedCapital}
-        onShowAddCapital={() => setShowAddCapitalModal(true)}
-        onDeleteCapital={(capital) => setShowDeleteConfirm(capital)}
-      />
+      {currentPage !== 'client-details' && (
+        <Navigation 
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+          capitals={capitals}
+          selectedCapital={selectedCapital}
+          onCapitalChange={setSelectedCapital}
+          onShowAddCapital={() => setShowAddCapitalModal(true)}
+          onDeleteCapital={(capital) => setShowDeleteConfirm(capital)}
+        />
+      )}
       
       {renderCurrentPage()}
       
