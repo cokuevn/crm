@@ -208,7 +208,7 @@ async def create_client(client: ClientCreate, current_user: str = Depends(get_cu
     client_dict = client.dict()
     client_obj = Client(
         **{k: v for k, v in client_dict.items() if k != 'months'},
-        schedule=schedule,
+        schedule=[s.dict() for s in schedule],  # Convert to dict for MongoDB
         end_date=end_date
     )
     
