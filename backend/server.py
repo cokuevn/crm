@@ -497,9 +497,14 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
     overdue_count = 0
     for client in clients:
         for schedule_item in client.get("schedule", []):
-            if (schedule_item["status"] == "pending" and 
-                datetime.strptime(schedule_item["payment_date"], "%Y-%m-%d").date() < today):
-                overdue_count += 1
+            try:
+                payment_date = datetime.strptime(schedule_item["payment_date"], "%Y-%m-%d").date()
+                # Count both explicitly overdue status and overdue dates
+                if (schedule_item["status"] == "overdue" or 
+                    (schedule_item["status"] == "pending" and payment_date < today)):
+                    overdue_count += 1
+            except (ValueError, KeyError):
+                continue
     
     return {
         "total_amount": total_debt,  # Keep API compatibility
