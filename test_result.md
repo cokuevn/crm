@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the updated CRM backend API with mock data initialization and client creation endpoints."
+user_problem_statement: "Test the capital creation functionality in the CRM system. I've just added: 1. Add Capital Modal: A modal popup with form to create new capital 2. Create Capital Button: Green button '➕ Создать капитал' in the navigation 3. Capital Management: Integration with the backend API to create and manage capitals"
 
 backend:
   - task: "Mock Data Initialization"
