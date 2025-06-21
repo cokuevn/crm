@@ -357,10 +357,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Client Details Component"
-    - "Payment Schedule Visualization"
-    - "Payment Status Management"
-    - "Client Details Navigation"
+    - "Analytics Page"
+    - "Enhanced Search Functionality"
+    - "Advanced Filtering"
+    - "Visual Analytics Components"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
