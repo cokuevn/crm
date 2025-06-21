@@ -278,7 +278,7 @@ async def update_client(client_id: str, updates: dict, current_user: str = Depen
         raise HTTPException(status_code=404, detail="Client not found")
     
     client = await db.clients.find_one({"client_id": client_id})
-    return Client(**client)
+    return Client(**mongo_to_dict(client))
 
 # Payment management
 @api_router.post("/payments", response_model=Payment)
