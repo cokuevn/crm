@@ -192,7 +192,7 @@ async def get_current_user_info(current_user: str = Depends(get_current_user)):
         user_obj = User(uid=current_user, email="demo@example.com", display_name="Demo User")
         await db.users.insert_one(user_obj.dict())
         return user_obj
-    return User(**user)
+    return User(**mongo_to_dict(user))
 
 # Capital management
 @api_router.post("/capitals", response_model=Capital)
