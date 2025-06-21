@@ -507,11 +507,8 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Analytics with New Fields"
-    - "Client Retrieval with Extended Fields"
+    - "Dashboard Data"
   stuck_tasks:
-    - "Analytics with New Fields"
-    - "Client Retrieval with Extended Fields"
   test_all: false
   test_priority: "high_first"
 
