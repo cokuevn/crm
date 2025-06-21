@@ -309,7 +309,7 @@ const ProgressRing = ({ progress, size = 120, strokeWidth = 8 }) => {
         className="transform -rotate-90"
       >
         <circle
-          stroke="#e2e8f0"
+          stroke="#e5e7eb"
           fill="transparent"
           strokeWidth={strokeWidth}
           strokeDasharray={strokeDasharray}
