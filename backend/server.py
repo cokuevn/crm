@@ -205,14 +205,14 @@ async def create_capital(capital: CapitalCreate, current_user: str = Depends(get
 @api_router.get("/capitals", response_model=List[Capital])
 async def get_user_capitals(current_user: str = Depends(get_current_user)):
     capitals = await db.capitals.find({"owner_id": current_user, "is_active": True}).to_list(100)
-    return [Capital(**capital) for capital in capitals]
+    return [Capital(**mongo_to_dict(capital)) for capital in capitals]
 
 @api_router.get("/capitals/{capital_id}", response_model=Capital)
 async def get_capital(capital_id: str, current_user: str = Depends(get_current_user)):
     capital = await db.capitals.find_one({"id": capital_id, "owner_id": current_user})
     if not capital:
         raise HTTPException(status_code=404, detail="Capital not found")
-    return Capital(**capital)
+    return Capital(**mongo_to_dict(capital))
 
 # Client management
 @api_router.post("/clients", response_model=Client)
