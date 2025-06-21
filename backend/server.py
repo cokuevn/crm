@@ -107,8 +107,10 @@ class Client(BaseModel):
     capital_id: str
     name: str  # ФИО клиента
     product: str
-    purchase_amount: float  # Сумма покупки
-    debt_amount: float  # Долг клиента (заменяет total_amount)
+    # Handle both old and new data models
+    purchase_amount: Optional[float] = None  # Сумма покупки  
+    debt_amount: Optional[float] = None  # Долг клиента (заменяет total_amount)
+    total_amount: Optional[float] = None  # Старое поле для совместимости
     monthly_payment: float
     guarantor_name: Optional[str] = None  # ФИО гаранта
     client_address: Optional[str] = None  # Адрес клиента
@@ -120,6 +122,11 @@ class Client(BaseModel):
     status: ClientStatus = ClientStatus.active
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    @property
+    def effective_debt_amount(self) -> float:
+        """Get debt amount, falling back to total_amount for old data"""
+        return self.debt_amount or self.total_amount or 0
 
 class Payment(BaseModel):
     payment_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
