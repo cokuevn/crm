@@ -87,6 +87,286 @@ const useAuth = () => {
   return context;
 };
 
+// Client Details Component
+const ClientDetails = ({ clientId, onBack, capitals }) => {
+  const [client, setClient] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(null);
+
+  useEffect(() => {
+    if (clientId) {
+      fetchClientDetails();
+    }
+  }, [clientId]);
+
+  const fetchClientDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API}/clients/${clientId}`);
+      setClient(response.data);
+    } catch (error) {
+      console.error('Error fetching client details:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markPaymentAsPaid = async (paymentDate, amount) => {
+    try {
+      const paymentData = {
+        client_id: clientId,
+        amount: amount,
+        payment_date: paymentDate
+      };
+      
+      await axios.post(`${API}/payments`, paymentData);
+      
+      // Refresh client data
+      fetchClientDetails();
+      setShowPaymentModal(null);
+    } catch (error) {
+      console.error('Error marking payment as paid:', error);
+      alert('Ошибка при отметке платежа');
+    }
+  };
+
+  const getPaymentStatusColor = (payment) => {
+    const paymentDate = new Date(payment.payment_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    paymentDate.setHours(0, 0, 0, 0);
+
+    if (payment.status === 'paid') {
+      return 'bg-green-100 text-green-800 border-green-200';
+    } else if (paymentDate < today) {
+      return 'bg-red-100 text-red-800 border-red-200';
+    } else if (paymentDate.getTime() === today.getTime()) {
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    } else {
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getPaymentStatusText = (payment) => {
+    const paymentDate = new Date(payment.payment_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    paymentDate.setHours(0, 0, 0, 0);
+
+    if (payment.status === 'paid') {
+      return '✅ Оплачено';
+    } else if (paymentDate < today) {
+      return '❌ Просрочено';
+    } else if (paymentDate.getTime() === today.getTime()) {
+      return '⏰ Сегодня';
+    } else {
+      return '⏳ Ожидается';
+    }
+  };
+
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Загружаем данные клиента...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!client) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">❌</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Клиент не найден</h3>
+          <button
+            onClick={onBack}
+            className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            ← Назад к списку
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const capital = capitals.find(c => c.id === client.capital_id);
+  const totalPaid = client.schedule?.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0) || 0;
+  const remainingAmount = client.total_amount - totalPaid;
+  const progress = (totalPaid / client.total_amount) * 100;
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header */}
+        <div className="mb-6">
+          <button
+            onClick={onBack}
+            className="flex items-center text-blue-600 hover:text-blue-500 mb-4 transition-colors"
+          >
+            ← Назад к списку клиентов
+          </button>
+          
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  👤 {client.name}
+                </h1>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Товар</p>
+                    <p className="font-medium">📱 {client.product}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Капитал</p>
+                    <p className="font-medium">💰 {capital?.name || 'Неизвестно'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Общая сумма</p>
+                    <p className="font-medium">💵 {client.total_amount?.toLocaleString()}₽</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Ежемесячный платёж</p>
+                    <p className="font-medium">📅 {client.monthly_payment?.toLocaleString()}₽</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                  client.status === 'active'
+                    ? 'bg-green-100 text-green-800'
+                    : client.status === 'overdue'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {client.status === 'active' ? '✅ Активен' : 
+                   client.status === 'overdue' ? '❌ Просрочка' : '✔️ Завершён'}
+                </span>
+                
+                <button
+                  onClick={() => setEditMode(!editMode)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  ✏️ Редактировать
+                </button>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mt-6">
+              <div className="flex justify-between text-sm text-gray-600 mb-2">
+                <span>💰 Оплачено: {totalPaid.toLocaleString()}₽</span>
+                <span>⏳ Осталось: {remainingAmount.toLocaleString()}₽</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-green-500 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(progress, 100)}%` }}
+                ></div>
+              </div>
+              <p className="text-sm text-gray-600 mt-1 text-center">
+                {progress.toFixed(1)}% выполнено
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Schedule */}
+        <div className="bg-white rounded-lg shadow-sm">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900">
+              📋 График платежей
+            </h2>
+          </div>
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {client.schedule?.map((payment, index) => (
+                <div 
+                  key={index}
+                  className={`border rounded-lg p-4 transition-all hover:shadow-md ${getPaymentStatusColor(payment)}`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-medium text-lg">
+                        💳 {payment.amount?.toLocaleString()}₽
+                      </p>
+                      <p className="text-sm opacity-75">
+                        📅 {formatDate(payment.payment_date)}
+                      </p>
+                    </div>
+                    <span className="text-xs font-medium">
+                      {getPaymentStatusText(payment)}
+                    </span>
+                  </div>
+                  
+                  {payment.status === 'pending' && (
+                    <button
+                      onClick={() => setShowPaymentModal(payment)}
+                      className="w-full mt-2 px-3 py-2 bg-white bg-opacity-50 rounded border border-current hover:bg-opacity-75 transition-colors text-sm font-medium"
+                    >
+                      ✅ Отметить как оплаченный
+                    </button>
+                  )}
+                  
+                  {payment.status === 'paid' && payment.paid_date && (
+                    <p className="text-xs opacity-75 mt-2">
+                      ✅ Оплачено {formatDate(payment.paid_date)}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Confirmation Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              ✅ Подтвердить платёж
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Отметить платёж <strong>{showPaymentModal.amount?.toLocaleString()}₽</strong> 
+              на <strong>{formatDate(showPaymentModal.payment_date)}</strong> как выполненный?
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowPaymentModal(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={() => markPaymentAsPaid(showPaymentModal.payment_date, showPaymentModal.amount)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                ✅ Подтвердить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Add Capital Modal Component
 const AddCapitalModal = ({ isOpen, onClose, onCapitalAdded }) => {
   const [formData, setFormData] = useState({
