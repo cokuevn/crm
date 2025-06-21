@@ -953,9 +953,10 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
   }
 
   const capital = capitals.find(c => c.id === client.capital_id);
+  const effectiveDebtAmount = client.debt_amount || client.total_amount || 0;
   const totalPaid = client.schedule?.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0) || 0;
-  const remainingAmount = client.debt_amount - totalPaid;
-  const progress = (totalPaid / client.debt_amount) * 100;
+  const remainingAmount = effectiveDebtAmount - totalPaid;
+  const progress = effectiveDebtAmount > 0 ? (totalPaid / effectiveDebtAmount) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
