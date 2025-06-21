@@ -460,7 +460,8 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
     clients = await db.clients.find({"capital_id": {"$in": query_capital_ids}}).to_list(1000)
     
     today = date.today()
-    tomorrow = date(today.year, today.month, today.day + 1) if today.day < 28 else today
+    from datetime import timedelta
+    tomorrow = today + timedelta(days=1)
     
     today_payments = []
     tomorrow_payments = []
@@ -468,23 +469,31 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
     
     for client in clients:
         for schedule_item in client.get("schedule", []):
-            payment_date = datetime.strptime(schedule_item["payment_date"], "%Y-%m-%d").date()
-            if schedule_item["status"] == "pending":
-                if payment_date == today:
-                    today_payments.append({
-                        "client": client,
-                        "payment": schedule_item
-                    })
-                elif payment_date == tomorrow:
-                    tomorrow_payments.append({
-                        "client": client,
-                        "payment": schedule_item
-                    })
-                elif payment_date < today:
-                    overdue_payments.append({
-                        "client": client,
-                        "payment": schedule_item
-                    })
+            try:
+                # Handle both string and date formats
+                if isinstance(schedule_item["payment_date"], str):
+                    payment_date = datetime.strptime(schedule_item["payment_date"], "%Y-%m-%d").date()
+                else:
+                    payment_date = schedule_item["payment_date"]
+                    
+                if schedule_item["status"] == "pending":
+                    if payment_date == today:
+                        today_payments.append({
+                            "client": client,
+                            "payment": schedule_item
+                        })
+                    elif payment_date == tomorrow:
+                        tomorrow_payments.append({
+                            "client": client,
+                            "payment": schedule_item
+                        })
+                    elif payment_date < today:
+                        overdue_payments.append({
+                            "client": client,
+                            "payment": schedule_item
+                        })
+            except (ValueError, KeyError) as e:
+                continue  # Skip invalid date entries
     
     return {
         "today": today_payments,
