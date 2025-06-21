@@ -1051,7 +1051,10 @@ const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange, o
                                  client.status === 'overdue' ? '❌ Просрочка' : '✔️ Завершён'}
                               </span>
                               
-                              <button className="text-blue-600 hover:text-blue-500 text-sm font-medium transition-colors">
+                              <button 
+                                onClick={() => onViewClientDetails(client.client_id)}
+                                className="text-blue-600 hover:text-blue-500 text-sm font-medium transition-colors"
+                              >
                                 👁️ Подробнее
                               </button>
                             </div>
