@@ -282,3 +282,5 @@ agent_communication:
     -message: "Initializing testing for CRM frontend application with Firebase authentication. Will test authentication flow, dashboard interface, UI/UX, and Firebase integration."
     -agent: "testing"
     -message: "Completed testing of all components. Authentication flow, dashboard interface, UI/UX, and Firebase integration are all working correctly with minor issues. The capital selector dropdown is missing from the dashboard interface, but this doesn't affect the core functionality. All other features are working as expected."
+    -agent: "testing"
+    -message: "Starting testing of capital creation functionality including the Add Capital button, Add Capital modal, and integration with the backend API."
