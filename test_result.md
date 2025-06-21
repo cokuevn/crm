@@ -303,9 +303,9 @@ frontend:
 
   - task: "Analytics Page"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: false
     status_history:
@@ -315,6 +315,9 @@ frontend:
         -working: true
         -agent: "testing"
         -comment: "Analytics page is working correctly. Successfully navigated to the page by clicking the '📈 Аналитика' button in the navigation bar. The page displays all key metrics (total clients, total amount, collected funds, overdue payments) with proper formatting. Visual components including progress ring showing collection percentage (8.3%) and financial overview bar charts with correct color coding (blue, green, orange) are displayed correctly. Detailed analytics sections (client status breakdown and financial summary) are present and show accurate data."
+        -working: false
+        -agent: "testing"
+        -comment: "Analytics page is not working correctly. When clicking on the '📈 Аналитика' button, the page loads but shows 'Нет данных для аналитики' message. Backend API call to /api/analytics/{capital_id} returns a 500 error. The UI components for analytics are implemented correctly, but the data is not being loaded due to backend issues."
 
   - task: "Enhanced Search Functionality"
     implemented: true
@@ -330,6 +333,9 @@ frontend:
         -working: true
         -agent: "testing"
         -comment: "Enhanced search functionality is working correctly. The search bar is present with the correct placeholder 'Поиск по имени, товару или ID клиента...'. Search functionality works in real-time as you type, filtering clients by name, product, or ID. The search results count is displayed correctly ('🔍 Поиск: \"Иван\" • Найдено: 0 клиентов'). The search clear button (✕) works properly, resetting the search results to show all clients."
+        -working: true
+        -agent: "testing"
+        -comment: "Confirmed that search functionality is working correctly. Tested by searching for 'Test' and it correctly found and displayed the matching client. The search results count is displayed correctly ('🔍 Поиск: \"Test\" • Найдено: 1 клиентов'). The search clear button (✕) works properly, resetting the search results to show all clients."
 
   - task: "Advanced Filtering"
     implemented: true
@@ -345,12 +351,15 @@ frontend:
         -working: true
         -agent: "testing"
         -comment: "Advanced filtering is working correctly. The filter buttons (Все клиенты, Сегодня, Завтра, Просрочено) are displayed with correct counts in parentheses. Filters work correctly when clicked, showing the appropriate clients. Search and filters work together seamlessly - when a search term is applied and then a filter is selected, the results are correctly filtered by both criteria. Empty state messages are displayed appropriately when no results are found, with a 'Очистить поиск' button that works correctly."
+        -working: true
+        -agent: "testing"
+        -comment: "Confirmed that advanced filtering is working correctly. All filter buttons (📋 Все клиенты, 📅 Сегодня, ⏰ Завтра, ⚠️ Просрочено) are present and display the correct counts in parentheses. Each filter correctly shows the appropriate view when clicked. Empty state messages are displayed appropriately when no results are found for a particular filter."
 
   - task: "Visual Analytics Components"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: false
     status_history:
@@ -360,6 +369,84 @@ frontend:
         -working: true
         -agent: "testing"
         -comment: "Visual analytics components are working correctly. The progress ring showing collection percentage (8.3%) is displayed with the correct color (green) and animation. Financial overview bar charts are displayed with correct color coding (blue for total amount, green for collected funds, orange for outstanding amount) and proportions. Client status breakdown section shows active vs completed clients with appropriate color coding. Financial summary section displays total amount, paid amount, outstanding amount, and efficiency percentage with correct formatting and colors."
+        -working: false
+        -agent: "testing"
+        -comment: "Visual analytics components are implemented correctly in the code, but they cannot be tested properly because the analytics page fails to load data from the backend. The API call to /api/analytics/{capital_id} returns a 500 error, preventing the components from displaying with actual data."
+        
+  - task: "Enhanced Client Form with Extended Fields"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing the enhanced client form with extended fields including basic information, financial information, and guarantor information."
+        -working: true
+        -agent: "testing"
+        -comment: "The enhanced client form is implemented correctly with all required sections and fields. The form is divided into three sections: 📋 Основная информация, 💰 Финансовая информация, and 🤝 Информация о гаранте. All required fields are present including ФИО клиента, Товар, Адрес клиента, Телефон клиента, Сумма покупки, Долг клиента, Ежемесячный платёж, Количество месяцев, Дата начала, ФИО гаранта, and Телефон гаранта. The form has proper validation with required fields marked with asterisks."
+        
+  - task: "Client Editing Functionality"
+    implemented: true
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing the client editing functionality including the edit modal, pre-populated form, and saving changes."
+        -working: false
+        -agent: "testing"
+        -comment: "Client editing functionality is implemented correctly in the code, but could not be fully tested due to backend issues. When trying to view client details to access the edit functionality, the API call to /api/clients/{client_id} returns a 500 error. The edit modal component (EditClientModal) is properly implemented with all the required fields and sections, but the functionality could not be verified due to the backend error."
+        
+  - task: "Client Deletion"
+    implemented: true
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing the client deletion functionality including the delete confirmation modal and removal from the system."
+        -working: false
+        -agent: "testing"
+        -comment: "Client deletion functionality is implemented correctly in the code, but could not be fully tested due to backend issues. When trying to view client details to access the delete functionality, the API call to /api/clients/{client_id} returns a 500 error. The delete confirmation modal is properly implemented, but the functionality could not be verified due to the backend error."
+        
+  - task: "Enhanced Payment Status Management"
+    implemented: true
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing the enhanced payment status management including changing payment status and verifying updates."
+        -working: false
+        -agent: "testing"
+        -comment: "Enhanced payment status management is implemented correctly in the code, but could not be fully tested due to backend issues. When trying to view client details to access the payment status management functionality, the API call to /api/clients/{client_id} returns a 500 error. The payment status modal and status change functionality are properly implemented, but the functionality could not be verified due to the backend error."
+        
+  - task: "Enhanced Client Display"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing the enhanced client display including new fields, phone and address display, and guarantor information."
+        -working: true
+        -agent: "testing"
+        -comment: "Enhanced client display is implemented correctly. In the dashboard, client cards now show phone and address information (though marked as 'не указан' for test clients). The client list displays debt_amount instead of total_amount as required. The client details page is implemented to show full client information including guarantor details when available, though the client details page could not be fully tested due to backend issues."
 
 metadata:
   created_by: "testing_agent"
