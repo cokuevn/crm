@@ -1465,6 +1465,13 @@ const MainApp = () => {
             onClientAdded={handleClientAdded}
           />
         );
+      case 'analytics':
+        return (
+          <Analytics
+            capitals={capitals}
+            selectedCapital={selectedCapital}
+          />
+        );
       case 'client-details':
         return (
           <ClientDetails
