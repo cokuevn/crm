@@ -207,7 +207,7 @@ def generate_payment_schedule(start_date_str: str, monthly_payment: float, month
     return schedule
 
 # Auth dependency (simplified for demo)
-async def get_current_user(authorization: str = None) -> str:
+async def get_current_user(authorization: Optional[str] = Header(None)) -> str:
     # In production, verify Firebase token here
     # For now, extract user ID from Authorization header
     if authorization and authorization.startswith('Bearer '):
