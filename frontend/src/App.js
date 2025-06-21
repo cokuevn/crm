@@ -461,16 +461,11 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
 };
 
 // Dashboard Component
-const Dashboard = () => {
-  const [capitals, setCapitals] = useState([]);
-  const [selectedCapital, setSelectedCapital] = useState(null);
+const Dashboard = ({ onPageChange, capitals, selectedCapital, onCapitalChange }) => {
   const [dashboardData, setDashboardData] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
   const { user, logout } = useAuth();
-
-  useEffect(() => {
-    fetchCapitals();
-  }, []);
 
   useEffect(() => {
     if (selectedCapital) {
@@ -478,26 +473,28 @@ const Dashboard = () => {
     }
   }, [selectedCapital]);
 
-  const fetchCapitals = async () => {
-    try {
-      const response = await axios.get(`${API}/capitals`);
-      setCapitals(response.data);
-      if (response.data.length > 0) {
-        setSelectedCapital(response.data[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching capitals:', error);
-    }
-  };
-
   const fetchDashboardData = async () => {
     try {
+      setLoading(true);
       const response = await axios.get(`${API}/dashboard`, {
         params: { capital_id: selectedCapital?.id }
       });
       setDashboardData(response.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initMockData = async () => {
+    try {
+      const response = await axios.post(`${API}/init-mock-data`);
+      console.log('Mock data initialized:', response.data);
+      // Refresh page to load new data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error initializing mock data:', error);
     }
   };
 
@@ -524,6 +521,17 @@ const Dashboard = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -532,23 +540,6 @@ const Dashboard = () => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <h1 className="text-xl font-semibold text-gray-900">CRM Рассрочки</h1>
-              
-              {capitals.length > 0 && (
-                <select
-                  value={selectedCapital?.id || ''}
-                  onChange={(e) => {
-                    const capital = capitals.find(c => c.id === e.target.value);
-                    setSelectedCapital(capital);
-                  }}
-                  className="ml-4 px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
-                >
-                  {capitals.map(capital => (
-                    <option key={capital.id} value={capital.id}>
-                      {capital.name}
-                    </option>
-                  ))}
-                </select>
-              )}
             </div>
 
             <div className="flex items-center space-x-4">
@@ -567,116 +558,210 @@ const Dashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex space-x-4">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg font-medium ${
-                filter === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Все клиенты
-            </button>
-            <button
-              onClick={() => setFilter('today')}
-              className={`px-4 py-2 rounded-lg font-medium ${
-                filter === 'today'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Сегодня ({dashboardData?.today?.length || 0})
-            </button>
-            <button
-              onClick={() => setFilter('tomorrow')}
-              className={`px-4 py-2 rounded-lg font-medium ${
-                filter === 'tomorrow'
-                  ? 'bg-yellow-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Завтра ({dashboardData?.tomorrow?.length || 0})
-            </button>
-            <button
-              onClick={() => setFilter('overdue')}
-              className={`px-4 py-2 rounded-lg font-medium ${
-                filter === 'overdue'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Просрочено ({dashboardData?.overdue?.length || 0})
-            </button>
-          </div>
-        </div>
-
-        {/* Client List */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">
-              Список клиентов
-            </h2>
-          </div>
-          
-          <div className="divide-y divide-gray-200">
-            {getFilteredClients().map((item, index) => {
-              const client = item.client;
-              const payment = item.payment;
-              
-              return (
-                <div key={client.client_id || index} className="p-6 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-sm font-medium text-gray-900">
-                        {client.name}
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {client.product} • {client.total_amount}₽
-                      </p>
-                      {payment && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          Платёж: {payment.amount}₽ на {payment.payment_date}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center space-x-3">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        client.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : client.status === 'overdue'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {client.status === 'active' ? 'Активен' : 
-                         client.status === 'overdue' ? 'Просрочка' : 'Завершён'}
-                      </span>
-                      
-                      <button className="text-blue-600 hover:text-blue-500 text-sm font-medium">
-                        Подробнее
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          {getFilteredClients().length === 0 && (
-            <div className="p-6 text-center text-gray-500">
-              Клиенты не найдены
+        {/* Empty state when no capitals */}
+        {capitals.length === 0 && (
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Добро пожаловать в CRM!
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Для начала работы инициализируйте тестовые данные
+              </p>
+              <button
+                onClick={initMockData}
+                className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                Создать тестовые данные
+              </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Dashboard content when capitals exist */}
+        {capitals.length > 0 && (
+          <>
+            {/* Filters */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => setFilter('all')}
+                  className={`px-4 py-2 rounded-lg font-medium ${
+                    filter === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Все клиенты
+                </button>
+                <button
+                  onClick={() => setFilter('today')}
+                  className={`px-4 py-2 rounded-lg font-medium ${
+                    filter === 'today'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Сегодня ({dashboardData?.today?.length || 0})
+                </button>
+                <button
+                  onClick={() => setFilter('tomorrow')}
+                  className={`px-4 py-2 rounded-lg font-medium ${
+                    filter === 'tomorrow'
+                      ? 'bg-yellow-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Завтра ({dashboardData?.tomorrow?.length || 0})
+                </button>
+                <button
+                  onClick={() => setFilter('overdue')}
+                  className={`px-4 py-2 rounded-lg font-medium ${
+                    filter === 'overdue'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Просрочено ({dashboardData?.overdue?.length || 0})
+                </button>
+              </div>
+            </div>
+
+            {/* Client List */}
+            <div className="bg-white rounded-lg shadow-sm">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-medium text-gray-900">
+                  Список клиентов
+                </h2>
+              </div>
+              
+              <div className="divide-y divide-gray-200">
+                {getFilteredClients().map((item, index) => {
+                  const client = item.client;
+                  const payment = item.payment;
+                  
+                  return (
+                    <div key={client.client_id || index} className="p-6 hover:bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-sm font-medium text-gray-900">
+                            {client.name}
+                          </h3>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {client.product} • {client.total_amount}₽
+                          </p>
+                          {payment && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              Платёж: {payment.amount}₽ на {payment.payment_date}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center space-x-3">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            client.status === 'active'
+                              ? 'bg-green-100 text-green-800'
+                              : client.status === 'overdue'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {client.status === 'active' ? 'Активен' : 
+                             client.status === 'overdue' ? 'Просрочка' : 'Завершён'}
+                          </span>
+                          
+                          <button className="text-blue-600 hover:text-blue-500 text-sm font-medium">
+                            Подробнее
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {getFilteredClients().length === 0 && (
+                <div className="p-6 text-center text-gray-500">
+                  Клиенты не найдены
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 };
 
 // Main App Component
+const MainApp = () => {
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [capitals, setCapitals] = useState([]);
+  const [selectedCapital, setSelectedCapital] = useState(null);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      fetchCapitals();
+    }
+  }, [user]);
+
+  const fetchCapitals = async () => {
+    try {
+      const response = await axios.get(`${API}/capitals`);
+      setCapitals(response.data);
+      if (response.data.length > 0) {
+        setSelectedCapital(response.data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching capitals:', error);
+    }
+  };
+
+  const handleClientAdded = (newClient) => {
+    console.log('New client added:', newClient);
+    // Optionally refresh data or show success message
+    if (currentPage === 'add-client') {
+      setCurrentPage('dashboard');
+    }
+  };
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'add-client':
+        return (
+          <AddClientForm 
+            capitals={capitals}
+            selectedCapital={selectedCapital}
+            onClientAdded={handleClientAdded}
+          />
+        );
+      case 'dashboard':
+      default:
+        return (
+          <Dashboard 
+            onPageChange={setCurrentPage}
+            capitals={capitals}
+            selectedCapital={selectedCapital}
+            onCapitalChange={setSelectedCapital}
+          />
+        );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navigation 
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        capitals={capitals}
+        selectedCapital={selectedCapital}
+        onCapitalChange={setSelectedCapital}
+      />
+      {renderCurrentPage()}
+    </div>
+  );
+};
+
 function App() {
   const { user, loading } = useAuth();
 
@@ -693,7 +778,7 @@ function App() {
 
   return (
     <div className="App">
-      {user ? <Dashboard /> : <LoginPage />}
+      {user ? <MainApp /> : <LoginPage />}
     </div>
   );
 }
