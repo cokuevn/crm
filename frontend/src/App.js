@@ -870,7 +870,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
 
   const updatePaymentStatus = async (paymentDate, status) => {
     try {
-      await axios.put(`${API}/clients/${clientId}/payments/${paymentDate}?status=${status}`);
+      const response = await axios.put(`${API}/clients/${clientId}/payments/${paymentDate}`, { status });
       
       // Refresh client data
       fetchClientDetails();
