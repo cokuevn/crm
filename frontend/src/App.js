@@ -87,6 +87,197 @@ const useAuth = () => {
   return context;
 };
 
+// Notifications Component
+const NotificationToast = ({ notifications, onClose }) => {
+  if (notifications.length === 0) return null;
+
+  return (
+    <div className="fixed top-4 right-4 z-50 space-y-2">
+      {notifications.map((notification, index) => (
+        <div
+          key={index}
+          className={`max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 transition-all duration-300 ${
+            notification.type === 'success' ? 'border-l-4 border-green-500' :
+            notification.type === 'error' ? 'border-l-4 border-red-500' :
+            notification.type === 'warning' ? 'border-l-4 border-yellow-500' :
+            'border-l-4 border-blue-500'
+          }`}
+        >
+          <div className="p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <span className="text-xl">
+                  {notification.type === 'success' ? '✅' :
+                   notification.type === 'error' ? '❌' :
+                   notification.type === 'warning' ? '⚠️' : 'ℹ️'}
+                </span>
+              </div>
+              <div className="ml-3 w-0 flex-1 pt-0.5">
+                <p className="text-sm font-medium text-gray-900">
+                  {notification.title}
+                </p>
+                <p className="mt-1 text-sm text-gray-500">
+                  {notification.message}
+                </p>
+              </div>
+              <div className="ml-4 flex-shrink-0 flex">
+                <button
+                  className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500"
+                  onClick={() => onClose(index)}
+                >
+                  <span className="sr-only">Закрыть</span>
+                  <span className="text-lg">✕</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Export Modal Component  
+const ExportModal = ({ isOpen, onClose, selectedCapital }) => {
+  const [exportType, setExportType] = useState('csv');
+  const [loading, setLoading] = useState(false);
+
+  const handleExport = async () => {
+    setLoading(true);
+    try {
+      // Get all clients for the capital
+      const response = await axios.get(`${API}/clients`, {
+        params: { capital_id: selectedCapital?.id }
+      });
+      
+      const clients = response.data;
+      
+      if (exportType === 'csv') {
+        exportToCSV(clients);
+      } else {
+        exportToJSON(clients);
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      alert('Ошибка при экспорте данных');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportToCSV = (clients) => {
+    const headers = ['Имя', 'Товар', 'Общая сумма', 'Ежемесячный платёж', 'Дата начала', 'Дата окончания', 'Статус'];
+    const csvContent = [
+      headers.join(','),
+      ...clients.map(client => [
+        client.name,
+        client.product,
+        client.total_amount,
+        client.monthly_payment,
+        client.start_date,
+        client.end_date,
+        client.status
+      ].join(','))
+    ].join('\n');
+
+    downloadFile(csvContent, `clients_${selectedCapital?.name}_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+  };
+
+  const exportToJSON = (clients) => {
+    const jsonContent = JSON.stringify(clients, null, 2);
+    downloadFile(jsonContent, `clients_${selectedCapital?.name}_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+  };
+
+  const downloadFile = (content, filename, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-medium text-gray-900">
+            📤 Экспорт данных
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-xl"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Капитал для экспорта
+            </label>
+            <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+              💰 {selectedCapital?.name || 'Не выбран'}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Формат экспорта
+            </label>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="csv"
+                  checked={exportType === 'csv'}
+                  onChange={(e) => setExportType(e.target.value)}
+                  className="mr-2"
+                />
+                <span className="text-sm">📊 CSV (Excel)</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="json"
+                  checked={exportType === 'json'}
+                  onChange={(e) => setExportType(e.target.value)}
+                  className="mr-2"
+                />
+                <span className="text-sm">💾 JSON (данные)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={loading || !selectedCapital}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Экспорт...' : '📤 Экспортировать'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Analytics Component
 const Analytics = ({ capitals, selectedCapital }) => {
   const [analyticsData, setAnalyticsData] = useState(null);
