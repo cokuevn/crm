@@ -196,7 +196,7 @@ const AddCapitalModal = ({ isOpen, onClose, onCapitalAdded }) => {
 };
 
 // Navigation Component
-const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital }) => {
+const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onDeleteCapital }) => {
   return (
     <nav className="bg-white border-b border-gray-200 px-4">
       <div className="max-w-7xl mx-auto">
@@ -226,20 +226,32 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
           
           <div className="flex items-center space-x-4">
             {capitals.length > 0 && (
-              <select
-                value={selectedCapital?.id || ''}
-                onChange={(e) => {
-                  const capital = capitals.find(c => c.id === e.target.value);
-                  onCapitalChange(capital);
-                }}
-                className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
-              >
-                {capitals.map(capital => (
-                  <option key={capital.id} value={capital.id}>
-                    💰 {capital.name}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center space-x-2">
+                <select
+                  value={selectedCapital?.id || ''}
+                  onChange={(e) => {
+                    const capital = capitals.find(c => c.id === e.target.value);
+                    onCapitalChange(capital);
+                  }}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
+                >
+                  {capitals.map(capital => (
+                    <option key={capital.id} value={capital.id}>
+                      💰 {capital.name}
+                    </option>
+                  ))}
+                </select>
+                
+                {selectedCapital && (
+                  <button
+                    onClick={() => onDeleteCapital(selectedCapital)}
+                    className="px-2 py-1 bg-red-100 text-red-700 text-sm rounded-md hover:bg-red-200 transition-colors"
+                    title="Удалить капитал"
+                  >
+                    🗑️
+                  </button>
+                )}
+              </div>
             )}
             
             <button
