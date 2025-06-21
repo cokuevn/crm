@@ -534,6 +534,9 @@ frontend:
         -working: true
         -agent: "testing"
         -comment: "Comprehensive testing shows enhanced payment status management is now working correctly. Successfully accessed client details page and opened the payment status modal by clicking the '🔄 Изменить статус' button. The modal displays payment amount and date. Successfully changed payment status to 'Оплачено' and the change was reflected in the UI. However, there was a console error 'Error updating payment status: AxiosError' which suggests there might still be some backend issues, but the UI functionality works as expected."
+        -working: true
+        -agent: "testing"
+        -comment: "Thorough testing of the payment status change functionality confirms it is now working correctly without any errors. Successfully tested changing payment status to all three options: '⏳ Ожидается' (pending), '✅ Оплачено' (paid), and '❌ Просрочено' (overdue). The modal closes properly after each status change, and the payment card updates with the new status. The progress bar recalculates correctly, showing the appropriate percentage. No console errors were detected during the status changes. Network requests show the correct JSON body format being sent to the backend API: {\"status\":\"paid\"}, {\"status\":\"pending\"}, or {\"status\":\"overdue\"}. The previous issue with AxiosError has been resolved."
         
   - task: "Enhanced Client Display"
     implemented: true
