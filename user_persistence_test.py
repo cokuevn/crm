@@ -41,14 +41,14 @@ def print_separator(title):
     print(f" {title} ".center(80, "="))
     print("="*80 + "\n")
 
-def create_user_data(token):
-    """Create initial user data with the given token"""
-    print_separator("CREATING USER DATA WITH FIRST TOKEN")
+def create_user_data(user_uid):
+    """Create initial user data with the given user UID"""
+    print_separator("CREATING USER DATA WITH FIRST LOGIN")
     
-    # Headers for all requests with the first token
+    # Headers for all requests with the user UID
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {token}"  # First token, but user.uid will be extracted
+        "Authorization": f"Bearer {user_uid}"
     }
     
     # Step 1: Initialize mock data
