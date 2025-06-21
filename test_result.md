@@ -501,21 +501,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Analytics Page"
-    - "Enhanced Search Functionality"
-    - "Advanced Filtering"
-    - "Visual Analytics Components"
-    - "Enhanced Client Form with Extended Fields"
-    - "Client Editing Functionality"
-    - "Client Deletion"
-    - "Enhanced Payment Status Management"
-    - "Enhanced Client Display"
+    - "Analytics with New Fields"
+    - "Client Retrieval with Extended Fields"
   stuck_tasks:
-    - "Analytics Page"
-    - "Visual Analytics Components"
-    - "Client Editing Functionality"
-    - "Client Deletion"
-    - "Enhanced Payment Status Management"
+    - "Analytics with New Fields"
+    - "Client Retrieval with Extended Fields"
   test_all: false
   test_priority: "high_first"
 
