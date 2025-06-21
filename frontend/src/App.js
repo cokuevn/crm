@@ -553,6 +553,281 @@ const Analytics = ({ capitals, selectedCapital }) => {
   );
 };
 
+// Edit Client Modal Component
+const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    product: '',
+    purchase_amount: '',
+    debt_amount: '',
+    monthly_payment: '',
+    guarantor_name: '',
+    client_address: '',
+    client_phone: '',
+    guarantor_phone: '',
+    status: 'active'
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (client) {
+      setFormData({
+        name: client.name || '',
+        product: client.product || '',
+        purchase_amount: client.purchase_amount || '',
+        debt_amount: client.debt_amount || '',
+        monthly_payment: client.monthly_payment || '',
+        guarantor_name: client.guarantor_name || '',
+        client_address: client.client_address || '',
+        client_phone: client.client_phone || '',
+        guarantor_phone: client.guarantor_phone || '',
+        status: client.status || 'active'
+      });
+    }
+  }, [client]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const updateData = {
+        ...formData,
+        purchase_amount: parseFloat(formData.purchase_amount),
+        debt_amount: parseFloat(formData.debt_amount),
+        monthly_payment: parseFloat(formData.monthly_payment)
+      };
+
+      const response = await axios.put(`${API}/clients/${client.client_id}`, updateData);
+      
+      if (onClientUpdated) {
+        onClientUpdated(response.data);
+      }
+      onClose();
+    } catch (error) {
+      setError(error.response?.data?.detail || 'Ошибка при обновлении клиента');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-medium text-gray-900">
+            ✏️ Редактировать клиента
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-xl"
+          >
+            ✕
+          </button>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Основная информация */}
+          <div>
+            <h4 className="text-md font-medium text-gray-900 mb-3">Основная информация</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ФИО клиента
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Товар
+                </label>
+                <input
+                  type="text"
+                  name="product"
+                  value={formData.product}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Адрес клиента
+                </label>
+                <input
+                  type="text"
+                  name="client_address"
+                  value={formData.client_address}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Телефон клиента
+                </label>
+                <input
+                  type="tel"
+                  name="client_phone"
+                  value={formData.client_phone}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Финансовая информация */}
+          <div>
+            <h4 className="text-md font-medium text-gray-900 mb-3">Финансовая информация</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Сумма покупки (₽)
+                </label>
+                <input
+                  type="number"
+                  name="purchase_amount"
+                  value={formData.purchase_amount}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Долг клиента (₽)
+                </label>
+                <input
+                  type="number"
+                  name="debt_amount"
+                  value={formData.debt_amount}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ежемесячный платёж (₽)
+                </label>
+                <input
+                  type="number"
+                  name="monthly_payment"
+                  value={formData.monthly_payment}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Информация о гаранте */}
+          <div>
+            <h4 className="text-md font-medium text-gray-900 mb-3">Информация о гаранте</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ФИО гаранта
+                </label>
+                <input
+                  type="text"
+                  name="guarantor_name"
+                  value={formData.guarantor_name}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Телефон гаранта
+                </label>
+                <input
+                  type="tel"
+                  name="guarantor_phone"
+                  value={formData.guarantor_phone}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Статус */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Статус клиента
+            </label>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="active">Активен</option>
+              <option value="completed">Завершён</option>
+              <option value="overdue">Просрочка</option>
+              <option value="archived">Архивирован</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Сохранение...' : '💾 Сохранить'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // Client Details Component
 const ClientDetails = ({ clientId, onBack, capitals }) => {
   const [client, setClient] = useState(null);
