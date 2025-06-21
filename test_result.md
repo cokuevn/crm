@@ -215,7 +215,7 @@ backend:
 
   - task: "Client Retrieval with Extended Fields"
     implemented: true
-    working: false
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 1
     priority: "high"
@@ -227,6 +227,9 @@ backend:
         -working: false
         -agent: "testing"
         -comment: "The GET /api/clients endpoint is failing with validation errors for 'purchase_amount' and 'debt_amount' fields, which are required in the new Client model but missing in some existing database records. The endpoint needs to be updated to handle clients with the old data model."
+        -working: true
+        -agent: "testing"
+        -comment: "Fixed the client creation and retrieval to handle both old and new data models. Modified the ClientCreate model to make purchase_amount and debt_amount optional, and added fallback logic to handle total_amount for backward compatibility. Successfully tested with both old model clients (using total_amount) and new model clients (using debt_amount and purchase_amount)."
         
   - task: "Capital Deletion"
     implemented: true
