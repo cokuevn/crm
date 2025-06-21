@@ -338,6 +338,114 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
         "collection_rate": (total_paid / total_amount * 100) if total_amount > 0 else 0
     }
 
+# Initialize mock data
+@api_router.post("/init-mock-data")
+async def init_mock_data(current_user: str = Depends(get_current_user)):
+    # Create user if not exists
+    user = await db.users.find_one({"uid": current_user})
+    if not user:
+        user_obj = User(uid=current_user, email="demo@example.com", display_name="Demo User", role=UserRole.admin)
+        await db.users.insert_one(user_obj.dict())
+    
+    # Create 2 capitals
+    capital1 = Capital(
+        name="Основной капитал",
+        owner_id=current_user,
+        description="Основной капитал для рассрочки электроники"
+    )
+    
+    capital2 = Capital(
+        name="Дополнительный фонд",
+        owner_id=current_user,
+        description="Дополнительные средства для крупных покупок"
+    )
+    
+    await db.capitals.insert_one(capital1.dict())
+    await db.capitals.insert_one(capital2.dict())
+    
+    # Create mock clients for capital 1
+    clients_data1 = [
+        {
+            "name": "Иван Петров",
+            "product": "iPhone 15 Pro",
+            "total_amount": 120000.0,
+            "monthly_payment": 10000.0,
+            "months": 12,
+            "start_date": date(2024, 11, 1)
+        },
+        {
+            "name": "Мария Сидорова", 
+            "product": "MacBook Air M3",
+            "total_amount": 150000.0,
+            "monthly_payment": 12500.0,
+            "months": 12,
+            "start_date": date(2024, 10, 15)
+        },
+        {
+            "name": "Александр Козлов",
+            "product": "iPad Pro",
+            "total_amount": 80000.0,
+            "monthly_payment": 8000.0,
+            "months": 10,
+            "start_date": date(2024, 12, 1)
+        }
+    ]
+    
+    # Create mock clients for capital 2
+    clients_data2 = [
+        {
+            "name": "Елена Морозова",
+            "product": "Samsung Galaxy S24",
+            "total_amount": 90000.0,
+            "monthly_payment": 7500.0,
+            "months": 12,
+            "start_date": date(2024, 11, 10)
+        },
+        {
+            "name": "Дмитрий Волков",
+            "product": "PlayStation 5",
+            "total_amount": 60000.0,
+            "monthly_payment": 6000.0,
+            "months": 10,
+            "start_date": date(2024, 9, 20)
+        }
+    ]
+    
+    # Create clients for both capitals
+    for client_data in clients_data1:
+        schedule = generate_payment_schedule(client_data["start_date"], client_data["monthly_payment"], client_data["months"])
+        end_date = schedule[-1].payment_date if schedule else client_data["start_date"]
+        
+        client_obj = Client(
+            capital_id=capital1.id,
+            name=client_data["name"],
+            product=client_data["product"],
+            total_amount=client_data["total_amount"],
+            monthly_payment=client_data["monthly_payment"],
+            start_date=client_data["start_date"],
+            end_date=end_date,
+            schedule=schedule
+        )
+        await db.clients.insert_one(client_obj.dict())
+    
+    for client_data in clients_data2:
+        schedule = generate_payment_schedule(client_data["start_date"], client_data["monthly_payment"], client_data["months"])
+        end_date = schedule[-1].payment_date if schedule else client_data["start_date"]
+        
+        client_obj = Client(
+            capital_id=capital2.id,
+            name=client_data["name"],
+            product=client_data["product"],
+            total_amount=client_data["total_amount"],
+            monthly_payment=client_data["monthly_payment"],
+            start_date=client_data["start_date"],
+            end_date=end_date,
+            schedule=schedule
+        )
+        await db.clients.insert_one(client_obj.dict())
+    
+    return {"message": "Mock data initialized successfully", "capitals": [capital1.dict(), capital2.dict()]}
+
 # Dashboard data
 @api_router.get("/dashboard")
 async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str = Depends(get_current_user)):
