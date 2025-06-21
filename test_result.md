@@ -165,7 +165,22 @@ backend:
         -agent: "testing"
         -comment: "Successfully tested GET /api/dashboard endpoint. It correctly filters payments by today, tomorrow, and overdue status. The string date filtering works properly, and the endpoint returns the expected data structure."
 
-  - task: "Client Retrieval"
+  - task: "Analytics with New Fields"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of GET /api/analytics/{capital_id} with debt_amount instead of total_amount."
+        -working: false
+        -agent: "testing"
+        -comment: "The analytics endpoint is failing with a KeyError: 'debt_amount'. This is because some existing clients in the database don't have the 'debt_amount' field, which was added in the new model. The endpoint needs to be updated to handle clients with the old data model."
+
+  - task: "Client CRUD Operations with Extended Fields"
     implemented: true
     working: true
     file: "/app/backend/server.py"
@@ -175,10 +190,40 @@ backend:
     status_history:
         -working: "NA"
         -agent: "testing"
-        -comment: "Initial testing of GET /api/clients endpoint to get all clients across capitals."
+        -comment: "Initial testing of client CRUD operations with extended fields."
         -working: true
         -agent: "testing"
-        -comment: "Successfully tested GET /api/clients endpoint. It correctly returns clients filtered by capital_id if provided, or all clients across the user's capitals otherwise. The MongoDB ObjectId serialization issue has been fixed."
+        -comment: "Successfully tested POST /api/clients with new extended fields (name, purchase_amount, debt_amount, guarantor_name, client_address, client_phone, guarantor_phone). Client creation works correctly. Successfully tested GET /api/clients/{client_id} to retrieve client details. Successfully tested PUT /api/clients/{client_id} with ClientUpdate model for editing clients. Successfully tested DELETE /api/clients/{client_id} for client deletion."
+
+  - task: "Payment Status Management"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of payment status management."
+        -working: true
+        -agent: "testing"
+        -comment: "Successfully tested PUT /api/clients/{client_id}/payments/{payment_date} with status in request body. Verified payment status changes between pending, paid, and overdue. Confirmed that paid_date is set when status changes to 'paid' and cleared when status changes to other values."
+
+  - task: "Client Retrieval with Extended Fields"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of GET /api/clients endpoint with extended fields."
+        -working: false
+        -agent: "testing"
+        -comment: "The GET /api/clients endpoint is failing with validation errors for 'purchase_amount' and 'debt_amount' fields, which are required in the new Client model but missing in some existing database records. The endpoint needs to be updated to handle clients with the old data model."
         
   - task: "Capital Deletion"
     implemented: true
