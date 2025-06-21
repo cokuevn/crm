@@ -201,7 +201,7 @@ backend:
         -agent: "testing"
         -comment: "Successfully tested POST /api/clients with new extended fields (name, purchase_amount, debt_amount, guarantor_name, client_address, client_phone, guarantor_phone). Client creation works correctly. Successfully tested GET /api/clients/{client_id} to retrieve client details. Successfully tested PUT /api/clients/{client_id} with ClientUpdate model for editing clients. Successfully tested DELETE /api/clients/{client_id} for client deletion."
 
-  - task: "Payment Status Management"
+  - task: "User Isolation"
     implemented: true
     working: true
     file: "/app/backend/server.py"
@@ -211,16 +211,10 @@ backend:
     status_history:
         -working: "NA"
         -agent: "testing"
-        -comment: "Initial testing of payment status management."
+        -comment: "Initial testing of user isolation functionality after the authentication system was fixed."
         -working: true
         -agent: "testing"
-        -comment: "Successfully tested PUT /api/clients/{client_id}/payments/{payment_date} with status in request body. Verified payment status changes between pending, paid, and overdue. Confirmed that paid_date is set when status changes to 'paid' and cleared when status changes to other values."
-        -working: true
-        -agent: "testing"
-        -comment: "Comprehensive testing of payment status update endpoint confirms it's working correctly. Successfully tested with JSON body format ({"status": "paid"}) instead of query parameters. Verified all valid statuses (pending, paid, overdue) work correctly. Confirmed proper error handling for invalid statuses and missing status in request body. Verified that paid_date is set when status changes to 'paid' and cleared when status changes to other values."
-        -working: true
-        -agent: "testing"
-        -comment: "After fixing the backend startup issue with missing Google authentication dependencies, thoroughly tested the payment status change functionality. Confirmed the backend is running properly and responding to requests. Successfully tested changing payment status to all three options (paid, pending, overdue) using the PUT /api/clients/{client_id}/payments/{payment_date} endpoint with JSON body format. Verified that paid_date is correctly set when status changes to 'paid' and cleared when status changes to other values. Also confirmed proper error handling for invalid statuses, missing status in request body, non-existent payment dates, and non-existent clients. All tests passed successfully."
+        -comment: "Successfully tested user isolation functionality. Created a dedicated test script (user_isolation_test.py) that creates two different users and tests data isolation between them. All tests passed successfully. Verified that User A cannot access User B's capitals, clients, or payment data, and vice versa. Also confirmed that the demo user (no Authorization header) cannot access data from either User A or User B. The user isolation is working correctly across all endpoints including capitals, clients, payments, dashboard, and analytics."
 
   - task: "Client Retrieval with Extended Fields"
     implemented: true
