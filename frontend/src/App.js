@@ -832,7 +832,8 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
 const ClientDetails = ({ clientId, onBack, capitals }) => {
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [editMode, setEditMode] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(null);
 
   useEffect(() => {
@@ -853,22 +854,30 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
     }
   };
 
-  const markPaymentAsPaid = async (paymentDate, amount) => {
+  const handleClientUpdated = (updatedClient) => {
+    setClient(updatedClient);
+  };
+
+  const handleDeleteClient = async () => {
     try {
-      const paymentData = {
-        client_id: clientId,
-        amount: amount,
-        payment_date: paymentDate
-      };
-      
-      await axios.post(`${API}/payments`, paymentData);
+      await axios.delete(`${API}/clients/${clientId}`);
+      onBack(); // Вернуться к списку после удаления
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      alert('Ошибка при удалении клиента');
+    }
+  };
+
+  const updatePaymentStatus = async (paymentDate, status) => {
+    try {
+      await axios.put(`${API}/clients/${clientId}/payments/${paymentDate}?status=${status}`);
       
       // Refresh client data
       fetchClientDetails();
       setShowPaymentModal(null);
     } catch (error) {
-      console.error('Error marking payment as paid:', error);
-      alert('Ошибка при отметке платежа');
+      console.error('Error updating payment status:', error);
+      alert('Ошибка при изменении статуса платежа');
     }
   };
 
@@ -945,8 +954,8 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
 
   const capital = capitals.find(c => c.id === client.capital_id);
   const totalPaid = client.schedule?.filter(p => p.status === 'paid').reduce((sum, p) => sum + p.amount, 0) || 0;
-  const remainingAmount = client.total_amount - totalPaid;
-  const progress = (totalPaid / client.total_amount) * 100;
+  const remainingAmount = client.debt_amount - totalPaid;
+  const progress = (totalPaid / client.debt_amount) * 100;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -963,10 +972,11 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                <h1 className="text-2xl font-bold text-gray-900 mb-4">
                   👤 {client.name}
                 </h1>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Товар</p>
                     <p className="font-medium">📱 {client.product}</p>
@@ -976,12 +986,35 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
                     <p className="font-medium">💰 {capital?.name || 'Неизвестно'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Общая сумма</p>
-                    <p className="font-medium">💵 {client.total_amount?.toLocaleString()}₽</p>
+                    <p className="text-sm text-gray-500">Сумма покупки</p>
+                    <p className="font-medium">🛒 {client.purchase_amount?.toLocaleString()}₽</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Долг клиента</p>
+                    <p className="font-medium">💸 {client.debt_amount?.toLocaleString()}₽</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Ежемесячный платёж</p>
                     <p className="font-medium">📅 {client.monthly_payment?.toLocaleString()}₽</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Телефон</p>
+                    <p className="font-medium">📞 {client.client_phone || 'Не указан'}</p>
+                  </div>
+                </div>
+
+                {/* Дополнительная информация */}
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Адрес</p>
+                    <p className="font-medium">🏠 {client.client_address || 'Не указан'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Гарант</p>
+                    <p className="font-medium">🤝 {client.guarantor_name || 'Не указан'}</p>
+                    {client.guarantor_phone && (
+                      <p className="text-sm text-gray-500">📞 {client.guarantor_phone}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -999,10 +1032,17 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
                 </span>
                 
                 <button
-                  onClick={() => setEditMode(!editMode)}
+                  onClick={() => setShowEditModal(true)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   ✏️ Редактировать
+                </button>
+
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  🗑️ Удалить
                 </button>
               </div>
             </div>
@@ -1055,14 +1095,12 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
                     </span>
                   </div>
                   
-                  {payment.status === 'pending' && (
-                    <button
-                      onClick={() => setShowPaymentModal(payment)}
-                      className="w-full mt-2 px-3 py-2 bg-white bg-opacity-50 rounded border border-current hover:bg-opacity-75 transition-colors text-sm font-medium"
-                    >
-                      ✅ Отметить как оплаченный
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setShowPaymentModal(payment)}
+                    className="w-full mt-2 px-3 py-2 bg-white bg-opacity-50 rounded border border-current hover:bg-opacity-75 transition-colors text-sm font-medium"
+                  >
+                    🔄 Изменить статус
+                  </button>
                   
                   {payment.status === 'paid' && payment.paid_date && (
                     <p className="text-xs opacity-75 mt-2">
@@ -1076,31 +1114,80 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
         </div>
       </div>
 
-      {/* Payment Confirmation Modal */}
-      {showPaymentModal && (
+      {/* Edit Modal */}
+      <EditClientModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        client={client}
+        onClientUpdated={handleClientUpdated}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
-              ✅ Подтвердить платёж
+              🗑️ Удалить клиента?
             </h3>
             <p className="text-gray-600 mb-6">
-              Отметить платёж <strong>{showPaymentModal.amount?.toLocaleString()}₽</strong> 
-              на <strong>{formatDate(showPaymentModal.payment_date)}</strong> как выполненный?
+              Вы уверены, что хотите удалить клиента <strong>"{client.name}"</strong>? 
+              Все данные о платежах будут также удалены. Это действие нельзя отменить.
             </p>
             <div className="flex justify-end space-x-3">
               <button
-                onClick={() => setShowPaymentModal(null)}
+                onClick={() => setShowDeleteConfirm(false)}
                 className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Отмена
               </button>
               <button
-                onClick={() => markPaymentAsPaid(showPaymentModal.payment_date, showPaymentModal.amount)}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                onClick={handleDeleteClient}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
-                ✅ Подтвердить
+                🗑️ Удалить
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Status Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              🔄 Изменить статус платежа
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Платёж <strong>{showPaymentModal.amount?.toLocaleString()}₽</strong> 
+              на <strong>{formatDate(showPaymentModal.payment_date)}</strong>
+            </p>
+            <div className="space-y-2 mb-6">
+              <button
+                onClick={() => updatePaymentStatus(showPaymentModal.payment_date, 'pending')}
+                className="w-full px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                ⏳ Ожидается
+              </button>
+              <button
+                onClick={() => updatePaymentStatus(showPaymentModal.payment_date, 'paid')}
+                className="w-full px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors"
+              >
+                ✅ Оплачено
+              </button>
+              <button
+                onClick={() => updatePaymentStatus(showPaymentModal.payment_date, 'overdue')}
+                className="w-full px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-colors"
+              >
+                ❌ Просрочено
+              </button>
+            </div>
+            <button
+              onClick={() => setShowPaymentModal(null)}
+              className="w-full px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Отмена
+            </button>
           </div>
         </div>
       )}
