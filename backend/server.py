@@ -448,7 +448,13 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
     clients = await db.clients.find({"capital_id": capital_id}).to_list(1000)
     payments = await db.payments.find({"capital_id": capital_id}).to_list(1000)
     
-    total_debt = sum(client["debt_amount"] for client in clients)
+    # Handle both old and new data models
+    total_debt = 0
+    for client in clients:
+        # Use debt_amount if available, otherwise fall back to total_amount
+        debt = client.get("debt_amount") or client.get("total_amount", 0)
+        total_debt += debt
+    
     total_paid = sum(payment["amount"] for payment in payments)
     active_clients = len([c for c in clients if c["status"] == "active"])
     
