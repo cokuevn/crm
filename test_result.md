@@ -270,12 +270,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Authentication Flow"
-    - "Dashboard Interface"
-    - "UI/UX Testing"
-    - "Firebase Integration"
+    - "Add Capital Button"
+    - "Add Capital Modal"
+    - "Capital Creation"
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
 
 agent_communication:
