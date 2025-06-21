@@ -349,6 +349,11 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
         user_obj = User(uid=current_user, email="demo@example.com", display_name="Demo User", role=UserRole.admin)
         await db.users.insert_one(user_obj.dict())
     
+    # Check if mock data already exists
+    existing_capitals = await db.capitals.find({"owner_id": current_user}).to_list(10)
+    if existing_capitals:
+        return {"message": "Mock data already exists", "capitals": existing_capitals}
+    
     # Create 2 capitals
     capital1 = Capital(
         name="Основной капитал",
@@ -373,7 +378,7 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
             "total_amount": 120000.0,
             "monthly_payment": 10000.0,
             "months": 12,
-            "start_date": date(2024, 11, 1)
+            "start_date": "2024-11-01"
         },
         {
             "name": "Мария Сидорова", 
@@ -381,7 +386,7 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
             "total_amount": 150000.0,
             "monthly_payment": 12500.0,
             "months": 12,
-            "start_date": date(2024, 10, 15)
+            "start_date": "2024-10-15"
         },
         {
             "name": "Александр Козлов",
@@ -389,7 +394,7 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
             "total_amount": 80000.0,
             "monthly_payment": 8000.0,
             "months": 10,
-            "start_date": date(2024, 12, 1)
+            "start_date": "2024-12-01"
         }
     ]
     
@@ -401,7 +406,7 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
             "total_amount": 90000.0,
             "monthly_payment": 7500.0,
             "months": 12,
-            "start_date": date(2024, 11, 10)
+            "start_date": "2024-11-10"
         },
         {
             "name": "Дмитрий Волков",
@@ -409,7 +414,7 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
             "total_amount": 60000.0,
             "monthly_payment": 6000.0,
             "months": 10,
-            "start_date": date(2024, 9, 20)
+            "start_date": "2024-09-20"
         }
     ]
     
@@ -426,7 +431,7 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
             monthly_payment=client_data["monthly_payment"],
             start_date=client_data["start_date"],
             end_date=end_date,
-            schedule=schedule
+            schedule=[s.dict() for s in schedule]  # Convert to dict for MongoDB
         )
         await db.clients.insert_one(client_obj.dict())
     
@@ -442,11 +447,42 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
             monthly_payment=client_data["monthly_payment"],
             start_date=client_data["start_date"],
             end_date=end_date,
-            schedule=schedule
+            schedule=[s.dict() for s in schedule]  # Convert to dict for MongoDB
         )
         await db.clients.insert_one(client_obj.dict())
     
     return {"message": "Mock data initialized successfully", "capitals": [capital1.dict(), capital2.dict()]}
+
+# Auto-initialize mock data on first login
+@api_router.get("/auto-init")
+async def auto_init_data(current_user: str = Depends(get_current_user)):
+    # Check if user has any capitals
+    existing_capitals = await db.capitals.find({"owner_id": current_user}).to_list(10)
+    if not existing_capitals:
+        return await init_mock_data(current_user)
+    return {"message": "Data already exists", "capitals": existing_capitals}
+
+# Delete capital
+@api_router.delete("/capitals/{capital_id}")
+async def delete_capital(capital_id: str, current_user: str = Depends(get_current_user)):
+    # Verify capital ownership
+    capital = await db.capitals.find_one({"id": capital_id, "owner_id": current_user})
+    if not capital:
+        raise HTTPException(status_code=404, detail="Capital not found")
+    
+    # Delete all clients in this capital
+    await db.clients.delete_many({"capital_id": capital_id})
+    
+    # Delete all payments in this capital
+    await db.payments.delete_many({"capital_id": capital_id})
+    
+    # Delete the capital
+    result = await db.capitals.delete_one({"id": capital_id, "owner_id": current_user})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Capital not found")
+    
+    return {"message": "Capital deleted successfully"}
 
 # Dashboard data
 @api_router.get("/dashboard")
