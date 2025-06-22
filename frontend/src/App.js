@@ -871,13 +871,13 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
     paymentDate.setHours(0, 0, 0, 0);
 
     if (payment.status === 'paid') {
-      return 'bg-green-100 text-green-800 border-green-200';
+      return 'bg-green-50/80 backdrop-blur-sm text-green-800 border-green-200/50';
     } else if (paymentDate < today) {
-      return 'bg-red-100 text-red-800 border-red-200';
+      return 'bg-red-50/80 backdrop-blur-sm text-red-800 border-red-200/50';
     } else if (paymentDate.getTime() === today.getTime()) {
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      return 'bg-orange-50/80 backdrop-blur-sm text-orange-800 border-orange-200/50';
     } else {
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return 'bg-gray-50/80 backdrop-blur-sm text-gray-800 border-gray-200/50';
     }
   };
 
@@ -888,13 +888,46 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
     paymentDate.setHours(0, 0, 0, 0);
 
     if (payment.status === 'paid') {
-      return '✅ Оплачено';
+      return 'Оплачено';
     } else if (paymentDate < today) {
-      return '❌ Просрочено';
+      return 'Просрочено';
     } else if (paymentDate.getTime() === today.getTime()) {
-      return '⏰ Сегодня';
+      return 'Сегодня';
     } else {
-      return '⏳ Ожидается';
+      return 'Ожидается';
+    }
+  };
+
+  const getPaymentStatusIcon = (payment) => {
+    const paymentDate = new Date(payment.payment_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    paymentDate.setHours(0, 0, 0, 0);
+
+    if (payment.status === 'paid') {
+      return (
+        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+    } else if (paymentDate < today) {
+      return (
+        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.08 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        </svg>
+      );
+    } else if (paymentDate.getTime() === today.getTime()) {
+      return (
+        <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+    } else {
+      return (
+        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
     }
   };
 
