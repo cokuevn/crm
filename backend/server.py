@@ -717,31 +717,48 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
         raise HTTPException(status_code=404, detail="Capital not found")
     
     clients = await db.clients.find({"capital_id": capital_id}).to_list(1000)
-    payments = await db.payments.find({"capital_id": capital_id}).to_list(1000)
     
-    # Handle both old and new data models
+    # Calculate analytics from schedule data
     total_debt = 0
+    total_paid = 0
+    total_payments_count = 0
+    paid_payments_count = 0
+    overdue_count = 0
+    
+    today = date.today()
+    
     for client in clients:
         # Use debt_amount if available, otherwise fall back to total_amount
         debt = client.get("debt_amount") or client.get("total_amount", 0)
         total_debt += debt
-    
-    total_paid = sum(payment["amount"] for payment in payments)
-    active_clients = len([c for c in clients if c["status"] == "active"])
-    
-    # Calculate overdue payments
-    today = date.today()
-    overdue_count = 0
-    for client in clients:
+        
+        # Calculate from schedule
         for schedule_item in client.get("schedule", []):
             try:
                 payment_date = datetime.strptime(schedule_item["payment_date"], "%Y-%m-%d").date()
-                # Count both explicitly overdue status and overdue dates
-                if (schedule_item["status"] == "overdue" or 
-                    (schedule_item["status"] == "pending" and payment_date < today)):
+                payment_amount = schedule_item.get("amount", 0)
+                payment_status = schedule_item.get("status", "pending")
+                
+                total_payments_count += 1
+                
+                # Count paid payments and their amounts
+                if payment_status == "paid":
+                    total_paid += payment_amount
+                    paid_payments_count += 1
+                
+                # Count overdue payments
+                elif (payment_status == "overdue" or 
+                      (payment_status == "pending" and payment_date < today)):
                     overdue_count += 1
+                    
             except (ValueError, KeyError):
                 continue
+    
+    active_clients = len([c for c in clients if c["status"] == "active"])
+    
+    # Get expenses for this capital
+    expenses = await db.expenses.find({"capital_id": capital_id}).to_list(1000)
+    total_expenses = sum(expense.get("amount", 0) for expense in expenses)
     
     return {
         "total_amount": total_debt,  # Keep API compatibility
@@ -750,7 +767,13 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
         "active_clients": active_clients,
         "total_clients": len(clients),
         "overdue_payments": overdue_count,
-        "collection_rate": (total_paid / total_debt * 100) if total_debt > 0 else 0
+        "collection_rate": (total_paid / total_debt * 100) if total_debt > 0 else 0,
+        "total_payments": total_payments_count,
+        "paid_payments": paid_payments_count,
+        "payment_completion_rate": (paid_payments_count / total_payments_count * 100) if total_payments_count > 0 else 0,
+        "total_expenses": total_expenses,
+        "current_balance": capital.get("balance", 0),
+        "net_profit": total_paid - total_expenses  # Доходы минус расходы
     }
 
 # Initialize mock data
