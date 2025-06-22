@@ -717,7 +717,8 @@ def test_user_data_persistence():
     print("Step 1: Creating a capital with persistent user ID...")
     capital_data = {
         "name": "Persistent Test Capital",
-        "description": "Capital for testing user data persistence"
+        "description": "Capital for testing user data persistence",
+        "balance": 100000.0  # Add initial balance
     }
     
     response = requests.post(f"{API_URL}/capitals", headers=persistent_headers, json=capital_data)
