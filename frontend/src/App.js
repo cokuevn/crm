@@ -3294,6 +3294,13 @@ const MainApp = () => {
         onCapitalAdded={handleCapitalAdded}
       />
 
+      <BalanceModal
+        isOpen={showBalanceModal}
+        onClose={() => setShowBalanceModal(false)}
+        capital={selectedCapital}
+        onBalanceUpdated={handleBalanceUpdated}
+      />
+
       <ExportModal
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
