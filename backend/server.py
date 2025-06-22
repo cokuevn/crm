@@ -351,7 +351,16 @@ async def create_client(client: ClientCreate, current_user: str = Depends(get_cu
         end_date=end_date
     )
     
+    # Insert the client
     await db.clients.insert_one(client_obj.dict())
+    
+    # Deduct the purchase amount from capital balance
+    new_balance = current_balance - purchase_amount
+    await db.capitals.update_one(
+        {"id": client.capital_id},
+        {"$set": {"balance": new_balance}}
+    )
+    
     return client_obj
 
 @api_router.get("/clients", response_model=List[Client])
