@@ -893,6 +893,9 @@ async def delete_capital(capital_id: str, current_user: str = Depends(get_curren
     # Delete all payments in this capital
     await db.payments.delete_many({"capital_id": capital_id})
     
+    # Delete all expenses in this capital
+    await db.expenses.delete_many({"capital_id": capital_id})
+    
     # Delete the capital
     result = await db.capitals.delete_one({"id": capital_id, "owner_id": current_user})
     
