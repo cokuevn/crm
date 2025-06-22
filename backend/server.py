@@ -454,12 +454,23 @@ async def update_payment_status(
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
     
+    # Get capital for balance update
+    capital = await db.capitals.find_one({"id": client["capital_id"]})
+    if not capital:
+        raise HTTPException(status_code=404, detail="Capital not found")
+    
     # Update the payment status in schedule
     schedule = client.get("schedule", [])
     updated = False
+    payment_amount = 0
+    previous_status = None
     
     for payment in schedule:
         if payment["payment_date"] == payment_date:
+            previous_status = payment.get("status", "pending")
+            payment_amount = payment.get("amount", 0)
+            
+            # Update payment status
             payment["status"] = status
             if status == "paid":
                 payment["paid_date"] = date.today().strftime("%Y-%m-%d")
@@ -471,13 +482,35 @@ async def update_payment_status(
     if not updated:
         raise HTTPException(status_code=404, detail="Payment not found")
     
+    # Update capital balance based on status change
+    current_balance = capital.get("balance", 0.0)
+    new_balance = current_balance
+    
+    # If changing TO paid status, add payment to balance
+    if status == "paid" and previous_status != "paid":
+        new_balance = current_balance + payment_amount
+    # If changing FROM paid status, subtract payment from balance
+    elif previous_status == "paid" and status != "paid":
+        new_balance = current_balance - payment_amount
+    
     # Update the client with new schedule
     await db.clients.update_one(
         {"client_id": client_id},
         {"$set": {"schedule": schedule, "updated_at": datetime.utcnow()}}
     )
     
-    return {"message": "Payment status updated successfully"}
+    # Update capital balance if it changed
+    if abs(new_balance - current_balance) > 0.01:  # Only update if balance actually changed
+        await db.capitals.update_one(
+            {"id": client["capital_id"]},
+            {"$set": {"balance": new_balance}}
+        )
+    
+    return {
+        "message": "Payment status updated successfully",
+        "balance_change": new_balance - current_balance if abs(new_balance - current_balance) > 0.01 else 0,
+        "new_balance": new_balance
+    }
 
 @api_router.put("/clients/{client_id}", response_model=Client)
 async def update_client_old(client_id: str, updates: dict, current_user: str = Depends(get_current_user)):
