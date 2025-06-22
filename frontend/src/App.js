@@ -1208,38 +1208,51 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
 
       {/* Payment Status Modal */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              🔄 Изменить статус платежа
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-md w-full p-8 shadow-2xl border border-gray-200/50">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+              Изменить статус платежа
             </h3>
-            <p className="text-gray-600 mb-4">
-              Платёж <strong>{showPaymentModal.amount?.toLocaleString()}₽</strong> 
-              на <strong>{formatDate(showPaymentModal.payment_date)}</strong>
-            </p>
-            <div className="space-y-2 mb-6">
+            <div className="text-center mb-8 p-4 bg-gray-50/80 rounded-2xl">
+              <p className="text-lg font-semibold text-gray-900 mb-1">
+                {showPaymentModal.amount?.toLocaleString()}₽
+              </p>
+              <p className="text-sm text-gray-600">
+                {formatDate(showPaymentModal.payment_date)}
+              </p>
+            </div>
+            <div className="space-y-3 mb-8">
               <button
                 onClick={() => updatePaymentStatus(showPaymentModal.payment_date, 'pending')}
-                className="w-full px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors"
+                className="w-full flex items-center justify-center space-x-3 px-6 py-4 bg-gray-50/80 text-gray-800 rounded-2xl hover:bg-gray-100/80 transition-all font-semibold"
               >
-                ⏳ Ожидается
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Ожидается</span>
               </button>
               <button
                 onClick={() => updatePaymentStatus(showPaymentModal.payment_date, 'paid')}
-                className="w-full px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-colors"
+                className="w-full flex items-center justify-center space-x-3 px-6 py-4 bg-green-50/80 text-green-800 rounded-2xl hover:bg-green-100/80 transition-all font-semibold"
               >
-                ✅ Оплачено
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Оплачено</span>
               </button>
               <button
                 onClick={() => updatePaymentStatus(showPaymentModal.payment_date, 'overdue')}
-                className="w-full px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 transition-colors"
+                className="w-full flex items-center justify-center space-x-3 px-6 py-4 bg-red-50/80 text-red-800 rounded-2xl hover:bg-red-100/80 transition-all font-semibold"
               >
-                ❌ Просрочено
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.08 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <span>Просрочено</span>
               </button>
             </div>
             <button
               onClick={() => setShowPaymentModal(null)}
-              className="w-full px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="w-full px-6 py-4 text-gray-700 bg-gray-100/80 rounded-2xl hover:bg-gray-200/80 transition-all font-semibold"
             >
               Отмена
             </button>
