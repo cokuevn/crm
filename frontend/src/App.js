@@ -3187,6 +3187,20 @@ const MainApp = () => {
     fetchCapitals();
   };
 
+  const handleBalanceUpdated = (updatedCapital) => {
+    setCapitals(prev => prev.map(c => 
+      c.id === updatedCapital.id ? updatedCapital : c
+    ));
+    setSelectedCapital(updatedCapital);
+    showNotification('success', 'Баланс обновлен', `Баланс капитала "${updatedCapital.name}" обновлен`);
+    setShowBalanceModal(false);
+  };
+
+  const handleShowBalanceModal = (capital) => {
+    setSelectedCapital(capital);
+    setShowBalanceModal(true);
+  };
+
   const handleDeleteCapital = async (capitalId) => {
     try {
       const headers = await getAuthHeaders(user);
@@ -3217,6 +3231,8 @@ const MainApp = () => {
 
   const handleClientAdded = (newClient) => {
     showNotification('success', 'Клиент добавлен', `${newClient.name} успешно добавлен`);
+    // Refresh capitals to update balance
+    fetchCapitals();
     setCurrentPage('dashboard');
   };
 
