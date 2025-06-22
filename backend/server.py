@@ -314,6 +314,16 @@ async def create_client(client: ClientCreate, current_user: str = Depends(get_cu
     if not capital:
         raise HTTPException(status_code=404, detail="Capital not found")
     
+    # Check if there's enough balance for the purchase
+    current_balance = capital.get("balance", 0.0)
+    purchase_amount = client.purchase_amount or client.debt_amount or client.total_amount or 0
+    
+    if current_balance < purchase_amount:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Недостаточно средств в капитале. Доступно: {current_balance}₽, требуется: {purchase_amount}₽"
+        )
+    
     # Generate payment schedule
     schedule = generate_payment_schedule(client.start_date, client.monthly_payment, client.months)
     end_date = schedule[-1].payment_date if schedule else client.start_date
