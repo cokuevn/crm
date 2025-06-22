@@ -3129,6 +3129,7 @@ const MainApp = () => {
   const [showAddCapitalModal, setShowAddCapitalModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const { user } = useAuth();
