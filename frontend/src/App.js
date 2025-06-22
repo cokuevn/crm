@@ -2235,6 +2235,482 @@ const Icons = {
   )
 };
 
+// Balance Management Modal
+const BalanceModal = ({ isOpen, onClose, capital, onBalanceUpdated }) => {
+  const [balance, setBalance] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (capital && isOpen) {
+      setBalance(capital.balance?.toString() || '0');
+      setError('');
+    }
+  }, [capital, isOpen]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const headers = await getAuthHeaders(user);
+      const response = await axios.put(`${API}/capitals/${capital.id}`, {
+        balance: parseFloat(balance)
+      }, { headers });
+
+      if (onBalanceUpdated) {
+        onBalanceUpdated(response.data);
+      }
+      onClose();
+    } catch (error) {
+      setError(error.response?.data?.detail || 'Ошибка при обновлении баланса');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white/95 backdrop-blur-xl rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200/50">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
+            <Icons.Wallet />
+            <span>Управление балансом</span>
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-1"
+          >
+            <Icons.Close />
+          </button>
+        </div>
+
+        {capital && (
+          <div className="mb-4 p-4 bg-blue-50/80 rounded-xl">
+            <p className="text-sm text-blue-800 font-medium">
+              Капитал: {capital.name}
+            </p>
+            <p className="text-sm text-blue-600">
+              Текущий баланс: {capital.balance?.toLocaleString() || 0}₽
+            </p>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50/80 border border-red-200/50 text-red-700 px-4 py-3 rounded-xl mb-4 flex items-center space-x-2">
+            <Icons.Warning />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+              <Icons.Money />
+              <span>Новый баланс (₽)</span>
+            </label>
+            <input
+              type="number"
+              value={balance}
+              onChange={(e) => setBalance(e.target.value)}
+              className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+              placeholder="100000"
+              required
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>Сохранение...</span>
+                </>
+              ) : (
+                <>
+                  <Icons.Check />
+                  <span>Сохранить</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Expenses Component
+const Expenses = ({ selectedCapital }) => {
+  const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (selectedCapital) {
+      fetchExpenses();
+    }
+  }, [selectedCapital]);
+
+  const fetchExpenses = async () => {
+    if (!selectedCapital) return;
+    
+    setLoading(true);
+    try {
+      const headers = await getAuthHeaders(user);
+      const response = await axios.get(`${API}/expenses`, {
+        params: { capital_id: selectedCapital.id },
+        headers
+      });
+      setExpenses(response.data);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExpenseAdded = (newExpense) => {
+    setExpenses(prev => [newExpense, ...prev]);
+    setShowAddModal(false);
+  };
+
+  const handleExpenseUpdated = (updatedExpense) => {
+    setExpenses(prev => prev.map(exp => 
+      exp.expense_id === updatedExpense.expense_id ? updatedExpense : exp
+    ));
+    setEditingExpense(null);
+  };
+
+  const handleDeleteExpense = async (expenseId) => {
+    if (!window.confirm('Вы уверены, что хотите удалить этот расход?')) return;
+
+    try {
+      const headers = await getAuthHeaders(user);
+      await axios.delete(`${API}/expenses/${expenseId}`, { headers });
+      setExpenses(prev => prev.filter(exp => exp.expense_id !== expenseId));
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      alert('Ошибка при удалении расхода');
+    }
+  };
+
+  if (!selectedCapital) {
+    return (
+      <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl">
+        <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Icons.Receipt />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">Выберите капитал</h3>
+        <p className="text-gray-600">Выберите капитал для просмотра расходов</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-purple-500 border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">Загружаем расходы...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+            <Icons.Receipt />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Расходы</h2>
+            <p className="text-gray-600">Управление расходами капитала "{selectedCapital.name}"</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center space-x-2 shadow-lg shadow-purple-600/25"
+        >
+          <Icons.Plus />
+          <span>Добавить расход</span>
+        </button>
+      </div>
+
+      {/* Expenses List */}
+      {expenses.length === 0 ? (
+        <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50">
+          <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Icons.Receipt />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Нет расходов</h3>
+          <p className="text-gray-600 mb-4">Добавьте первый расход для этого капитала</p>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
+          >
+            Добавить расход
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {expenses.map(expense => (
+            <div 
+              key={expense.expense_id}
+              className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-lg transition-all duration-300"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                    <Icons.Receipt />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{expense.description}</h3>
+                    <p className="text-sm text-gray-600">{expense.expense_date}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setEditingExpense(expense)}
+                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  >
+                    <Icons.Edit />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteExpense(expense.expense_id)}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Icons.Trash />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-gray-600">
+                  <Icons.Money />
+                  <span className="text-sm">Сумма:</span>
+                </div>
+                <span className="font-semibold text-lg text-purple-600">{expense.amount.toLocaleString()}₽</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add/Edit Expense Modal */}
+      <ExpenseModal
+        isOpen={showAddModal || !!editingExpense}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingExpense(null);
+        }}
+        expense={editingExpense}
+        capital={selectedCapital}
+        onExpenseAdded={handleExpenseAdded}
+        onExpenseUpdated={handleExpenseUpdated}
+      />
+    </div>
+  );
+};
+
+// Expense Modal Component
+const ExpenseModal = ({ isOpen, onClose, expense, capital, onExpenseAdded, onExpenseUpdated }) => {
+  const [formData, setFormData] = useState({
+    amount: '',
+    description: '',
+    expense_date: new Date().toISOString().split('T')[0]
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (expense && isOpen) {
+      setFormData({
+        amount: expense.amount?.toString() || '',
+        description: expense.description || '',
+        expense_date: expense.expense_date || new Date().toISOString().split('T')[0]
+      });
+      setError('');
+    } else if (!expense && isOpen) {
+      setFormData({
+        amount: '',
+        description: '',
+        expense_date: new Date().toISOString().split('T')[0]
+      });
+      setError('');
+    }
+  }, [expense, isOpen]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const headers = await getAuthHeaders(user);
+      const data = {
+        ...formData,
+        amount: parseFloat(formData.amount)
+      };
+
+      if (expense) {
+        // Update existing expense
+        const response = await axios.put(`${API}/expenses/${expense.expense_id}`, data, { headers });
+        if (onExpenseUpdated) {
+          onExpenseUpdated(response.data);
+        }
+      } else {
+        // Create new expense
+        data.capital_id = capital.id;
+        const response = await axios.post(`${API}/expenses`, data, { headers });
+        if (onExpenseAdded) {
+          onExpenseAdded(response.data);
+        }
+      }
+
+      onClose();
+    } catch (error) {
+      setError(error.response?.data?.detail || 'Ошибка при сохранении расхода');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white/95 backdrop-blur-xl rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200/50">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
+            <Icons.Receipt />
+            <span>{expense ? 'Редактировать расход' : 'Добавить расход'}</span>
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-lg p-1"
+          >
+            <Icons.Close />
+          </button>
+        </div>
+
+        {error && (
+          <div className="bg-red-50/80 border border-red-200/50 text-red-700 px-4 py-3 rounded-xl mb-4 flex items-center space-x-2">
+            <Icons.Warning />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+              <Icons.Receipt />
+              <span>Назначение расхода *</span>
+            </label>
+            <input
+              type="text"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200"
+              placeholder="Аренда офиса, реклама, расходные материалы..."
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+              <Icons.Money />
+              <span>Сумма расхода (₽) *</span>
+            </label>
+            <input
+              type="number"
+              name="amount"
+              value={formData.amount}
+              onChange={handleChange}
+              className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200"
+              placeholder="5000"
+              required
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+              <Icons.Calendar />
+              <span>Дата расхода *</span>
+            </label>
+            <input
+              type="date"
+              name="expense_date"
+              value={formData.expense_date}
+              onChange={handleChange}
+              className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200"
+              required
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>Сохранение...</span>
+                </>
+              ) : (
+                <>
+                  <Icons.Check />
+                  <span>{expense ? 'Обновить' : 'Добавить'}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // Payment Progress Component  
 const PaymentProgress = ({ client }) => {
   const totalPayments = client.schedule?.length || 0;
