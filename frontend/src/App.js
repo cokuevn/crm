@@ -3240,6 +3240,8 @@ const MainApp = () => {
     switch (currentPage) {
       case 'analytics':
         return <Analytics selectedCapital={selectedCapital} />;
+      case 'expenses':
+        return <Expenses selectedCapital={selectedCapital} />;
       case 'add-client':
         return (
           <AddClientForm 
@@ -3278,6 +3280,7 @@ const MainApp = () => {
         onShowAddCapital={() => setShowAddCapitalModal(true)}
         onDeleteCapital={(capital) => setShowDeleteConfirm(capital)}
         onShowExport={() => setShowExportModal(true)}
+        onShowBalanceModal={handleShowBalanceModal}
       />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
