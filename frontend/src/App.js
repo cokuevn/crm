@@ -1291,44 +1291,79 @@ const AddCapitalModal = ({ isOpen, onClose, onCapitalAdded }) => {
 
 // Navigation Component
 const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onDeleteCapital, onShowExport }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
-    <nav className="bg-white border-b border-gray-200 px-4">
-      <div className="max-w-7xl mx-auto">
+    <nav className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-8">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-2">
             <button
               onClick={() => onPageChange('dashboard')}
-              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
                 currentPage === 'dashboard'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
               }`}
             >
-              📊 Дашборд
+              <div className="flex items-center space-x-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span>Дашборд</span>
+              </div>
             </button>
             <button
               onClick={() => onPageChange('analytics')}
-              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
                 currentPage === 'analytics'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
               }`}
             >
-              📈 Аналитика
+              <div className="flex items-center space-x-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Аналитика</span>
+              </div>
             </button>
             <button
               onClick={() => onPageChange('add-client')}
-              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
                 currentPage === 'add-client'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
               }`}
             >
-              👤 Добавить клиента
+              <div className="flex items-center space-x-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Добавить клиента</span>
+              </div>
+            </button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl p-2 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isMobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
             </button>
           </div>
           
-          <div className="flex items-center space-x-4">
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center space-x-3">
             {capitals.length > 0 && (
               <div className="flex items-center space-x-2">
                 <select
@@ -1337,11 +1372,11 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                     const capital = capitals.find(c => c.id === e.target.value);
                     onCapitalChange(capital);
                   }}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-300/50 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none min-w-[180px]"
                 >
                   {capitals.map(capital => (
                     <option key={capital.id} value={capital.id}>
-                      💰 {capital.name}
+                      {capital.name}
                     </option>
                   ))}
                 </select>
@@ -1349,10 +1384,12 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                 {selectedCapital && (
                   <button
                     onClick={() => onDeleteCapital(selectedCapital)}
-                    className="px-2 py-1 bg-red-100 text-red-700 text-sm rounded-md hover:bg-red-200 transition-colors"
+                    className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
                     title="Удалить капитал"
                   >
-                    🗑️
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                   </button>
                 )}
               </div>
@@ -1360,21 +1397,155 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
             
             <button
               onClick={onShowAddCapital}
-              className="px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
+              className="px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-xl hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all shadow-lg shadow-green-500/30"
             >
-              ➕ Создать капитал
+              <div className="flex items-center space-x-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Создать капитал</span>
+              </div>
             </button>
             
             {selectedCapital && (
               <button
                 onClick={onShowExport}
-                className="px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors"
+                className="px-4 py-2 bg-purple-500 text-white text-sm font-medium rounded-xl hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-lg shadow-purple-500/30"
               >
-                📤 Экспорт
+                <div className="flex items-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Экспорт</span>
+                </div>
               </button>
             )}
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-xl">
+            <div className="px-4 pt-2 pb-6 space-y-3">
+              <button
+                onClick={() => {
+                  onPageChange('dashboard');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center space-x-3 px-4 py-3 text-left text-sm font-medium rounded-xl transition-all ${
+                  currentPage === 'dashboard'
+                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span>Дашборд</span>
+              </button>
+              <button
+                onClick={() => {
+                  onPageChange('analytics');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center space-x-3 px-4 py-3 text-left text-sm font-medium rounded-xl transition-all ${
+                  currentPage === 'analytics'
+                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Аналитика</span>
+              </button>
+              <button
+                onClick={() => {
+                  onPageChange('add-client');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center space-x-3 px-4 py-3 text-left text-sm font-medium rounded-xl transition-all ${
+                  currentPage === 'add-client'
+                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Добавить клиента</span>
+              </button>
+              
+              {/* Mobile Capital Selection */}
+              {capitals.length > 0 && (
+                <div className="pt-4 border-t border-gray-200/50">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 px-1">
+                    Капитал
+                  </label>
+                  <select
+                    value={selectedCapital?.id || ''}
+                    onChange={(e) => {
+                      const capital = capitals.find(c => c.id === e.target.value);
+                      onCapitalChange(capital);
+                    }}
+                    className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-gray-300/50 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all mb-3"
+                  >
+                    {capitals.map(capital => (
+                      <option key={capital.id} value={capital.id}>
+                        {capital.name}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {selectedCapital && (
+                    <button
+                      onClick={() => {
+                        onDeleteCapital(selectedCapital);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors mb-3"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>Удалить капитал</span>
+                    </button>
+                  )}
+                </div>
+              )}
+              
+              <div className="pt-4 border-t border-gray-200/50 space-y-3">
+                <button
+                  onClick={() => {
+                    onShowAddCapital();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-500 text-white font-medium rounded-xl hover:bg-green-600 transition-all shadow-lg shadow-green-500/30"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Создать капитал</span>
+                </button>
+                
+                {selectedCapital && (
+                  <button
+                    onClick={() => {
+                      onShowExport();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-purple-500 text-white font-medium rounded-xl hover:bg-purple-600 transition-all shadow-lg shadow-purple-500/30"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Экспорт</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
