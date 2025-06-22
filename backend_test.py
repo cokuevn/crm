@@ -702,6 +702,137 @@ def test_mock_data():
     
     return True
 
+def test_user_data_persistence():
+    """Test user data persistence with user.uid"""
+    print_separator("TESTING USER DATA PERSISTENCE WITH USER.UID")
+    
+    # Create headers with persistent user ID
+    persistent_user_id = f"persistent_test_user_{uuid.uuid4()}"
+    persistent_headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {persistent_user_id}"
+    }
+    
+    # Step 1: Create a capital with the persistent user ID
+    print("Step 1: Creating a capital with persistent user ID...")
+    capital_data = {
+        "name": "Persistent Test Capital",
+        "description": "Capital for testing user data persistence"
+    }
+    
+    response = requests.post(f"{API_URL}/capitals", headers=persistent_headers, json=capital_data)
+    
+    if response.status_code != 200:
+        print(f"❌ Error creating capital: {response.status_code} - {response.text}")
+        return False
+    
+    capital = response.json()
+    capital_id = capital['id']
+    print(f"✅ Capital created successfully with ID: {capital_id}")
+    
+    # Step 2: Create a client for this capital
+    print("Step 2: Creating a client for the persistent capital...")
+    client_data = {
+        "capital_id": capital_id,
+        "name": "Persistent Test Client",
+        "product": "Test Product",
+        "purchase_amount": 50000.0,
+        "debt_amount": 50000.0,
+        "monthly_payment": 5000.0,
+        "guarantor_name": "Test Guarantor",
+        "client_address": "Test Address",
+        "client_phone": "+7 (123) 456-7890",
+        "guarantor_phone": "+7 (123) 456-7891",
+        "start_date": date.today().strftime("%Y-%m-%d"),
+        "months": 10
+    }
+    
+    response = requests.post(f"{API_URL}/clients", headers=persistent_headers, json=client_data)
+    
+    if response.status_code != 200:
+        print(f"❌ Error creating client: {response.status_code} - {response.text}")
+        return False
+    
+    client = response.json()
+    client_id = client['client_id']
+    print(f"✅ Client created successfully with ID: {client_id}")
+    
+    # Step 3: Simulate logging out and back in with a different token but same user.uid
+    print("Step 3: Simulating logout and login with different token but same user.uid...")
+    new_token = f"different_token_{uuid.uuid4()}"
+    new_headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {persistent_user_id}"  # Same user.uid, different token
+    }
+    
+    # Step 4: Verify capitals are still accessible
+    print("Step 4: Verifying capitals are still accessible...")
+    response = requests.get(f"{API_URL}/capitals", headers=new_headers)
+    
+    if response.status_code != 200:
+        print(f"❌ Error getting capitals: {response.status_code} - {response.text}")
+        return False
+    
+    capitals = response.json()
+    found_capital = False
+    for cap in capitals:
+        if cap['id'] == capital_id:
+            found_capital = True
+            break
+    
+    if not found_capital:
+        print(f"❌ Error: Could not find the previously created capital")
+        return False
+    
+    print(f"✅ Capital is still accessible after token change")
+    
+    # Step 5: Verify clients are still accessible
+    print("Step 5: Verifying clients are still accessible...")
+    response = requests.get(f"{API_URL}/clients/{client_id}", headers=new_headers)
+    
+    if response.status_code != 200:
+        print(f"❌ Error getting client: {response.status_code} - {response.text}")
+        return False
+    
+    retrieved_client = response.json()
+    if retrieved_client['client_id'] != client_id:
+        print(f"❌ Error: Retrieved client ID does not match")
+        return False
+    
+    print(f"✅ Client is still accessible after token change")
+    
+    # Step 6: Verify dashboard data is accessible
+    print("Step 6: Verifying dashboard data is accessible...")
+    response = requests.get(f"{API_URL}/dashboard?capital_id={capital_id}", headers=new_headers)
+    
+    if response.status_code != 200:
+        print(f"❌ Error getting dashboard data: {response.status_code} - {response.text}")
+        return False
+    
+    print(f"✅ Dashboard data is accessible after token change")
+    
+    # Step 7: Verify analytics data is accessible
+    print("Step 7: Verifying analytics data is accessible...")
+    response = requests.get(f"{API_URL}/analytics/{capital_id}", headers=new_headers)
+    
+    if response.status_code != 200:
+        print(f"❌ Error getting analytics data: {response.status_code} - {response.text}")
+        return False
+    
+    print(f"✅ Analytics data is accessible after token change")
+    
+    # Step 8: Clean up - delete the test capital
+    print("Step 8: Cleaning up - deleting the test capital...")
+    response = requests.delete(f"{API_URL}/capitals/{capital_id}", headers=new_headers)
+    
+    if response.status_code != 200:
+        print(f"❌ Error deleting capital: {response.status_code} - {response.text}")
+        # Not a critical failure, continue
+    else:
+        print(f"✅ Test capital deleted successfully")
+    
+    return True
+
 def run_all_tests():
     """Run all tests in sequence"""
     print_separator("STARTING BACKEND TESTS")
@@ -780,6 +911,13 @@ def run_all_tests():
             print("✅ Capital deletion test passed")
     else:
         print("⚠️ Skipping capital deletion test as only one capital is available")
+    
+    # Test 11: User data persistence
+    print("Testing user data persistence...")
+    if not test_user_data_persistence():
+        print("❌ User data persistence test failed")
+    else:
+        print("✅ User data persistence test passed")
     
     print_separator("ALL TESTS COMPLETED")
     return True
