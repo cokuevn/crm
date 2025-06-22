@@ -1388,7 +1388,7 @@ const AddCapitalModal = ({ isOpen, onClose, onCapitalAdded }) => {
 };
 
 // Navigation Component
-const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onDeleteCapital, onShowExport }) => {
+const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onDeleteCapital, onShowExport, onShowBalanceModal }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -1428,6 +1428,21 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
               </div>
             </button>
             <button
+              onClick={() => onPageChange('expenses')}
+              className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                currentPage === 'expenses'
+                  ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                <span>Расходы</span>
+              </div>
+            </button>
+            <button
               onClick={() => onPageChange('add-client')}
               className={`px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
                 currentPage === 'add-client'
@@ -1464,31 +1479,49 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
           <div className="hidden md:flex items-center space-x-3">
             {capitals.length > 0 && (
               <div className="flex items-center space-x-2">
-                <select
-                  value={selectedCapital?.id || ''}
-                  onChange={(e) => {
-                    const capital = capitals.find(c => c.id === e.target.value);
-                    onCapitalChange(capital);
-                  }}
-                  className="px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-300/50 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none min-w-[180px]"
-                >
-                  {capitals.map(capital => (
-                    <option key={capital.id} value={capital.id}>
-                      {capital.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex flex-col">
+                  <select
+                    value={selectedCapital?.id || ''}
+                    onChange={(e) => {
+                      const capital = capitals.find(c => c.id === e.target.value);
+                      onCapitalChange(capital);
+                    }}
+                    className="px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-300/50 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none min-w-[180px]"
+                  >
+                    {capitals.map(capital => (
+                      <option key={capital.id} value={capital.id}>
+                        {capital.name}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedCapital && (
+                    <div className="text-xs text-gray-600 mt-1 px-3">
+                      Баланс: {selectedCapital.balance?.toLocaleString() || 0}₽
+                    </div>
+                  )}
+                </div>
                 
                 {selectedCapital && (
-                  <button
-                    onClick={() => onDeleteCapital(selectedCapital)}
-                    className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
-                    title="Удалить капитал"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => onShowBalanceModal(selectedCapital)}
+                      className="p-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                      title="Управление балансом"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => onDeleteCapital(selectedCapital)}
+                      className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
+                      title="Удалить капитал"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </>
                 )}
               </div>
             )}
@@ -1508,7 +1541,7 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
             {selectedCapital && (
               <button
                 onClick={onShowExport}
-                className="px-4 py-2 bg-purple-500 text-white text-sm font-medium rounded-xl hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-lg shadow-purple-500/30"
+                className="px-4 py-2 bg-indigo-500 text-white text-sm font-medium rounded-xl hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-lg shadow-indigo-500/30"
               >
                 <div className="flex items-center space-x-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
