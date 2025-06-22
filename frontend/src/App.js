@@ -391,11 +391,12 @@ const Analytics = ({ selectedCapital }) => {
   }
 
   const collectionRate = analytics.collection_rate || 0;
+  const paymentCompletionRate = analytics.payment_completion_rate || 0;
 
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center">
             <div className="p-3 bg-blue-100 rounded-lg">
@@ -440,6 +441,20 @@ const Analytics = ({ selectedCapital }) => {
 
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <div className="flex items-center">
+            <div className="p-3 bg-purple-100 rounded-lg">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Всего расходов</p>
+              <p className="text-2xl font-bold text-purple-600">{analytics.total_expenses?.toLocaleString()}₽</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <div className="flex items-center">
             <div className="p-3 bg-red-100 rounded-lg">
               <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.08 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -453,8 +468,8 @@ const Analytics = ({ selectedCapital }) => {
         </div>
       </div>
 
-      {/* Progress Ring and Financial Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Payment Statistics */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Collection Progress */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Процент сбора</h3>
@@ -468,38 +483,40 @@ const Analytics = ({ selectedCapital }) => {
           </div>
         </div>
 
-        {/* Financial Overview */}
+        {/* Payment Completion Rate */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Финансовый обзор</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Выполнение платежей</h3>
+          <div className="flex items-center justify-center">
+            <ProgressRing progress={paymentCompletionRate} color="emerald" />
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-600">
+              Оплачено {analytics.paid_payments} из {analytics.total_payments} платежей
+            </p>
+          </div>
+        </div>
+
+        {/* Financial Balance */}
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Финансовый баланс</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-600">Общая сумма</span>
-              <div className="flex items-center space-x-2">
-                <div className="w-24 bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '100%' }}></div>
-                </div>
-                <span className="text-sm font-medium text-gray-900">{analytics.total_amount?.toLocaleString()}₽</span>
-              </div>
+              <span className="text-sm font-medium text-gray-600">Текущий баланс</span>
+              <span className="text-lg font-semibold text-blue-600">{analytics.current_balance?.toLocaleString()}₽</span>
             </div>
-            
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-600">Собрано</span>
-              <div className="flex items-center space-x-2">
-                <div className="w-24 bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: `${collectionRate}%` }}></div>
-                </div>
-                <span className="text-sm font-medium text-gray-900">{analytics.total_paid?.toLocaleString()}₽</span>
-              </div>
+              <span className="text-sm font-medium text-gray-600">Всего доходов</span>
+              <span className="text-lg font-semibold text-green-600">{analytics.total_paid?.toLocaleString()}₽</span>
             </div>
-            
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-600">Осталось</span>
-              <div className="flex items-center space-x-2">
-                <div className="w-24 bg-gray-200 rounded-full h-2">
-                  <div className="bg-orange-500 h-2 rounded-full" style={{ width: `${100 - collectionRate}%` }}></div>
-                </div>
-                <span className="text-sm font-medium text-gray-900">{analytics.outstanding?.toLocaleString()}₽</span>
-              </div>
+              <span className="text-sm font-medium text-gray-600">Всего расходов</span>
+              <span className="text-lg font-semibold text-purple-600">{analytics.total_expenses?.toLocaleString()}₽</span>
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+              <span className="text-sm font-medium text-gray-900">Чистая прибыль</span>
+              <span className={`text-lg font-semibold ${analytics.net_profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {analytics.net_profit?.toLocaleString()}₽
+              </span>
             </div>
           </div>
         </div>
