@@ -944,8 +944,8 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Загружаем данные клиента...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-500 border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">Загружаем данные клиента...</p>
         </div>
       </div>
     );
@@ -954,14 +954,23 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
   if (!client) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">❌</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Клиент не найден</h3>
+        <div className="text-center p-8">
+          <div className="w-24 h-24 bg-red-100/80 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+            <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">Клиент не найден</h3>
           <button
             onClick={onBack}
-            className="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            className="px-6 py-3 bg-blue-500 text-white rounded-2xl font-semibold hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/30"
           >
-            ← Назад к списку
+            <div className="flex items-center space-x-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>Назад к списку</span>
+            </div>
           </button>
         </div>
       </div>
@@ -981,102 +990,117 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
         <div className="mb-6">
           <button
             onClick={onBack}
-            className="flex items-center text-blue-600 hover:text-blue-500 mb-4 transition-colors"
+            className="flex items-center text-blue-600 hover:text-blue-500 mb-6 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl px-2 py-1"
           >
-            ← Назад к списку клиентов
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="font-medium">Назад к списку клиентов</span>
           </button>
           
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-start justify-between">
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-gray-200/50">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
               <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                  👤 {client.name}
+                <h1 className="text-3xl font-bold text-gray-900 mb-6">
+                  {client.name}
                 </h1>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Товар</p>
-                    <p className="font-medium">📱 {client.product}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="p-4 bg-gray-50/80 rounded-2xl">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Товар</p>
+                    <p className="text-lg font-semibold text-gray-900">{client.product}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Капитал</p>
-                    <p className="font-medium">💰 {capital?.name || 'Неизвестно'}</p>
+                  <div className="p-4 bg-gray-50/80 rounded-2xl">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Капитал</p>
+                    <p className="text-lg font-semibold text-gray-900">{capital?.name || 'Неизвестно'}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Сумма покупки</p>
-                    <p className="font-medium">🛒 {(client.purchase_amount || client.total_amount || 0).toLocaleString()}₽</p>
+                  <div className="p-4 bg-gray-50/80 rounded-2xl">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Сумма покупки</p>
+                    <p className="text-lg font-semibold text-blue-600">{(client.purchase_amount || client.total_amount || 0).toLocaleString()}₽</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Долг клиента</p>
-                    <p className="font-medium">💸 {(client.debt_amount || client.total_amount || 0).toLocaleString()}₽</p>
+                  <div className="p-4 bg-gray-50/80 rounded-2xl">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Долг клиента</p>
+                    <p className="text-lg font-semibold text-red-600">{(client.debt_amount || client.total_amount || 0).toLocaleString()}₽</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Ежемесячный платёж</p>
-                    <p className="font-medium">📅 {client.monthly_payment?.toLocaleString()}₽</p>
+                  <div className="p-4 bg-gray-50/80 rounded-2xl">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Ежемесячный платёж</p>
+                    <p className="text-lg font-semibold text-purple-600">{client.monthly_payment?.toLocaleString()}₽</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Телефон</p>
-                    <p className="font-medium">📞 {client.client_phone || 'Не указан'}</p>
+                  <div className="p-4 bg-gray-50/80 rounded-2xl">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Телефон</p>
+                    <p className="text-lg font-semibold text-gray-900">{client.client_phone || 'Не указан'}</p>
                   </div>
                 </div>
 
                 {/* Дополнительная информация */}
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Адрес</p>
-                    <p className="font-medium">🏠 {client.client_address || 'Не указан'}</p>
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-4 bg-gray-50/80 rounded-2xl">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Адрес</p>
+                    <p className="text-lg font-semibold text-gray-900">{client.client_address || 'Не указан'}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Гарант</p>
-                    <p className="font-medium">🤝 {client.guarantor_name || 'Не указан'}</p>
+                  <div className="p-4 bg-gray-50/80 rounded-2xl">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Гарант</p>
+                    <p className="text-lg font-semibold text-gray-900">{client.guarantor_name || 'Не указан'}</p>
                     {client.guarantor_phone && (
-                      <p className="text-sm text-gray-500">📞 {client.guarantor_phone}</p>
+                      <p className="text-sm text-gray-600 mt-1">{client.guarantor_phone}</p>
                     )}
                   </div>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
-                <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+              <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-4">
+                <span className={`px-4 py-2 text-sm font-semibold rounded-2xl ${
                   client.status === 'active'
-                    ? 'bg-green-100 text-green-800'
+                    ? 'bg-green-100/80 text-green-800'
                     : client.status === 'overdue'
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-gray-100 text-gray-800'
+                    ? 'bg-red-100/80 text-red-800'
+                    : 'bg-gray-100/80 text-gray-800'
                 }`}>
-                  {client.status === 'active' ? '✅ Активен' : 
-                   client.status === 'overdue' ? '❌ Просрочка' : '✔️ Завершён'}
+                  {client.status === 'active' ? 'Активен' : 
+                   client.status === 'overdue' ? 'Просрочка' : 'Завершён'}
                 </span>
                 
-                <button
-                  onClick={() => setShowEditModal(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  ✏️ Редактировать
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="px-5 py-3 bg-blue-500 text-white text-sm font-semibold rounded-2xl hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-lg shadow-blue-500/30"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span>Редактировать</span>
+                    </div>
+                  </button>
 
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  🗑️ Удалить
-                </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="px-5 py-3 bg-red-500 text-white text-sm font-semibold rounded-2xl hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all shadow-lg shadow-red-500/30"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>Удалить</span>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="mt-6">
-              <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>💰 Оплачено: {totalPaid.toLocaleString()}₽</span>
-                <span>⏳ Осталось: {remainingAmount.toLocaleString()}₽</span>
+            <div className="mt-8 p-6 bg-gradient-to-r from-blue-50/80 to-purple-50/80 rounded-2xl backdrop-blur-sm">
+              <div className="flex justify-between text-sm font-medium text-gray-700 mb-3">
+                <span>Оплачено: {totalPaid.toLocaleString()}₽</span>
+                <span>Осталось: {remainingAmount.toLocaleString()}₽</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
+              <div className="w-full bg-gray-200/50 rounded-full h-4 overflow-hidden">
                 <div 
-                  className="bg-green-500 h-3 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full transition-all duration-1000 ease-out"
                   style={{ width: `${Math.min(progress, 100)}%` }}
                 ></div>
               </div>
-              <p className="text-sm text-gray-600 mt-1 text-center">
+              <p className="text-sm font-semibold text-gray-700 mt-3 text-center">
                 {progress.toFixed(1)}% выполнено
               </p>
             </div>
