@@ -1108,44 +1108,58 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
         </div>
 
         {/* Payment Schedule */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">
-              📋 График платежей
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200/50">
+          <div className="px-8 py-6 border-b border-gray-200/50">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+              <svg className="w-7 h-7 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+              График платежей
             </h2>
           </div>
           
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {client.schedule?.map((payment, index) => (
                 <div 
                   key={index}
-                  className={`border rounded-lg p-4 transition-all hover:shadow-md ${getPaymentStatusColor(payment)}`}
+                  className={`border-2 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:scale-105 ${getPaymentStatusColor(payment)}`}
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <p className="font-medium text-lg">
-                        💳 {payment.amount?.toLocaleString()}₽
-                      </p>
-                      <p className="text-sm opacity-75">
-                        📅 {formatDate(payment.payment_date)}
-                      </p>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center space-x-3">
+                      {getPaymentStatusIcon(payment)}
+                      <div>
+                        <p className="font-bold text-xl">
+                          {payment.amount?.toLocaleString()}₽
+                        </p>
+                        <p className="text-sm font-medium opacity-75">
+                          {formatDate(payment.payment_date)}
+                        </p>
+                      </div>
                     </div>
-                    <span className="text-xs font-medium">
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/50 backdrop-blur-sm">
                       {getPaymentStatusText(payment)}
                     </span>
                   </div>
                   
                   <button
                     onClick={() => setShowPaymentModal(payment)}
-                    className="w-full mt-2 px-3 py-2 bg-white bg-opacity-50 rounded border border-current hover:bg-opacity-75 transition-colors text-sm font-medium"
+                    className="w-full mt-4 px-4 py-3 bg-white/60 backdrop-blur-sm rounded-2xl border border-current hover:bg-white/80 transition-all text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    🔄 Изменить статус
+                    <div className="flex items-center justify-center space-x-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span>Изменить статус</span>
+                    </div>
                   </button>
                   
                   {payment.status === 'paid' && payment.paid_date && (
-                    <p className="text-xs opacity-75 mt-2">
-                      ✅ Оплачено {formatDate(payment.paid_date)}
+                    <p className="text-xs font-medium mt-3 text-center opacity-75">
+                      <svg className="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Оплачено {formatDate(payment.paid_date)}
                     </p>
                   )}
                 </div>
