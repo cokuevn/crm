@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Test the new Analytics page and enhanced Dashboard search functionality in the CRM system. I've just added: 1. Analytics Page: Comprehensive analytics dashboard with charts and metrics 2. Enhanced Search: Real-time search functionality in the dashboard 3. Advanced Filtering: Improved client filtering with search integration 4. Visual Analytics: Progress rings, bar charts, and financial summaries"
+user_problem_statement: "Test the enhanced CRM backend with new balance and expenses functionality. Please test: 1. Capital Balance Management 2. Automatic Balance Deduction 3. Expense Management CRUD 4. Balance Integration 5. Data Integrity"
 
 backend:
   - task: "Mock Data Initialization"
@@ -269,6 +269,81 @@ backend:
         -working: true
         -agent: "testing"
         -comment: "Successfully tested DELETE /api/capitals/{capital_id} endpoint. It correctly deletes the capital and all associated clients and payments (cascade deletion). The endpoint also properly handles error cases for non-existent capitals."
+
+  - task: "Capital Balance Management"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of capital balance management functionality."
+        -working: true
+        -agent: "testing"
+        -comment: "Successfully tested updating capital balance via PUT /api/capitals/{capital_id}. The balance is correctly updated and returned in the capital data. The endpoint works as expected, allowing balance to be increased or decreased."
+
+  - task: "Automatic Balance Deduction"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of automatic balance deduction when creating clients."
+        -working: true
+        -agent: "testing"
+        -comment: "Successfully tested automatic balance deduction when creating clients. The purchase amount is correctly deducted from the capital balance. The endpoint also properly validates that there's enough balance available before creating a client, returning a 400 error with a clear message when the balance is insufficient."
+
+  - task: "Expense Management CRUD"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of expense management CRUD operations."
+        -working: true
+        -agent: "testing"
+        -comment: "Successfully tested all expense management CRUD operations. Creating expenses via POST /api/expenses works correctly and deducts the expense amount from the capital balance. Retrieving expenses via GET /api/expenses returns the correct list of expenses. Updating expenses via PUT /api/expenses/{expense_id} works correctly, adjusting the capital balance when the expense amount changes. Deleting expenses via DELETE /api/expenses/{expense_id} works correctly, returning the expense amount to the capital balance."
+
+  - task: "Balance Integration"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of balance integration across different operations."
+        -working: true
+        -agent: "testing"
+        -comment: "Successfully tested balance integration across different operations. Expenses automatically deduct from capital balance. Balance validation works correctly for expense creation, returning a 400 error with a clear message when the balance is insufficient. Balance consistency is maintained across all operations, including client creation, expense creation, expense updates, and expense deletion."
+
+  - task: "Data Integrity"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing of data integrity for balance and expenses."
+        -working: true
+        -agent: "testing"
+        -comment: "Successfully tested data integrity for balance and expenses. Cascade deletion works correctly, deleting all associated expenses when a capital is deleted. All balance calculations are accurate, with proper deduction and restoration of funds across various operations. Mixed operations (clients + expenses) work correctly, maintaining balance consistency."
 
 frontend:
   - task: "Authentication Flow"
@@ -577,12 +652,16 @@ frontend:
 metadata:
   created_by: "testing_agent"
   version: "1.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: true
 
 test_plan:
   current_focus:
-    - "User Data Persistence with user.uid"
+    - "Capital Balance Management"
+    - "Automatic Balance Deduction"
+    - "Expense Management CRUD"
+    - "Balance Integration"
+    - "Data Integrity"
   stuck_tasks:
   test_all: false
   test_priority: "high_first"
@@ -622,3 +701,5 @@ agent_communication:
     -message: "Thoroughly tested user data persistence after switching from Firebase ID token to user.uid. Created a dedicated test script (user_persistence_test.py) that creates a user with a permanent user.uid, creates capitals and clients, then simulates logging out and back in with a different token but the same user.uid. All tests passed successfully. Verified that all user data (capitals, clients, payments) remains accessible after changing tokens. Also confirmed that all API endpoints (capitals, clients, dashboard, analytics) work correctly with the new token. The fix to use user.uid instead of Firebase ID token is working correctly and ensures data persistence across logins."
     -agent: "testing"
     -message: "Completed comprehensive testing of all backend API endpoints. All endpoints are working correctly after the frontend design updates. Successfully tested authentication and user management, capital creation and management, client CRUD operations with extended fields, dashboard data retrieval with filtering, analytics endpoints, and payment status management. The backend is responding correctly to all API calls that the updated frontend will be making. The only minor issue is that the authorization check might not be properly implemented, as requests without an Authorization header are still accepted in some cases. However, this doesn't affect the core functionality of the application."
+    -agent: "testing"
+    -message: "Completed comprehensive testing of the enhanced CRM backend with new balance and expenses functionality. All features are working correctly. Successfully tested capital balance management via PUT /api/capitals/{capital_id}, automatic balance deduction when creating clients, expense management CRUD operations, balance integration across different operations, and data integrity with cascade deletion. All balance calculations are accurate, and proper validation is in place to prevent operations with insufficient balance. The system maintains balance consistency across all operations."
