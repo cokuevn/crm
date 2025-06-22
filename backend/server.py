@@ -149,6 +149,23 @@ class Payment(BaseModel):
 class CapitalCreate(BaseModel):
     name: str
     description: Optional[str] = None
+    balance: Optional[float] = 0.0
+
+class CapitalUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    balance: Optional[float] = None
+
+class ExpenseCreate(BaseModel):
+    capital_id: str
+    amount: float
+    description: str
+    expense_date: str
+
+class ExpenseUpdate(BaseModel):
+    amount: Optional[float] = None
+    description: Optional[str] = None
+    expense_date: Optional[str] = None
 
 class ClientCreate(BaseModel):
     capital_id: str
