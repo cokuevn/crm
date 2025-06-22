@@ -93,6 +93,7 @@ class Capital(BaseModel):
     name: str
     owner_id: str  # uid
     description: Optional[str] = None
+    balance: float = 0.0  # Баланс капитала
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = True
 
