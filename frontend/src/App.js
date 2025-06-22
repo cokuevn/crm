@@ -2088,6 +2088,94 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
   );
 };
 
+// SVG Icons Component
+const Icons = {
+  Search: () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+  ),
+  User: () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  ),
+  Phone: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+    </svg>
+  ),
+  Location: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  ),
+  Money: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+    </svg>
+  ),
+  Calendar: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  ),
+  Clock: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  Warning: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.08 16.5c-.77.833.192 2.5 1.732 2.5z" />
+    </svg>
+  ),
+  Close: () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  ),
+  Check: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    </svg>
+  ),
+  Grid: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+    </svg>
+  ),
+  Device: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>
+  )
+};
+
+// Payment Progress Component  
+const PaymentProgress = ({ client }) => {
+  const totalPayments = client.schedule?.length || 0;
+  const paidPayments = client.schedule?.filter(p => p.status === 'paid').length || 0;
+  const progress = totalPayments > 0 ? (paidPayments / totalPayments) * 100 : 0;
+  
+  return (
+    <div className="w-full">
+      <div className="flex justify-between text-xs text-gray-600 mb-1">
+        <span>Прогресс платежей</span>
+        <span>{paidPayments}/{totalPayments}</span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+        <div 
+          className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <div className="text-xs text-gray-500 mt-1">{progress.toFixed(0)}% выполнено</div>
+    </div>
+  );
+};
+
 // Dashboard Component
 const Dashboard = ({ selectedCapital, onClientClick }) => {
   const [dashboardData, setDashboardData] = useState({
@@ -2165,9 +2253,11 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
 
   if (!selectedCapital) {
     return (
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">💰</div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Выберите капитал</h3>
+      <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl">
+        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Icons.Money />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">Выберите капитал</h3>
         <p className="text-gray-600">Создайте или выберите капитал для просмотра дашборда</p>
       </div>
     );
@@ -2177,8 +2267,8 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Загружаем дашборд...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-500 border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">Загружаем дашборд...</p>
         </div>
       </div>
     );
@@ -2186,8 +2276,8 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
 
   return (
     <div className="space-y-6">
-      {/* Search Bar */}
-      <div className="bg-white rounded-lg shadow-sm p-4">
+      {/* Modern iOS-style Search Bar */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-4">
         <div className="flex items-center space-x-4">
           <div className="flex-1 relative">
             <input
@@ -2195,78 +2285,85 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
               placeholder="Поиск по имени, товару или ID клиента..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-11 pr-4 py-3 bg-gray-50/80 border-0 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all duration-200 placeholder-gray-500"
             />
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span className="text-gray-400">🔍</span>
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <div className="text-gray-400">
+                <Icons.Search />
+              </div>
             </div>
           </div>
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="px-3 py-2 text-gray-500 hover:text-gray-700 transition-colors"
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              ✕
+              <Icons.Close />
             </button>
           )}
         </div>
       </div>
 
-      {/* Filter Buttons */}
+      {/* iOS-style Filter Buttons */}
       <div className="flex flex-wrap gap-3">
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+          className={`px-5 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
             filter === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
+              : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white border border-gray-200/50'
           }`}
         >
-          📋 Все клиенты ({dashboardData.all_clients?.length || 0})
+          <Icons.Grid />
+          <span>Все клиенты ({dashboardData.all_clients?.length || 0})</span>
         </button>
         <button
           onClick={() => setFilter('today')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+          className={`px-5 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
             filter === 'today'
-              ? 'bg-yellow-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+              ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
+              : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white border border-gray-200/50'
           }`}
         >
-          📅 Сегодня ({dashboardData.today?.length || 0})
+          <Icons.Calendar />
+          <span>Сегодня ({dashboardData.today?.length || 0})</span>
         </button>
         <button
           onClick={() => setFilter('tomorrow')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+          className={`px-5 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
             filter === 'tomorrow'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+              ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+              : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white border border-gray-200/50'
           }`}
         >
-          ⏰ Завтра ({dashboardData.tomorrow?.length || 0})
+          <Icons.Clock />
+          <span>Завтра ({dashboardData.tomorrow?.length || 0})</span>
         </button>
         <button
           onClick={() => setFilter('overdue')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+          className={`px-5 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
             filter === 'overdue'
-              ? 'bg-red-600 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+              ? 'bg-red-500 text-white shadow-lg shadow-red-500/25'
+              : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white border border-gray-200/50'
           }`}
         >
-          ⚠️ Просрочено ({dashboardData.overdue?.length || 0})
+          <Icons.Warning />
+          <span>Просрочено ({dashboardData.overdue?.length || 0})</span>
         </button>
       </div>
 
       {/* Search Results Info */}
       {searchTerm && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50/80 backdrop-blur-sm border border-blue-200/50 rounded-xl p-4">
           <div className="flex items-center justify-between">
-            <span className="text-blue-800">
-              🔍 Поиск: "{searchTerm}" • Найдено: {filteredClients.length} клиентов
-            </span>
+            <div className="flex items-center space-x-2 text-blue-800">
+              <Icons.Search />
+              <span>Поиск: "{searchTerm}" • Найдено: {filteredClients.length} клиентов</span>
+            </div>
             {filteredClients.length === 0 && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Очистить поиск
               </button>
@@ -2277,11 +2374,11 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
 
       {/* Client List */}
       {filteredClients.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-          <div className="text-6xl mb-4">
-            {searchTerm ? '🔍' : filter === 'today' ? '📅' : filter === 'tomorrow' ? '⏰' : filter === 'overdue' ? '⚠️' : '👥'}
+        <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            {searchTerm ? <Icons.Search /> : filter === 'today' ? <Icons.Calendar /> : filter === 'tomorrow' ? <Icons.Clock /> : filter === 'overdue' ? <Icons.Warning /> : <Icons.Grid />}
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
             {searchTerm 
               ? 'Клиенты не найдены' 
               : filter === 'today' 
@@ -2304,7 +2401,7 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
             >
               Очистить поиск
             </button>
@@ -2316,54 +2413,88 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
             {filteredClients.map(client => (
               <div 
                 key={client.client_id}
-                className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-6 hover:shadow-lg hover:shadow-gray-200/50 transition-all duration-300 cursor-pointer group"
                 onClick={() => onClientClick(client.client_id)}
               >
+                {/* Header with status */}
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900 mb-1">
-                      👤 {client.name}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      📱 {client.product}
-                    </p>
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      client.status === 'active' 
+                        ? 'bg-green-100 text-green-600' 
+                        : client.status === 'overdue'
+                        ? 'bg-red-100 text-red-600'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      <Icons.User />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                        {client.name}
+                      </h3>
+                      <div className="flex items-center space-x-1 text-sm text-gray-600">
+                        <Icons.Device />
+                        <span className="truncate">{client.product}</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ${
                     client.status === 'active'
                       ? 'bg-green-100 text-green-800'
                       : client.status === 'overdue'
                       ? 'bg-red-100 text-red-800'
                       : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {client.status === 'active' ? '✅' : client.status === 'overdue' ? '❌' : '✔️'}
+                    {client.status === 'active' ? 'Активен' : client.status === 'overdue' ? 'Просрочен' : 'Завершён'}
                   </span>
                 </div>
 
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">💰 Долг:</span>
-                    <span className="font-medium">{(client.debt_amount || client.total_amount || 0).toLocaleString()}₽</span>
+                {/* Client Info */}
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-2 text-gray-600">
+                      <Icons.Money />
+                      <span>Долг:</span>
+                    </div>
+                    <span className="font-semibold text-gray-900">{(client.debt_amount || client.total_amount || 0).toLocaleString()}₽</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">📞 Телефон:</span>
-                    <span className="font-medium">{client.client_phone || 'Не указан'}</span>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-2 text-gray-600">
+                      <Icons.Phone />
+                      <span>Телефон:</span>
+                    </div>
+                    <span className="font-medium text-gray-700">{client.client_phone || 'Не указан'}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">🏠 Адрес:</span>
-                    <span className="font-medium text-right">{client.client_address || 'Не указан'}</span>
+                  <div className="flex items-start justify-between text-sm">
+                    <div className="flex items-center space-x-2 text-gray-600">
+                      <Icons.Location />
+                      <span>Адрес:</span>
+                    </div>
+                    <span className="font-medium text-gray-700 text-right max-w-[60%] break-words">{client.client_address || 'Не указан'}</span>
                   </div>
                 </div>
 
+                {/* Filter reason badge */}
                 {client.filterReason && (
-                  <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
-                    ⚠️ {client.filterReason}
+                  <div className="mb-4 p-3 bg-orange-50/80 border border-orange-200/50 rounded-xl text-sm text-orange-800 flex items-center space-x-2">
+                    <Icons.Warning />
+                    <span>{client.filterReason}</span>
                   </div>
                 )}
 
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between text-sm text-gray-600">
-                    <span>📅 Платёж:</span>
-                    <span className="font-medium">{client.monthly_payment?.toLocaleString()}₽/мес</span>
+                {/* Progress bar */}
+                <div className="mb-4">
+                  <PaymentProgress client={client} />
+                </div>
+
+                {/* Monthly payment */}
+                <div className="pt-4 border-t border-gray-200/50">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-2 text-gray-600">
+                      <Icons.Calendar />
+                      <span>Ежемесячный платёж:</span>
+                    </div>
+                    <span className="font-semibold text-blue-600">{client.monthly_payment?.toLocaleString()}₽</span>
                   </div>
                 </div>
               </div>
