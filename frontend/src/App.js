@@ -1771,6 +1771,7 @@ const LoginPage = () => {
 };
 
 // Add Client Form Component
+// Enhanced AddClientForm Component with iOS Design
 const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
   const [formData, setFormData] = useState({
     capital_id: selectedCapital?.id || '',
@@ -1842,247 +1843,303 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Auto-fill debt amount if purchase amount changes and debt is empty
+    if (name === 'purchase_amount' && !formData.debt_amount) {
+      setFormData(prev => ({ ...prev, debt_amount: value }));
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="bg-white rounded-lg shadow-sm p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">👤 Добавить нового клиента</h2>
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
         
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-            {error}
+        {/* Header */}
+        <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200/50">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <Icons.User />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Добавить нового клиента</h2>
+              <p className="text-gray-600 mt-1">Заполните информацию о клиенте и условиях рассрочки</p>
+            </div>
           </div>
-        )}
-        
-        {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
-            {success}
-          </div>
-        )}
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Капитал
-            </label>
-            <select
-              name="capital_id"
-              value={formData.capital_id}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            >
-              <option value="">Выберите капитал</option>
-              {capitals.map(capital => (
-                <option key={capital.id} value={capital.id}>
-                  {capital.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="p-8">
+          {error && (
+            <div className="bg-red-50/80 backdrop-blur-sm border border-red-200/50 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-center space-x-2">
+              <Icons.Warning />
+              <span>{error}</span>
+            </div>
+          )}
+          
+          {success && (
+            <div className="bg-green-50/80 backdrop-blur-sm border border-green-200/50 text-green-700 px-4 py-3 rounded-xl mb-6 flex items-center space-x-2">
+              <Icons.Check />
+              <span>{success}</span>
+            </div>
+          )}
 
-          {/* Основная информация клиента */}
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">📋 Основная информация</h3>
+          <form onSubmit={handleSubmit} className="space-y-8">
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ФИО клиента *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Иванов Иван Иванович"
-                  required
-                />
+            {/* Capital Selection */}
+            <div className="bg-gray-50/50 rounded-xl p-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <Icons.Money />
+                <h3 className="text-lg font-semibold text-gray-900">Выбор капитала</h3>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Товар *
-                </label>
-                <input
-                  type="text"
-                  name="product"
-                  value={formData.product}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="iPhone 15 Pro"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Адрес клиента
-                </label>
-                <input
-                  type="text"
-                  name="client_address"
-                  value={formData.client_address}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="г. Москва, ул. Ленина, д. 1, кв. 1"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Телефон клиента
-                </label>
-                <input
-                  type="tel"
-                  name="client_phone"
-                  value={formData.client_phone}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="+7 (123) 456-78-90"
-                />
-              </div>
+              <select
+                name="capital_id"
+                value={formData.capital_id}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                required
+              >
+                <option value="">Выберите капитал</option>
+                {capitals.map(capital => (
+                  <option key={capital.id} value={capital.id}>
+                    {capital.name}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
 
-          {/* Финансовая информация */}
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">💰 Финансовая информация</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Сумма покупки (₽) *
-                </label>
-                <input
-                  type="number"
-                  name="purchase_amount"
-                  value={formData.purchase_amount}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                  min="0"
-                  step="0.01"
-                  placeholder="120000"
-                />
+            {/* Client Information */}
+            <div className="bg-blue-50/30 rounded-xl p-6">
+              <div className="flex items-center space-x-2 mb-6">
+                <Icons.User />
+                <h3 className="text-lg font-semibold text-gray-900">Основная информация</h3>
               </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Icons.User />
+                    <span>ФИО клиента *</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    placeholder="Иванов Иван Иванович"
+                    required
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Долг клиента (₽) *
-                </label>
-                <input
-                  type="number"
-                  name="debt_amount"
-                  value={formData.debt_amount}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                  min="0"
-                  step="0.01"
-                  placeholder="120000"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Icons.Device />
+                    <span>Товар *</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="product"
+                    value={formData.product}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    placeholder="iPhone 15 Pro"
+                    required
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ежемесячный платёж (₽) *
-                </label>
-                <input
-                  type="number"
-                  name="monthly_payment"
-                  value={formData.monthly_payment}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                  min="0"
-                  step="0.01"
-                  placeholder="10000"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Icons.Location />
+                    <span>Адрес клиента</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="client_address"
+                    value={formData.client_address}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    placeholder="г. Москва, ул. Ленина, д. 1, кв. 1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Icons.Phone />
+                    <span>Телефон клиента</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="client_phone"
+                    value={formData.client_phone}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    placeholder="+7 (123) 456-78-90"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Количество месяцев *
-                </label>
-                <input
-                  type="number"
-                  name="months"
-                  value={formData.months}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                  min="1"
-                  max="60"
-                  placeholder="12"
-                />
+            {/* Financial Information */}
+            <div className="bg-green-50/30 rounded-xl p-6">
+              <div className="flex items-center space-x-2 mb-6">
+                <Icons.Money />
+                <h3 className="text-lg font-semibold text-gray-900">Финансовая информация</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Icons.Money />
+                    <span>Сумма покупки (₽) *</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="purchase_amount"
+                    value={formData.purchase_amount}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    required
+                    min="0"
+                    step="0.01"
+                    placeholder="120000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Icons.Money />
+                    <span>Долг клиента (₽) *</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="debt_amount"
+                    value={formData.debt_amount}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    required
+                    min="0"
+                    step="0.01"
+                    placeholder="120000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Icons.Calendar />
+                    <span>Ежемесячный платёж (₽) *</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="monthly_payment"
+                    value={formData.monthly_payment}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    required
+                    min="0"
+                    step="0.01"
+                    placeholder="10000"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Дата начала рассрочки *
-                </label>
-                <input
-                  type="date"
-                  name="start_date"
-                  value={formData.start_date}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Icons.Clock />
+                    <span>Количество месяцев *</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="months"
+                    value={formData.months}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    required
+                    min="1"
+                    max="60"
+                    placeholder="12"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Icons.Calendar />
+                    <span>Дата начала рассрочки *</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="start_date"
+                    value={formData.start_date}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    required
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Информация о гаранте */}
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">🤝 Информация о гаранте</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ФИО гаранта
-                </label>
-                <input
-                  type="text"
-                  name="guarantor_name"
-                  value={formData.guarantor_name}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Иванова Мария Петровна"
-                />
+            {/* Guarantor Information */}
+            <div className="bg-purple-50/30 rounded-xl p-6">
+              <div className="flex items-center space-x-2 mb-6">
+                <Icons.User />
+                <h3 className="text-lg font-semibold text-gray-900">Информация о гаранте</h3>
+                <span className="text-sm text-gray-500">(необязательно)</span>
               </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Icons.User />
+                    <span>ФИО гаранта</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="guarantor_name"
+                    value={formData.guarantor_name}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    placeholder="Иванова Мария Петровна"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Телефон гаранта
-                </label>
-                <input
-                  type="tel"
-                  name="guarantor_phone"
-                  value={formData.guarantor_phone}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="+7 (123) 456-78-91"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center space-x-2">
+                    <Icons.Phone />
+                    <span>Телефон гаранта</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="guarantor_phone"
+                    value={formData.guarantor_phone}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                    placeholder="+7 (123) 456-78-91"
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex justify-end space-x-3 pt-6">
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-8 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Добавление...' : '👤 Добавить клиента'}
-            </button>
-          </div>
-        </form>
+            {/* Submit Button */}
+            <div className="flex justify-end pt-6 border-t border-gray-200/50">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/25 flex items-center space-x-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Добавление...</span>
+                  </>
+                ) : (
+                  <>
+                    <Icons.User />
+                    <span>Добавить клиента</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
