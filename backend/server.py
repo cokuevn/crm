@@ -544,6 +544,137 @@ async def get_payments(capital_id: Optional[str] = None, current_user: str = Dep
     payments = await db.payments.find(query).to_list(1000)
     return [Payment(**mongo_to_dict(payment)) for payment in payments]
 
+# Expense management
+@api_router.post("/expenses", response_model=Expense)
+async def create_expense(expense: ExpenseCreate, current_user: str = Depends(get_current_user)):
+    # Verify capital ownership
+    capital = await db.capitals.find_one({"id": expense.capital_id, "owner_id": current_user})
+    if not capital:
+        raise HTTPException(status_code=404, detail="Capital not found")
+    
+    # Check if there's enough balance for the expense
+    current_balance = capital.get("balance", 0.0)
+    if current_balance < expense.amount:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Недостаточно средств в капитале. Доступно: {current_balance}₽, требуется: {expense.amount}₽"
+        )
+    
+    expense_obj = Expense(**expense.dict())
+    await db.expenses.insert_one(expense_obj.dict())
+    
+    # Deduct the expense amount from capital balance
+    new_balance = current_balance - expense.amount
+    await db.capitals.update_one(
+        {"id": expense.capital_id},
+        {"$set": {"balance": new_balance}}
+    )
+    
+    return expense_obj
+
+@api_router.get("/expenses", response_model=List[Expense])
+async def get_expenses(capital_id: Optional[str] = None, current_user: str = Depends(get_current_user)):
+    # Get user's capitals
+    user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+    capital_ids = [cap["id"] for cap in user_capitals]
+    
+    query = {"capital_id": {"$in": capital_ids}}
+    if capital_id:
+        if capital_id not in capital_ids:
+            raise HTTPException(status_code=403, detail="Access denied")
+        query = {"capital_id": capital_id}
+    
+    expenses = await db.expenses.find(query).sort("created_at", -1).to_list(1000)
+    return [Expense(**mongo_to_dict(expense)) for expense in expenses]
+
+@api_router.get("/expenses/{expense_id}", response_model=Expense)
+async def get_expense(expense_id: str, current_user: str = Depends(get_current_user)):
+    # Get user's capitals
+    user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+    capital_ids = [cap["id"] for cap in user_capitals]
+    
+    expense = await db.expenses.find_one({"expense_id": expense_id, "capital_id": {"$in": capital_ids}})
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    return Expense(**mongo_to_dict(expense))
+
+@api_router.put("/expenses/{expense_id}", response_model=Expense)
+async def update_expense(expense_id: str, updates: ExpenseUpdate, current_user: str = Depends(get_current_user)):
+    # Get user's capitals
+    user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+    capital_ids = [cap["id"] for cap in user_capitals]
+    
+    # Get the original expense
+    original_expense = await db.expenses.find_one({"expense_id": expense_id, "capital_id": {"$in": capital_ids}})
+    if not original_expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    
+    # Convert updates to dict and filter out None values
+    update_dict = {k: v for k, v in updates.dict().items() if v is not None}
+    
+    # If amount is being updated, adjust the capital balance
+    if "amount" in update_dict:
+        capital = await db.capitals.find_one({"id": original_expense["capital_id"]})
+        if capital:
+            original_amount = original_expense["amount"]
+            new_amount = update_dict["amount"]
+            amount_difference = new_amount - original_amount
+            
+            current_balance = capital.get("balance", 0.0)
+            if current_balance < amount_difference:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Недостаточно средств в капитале для увеличения расхода на {amount_difference}₽"
+                )
+            
+            # Update capital balance
+            new_balance = current_balance - amount_difference
+            await db.capitals.update_one(
+                {"id": original_expense["capital_id"]},
+                {"$set": {"balance": new_balance}}
+            )
+    
+    if update_dict:
+        result = await db.expenses.update_one(
+            {"expense_id": expense_id, "capital_id": {"$in": capital_ids}},
+            {"$set": update_dict}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Expense not found")
+    
+    updated_expense = await db.expenses.find_one({"expense_id": expense_id})
+    return Expense(**mongo_to_dict(updated_expense))
+
+@api_router.delete("/expenses/{expense_id}")
+async def delete_expense(expense_id: str, current_user: str = Depends(get_current_user)):
+    # Get user's capitals
+    user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+    capital_ids = [cap["id"] for cap in user_capitals]
+    
+    # Get the expense to return the amount to balance
+    expense = await db.expenses.find_one({"expense_id": expense_id, "capital_id": {"$in": capital_ids}})
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    
+    # Delete the expense
+    result = await db.expenses.delete_one({"expense_id": expense_id, "capital_id": {"$in": capital_ids}})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    
+    # Return the expense amount to capital balance
+    capital = await db.capitals.find_one({"id": expense["capital_id"]})
+    if capital:
+        current_balance = capital.get("balance", 0.0)
+        new_balance = current_balance + expense["amount"]
+        await db.capitals.update_one(
+            {"id": expense["capital_id"]},
+            {"$set": {"balance": new_balance}}
+        )
+    
+    return {"message": "Expense deleted successfully"}
+
 # Analytics
 @api_router.get("/analytics/{capital_id}")
 async def get_capital_analytics(capital_id: str, current_user: str = Depends(get_current_user)):
