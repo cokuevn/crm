@@ -129,6 +129,14 @@ class Client(BaseModel):
         """Get debt amount, falling back to total_amount for old data"""
         return self.debt_amount or self.total_amount or 0
 
+class Expense(BaseModel):
+    expense_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    capital_id: str
+    amount: float
+    description: str  # Назначение расхода
+    expense_date: str  # Дата расхода
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 class Payment(BaseModel):
     payment_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     client_id: str
