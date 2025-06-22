@@ -738,13 +738,15 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
     capital1 = Capital(
         name="Основной капитал",
         owner_id=current_user,
-        description="Основной капитал для рассрочки электроники"
+        description="Основной капитал для рассрочки электроники",
+        balance=500000.0  # Начальный баланс 500,000₽
     )
     
     capital2 = Capital(
         name="Дополнительный фонд",
         owner_id=current_user,
-        description="Дополнительные средства для крупных покупок"
+        description="Дополнительные средства для крупных покупок",
+        balance=300000.0  # Начальный баланс 300,000₽
     )
     
     await db.capitals.insert_one(capital1.dict())
