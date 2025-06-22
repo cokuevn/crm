@@ -284,6 +284,28 @@ async def get_capital(capital_id: str, current_user: str = Depends(get_current_u
         raise HTTPException(status_code=404, detail="Capital not found")
     return Capital(**mongo_to_dict(capital))
 
+@api_router.put("/capitals/{capital_id}", response_model=Capital)
+async def update_capital(capital_id: str, updates: CapitalUpdate, current_user: str = Depends(get_current_user)):
+    # Verify capital ownership
+    capital = await db.capitals.find_one({"id": capital_id, "owner_id": current_user})
+    if not capital:
+        raise HTTPException(status_code=404, detail="Capital not found")
+    
+    # Convert updates to dict and filter out None values
+    update_dict = {k: v for k, v in updates.dict().items() if v is not None}
+    
+    if update_dict:
+        result = await db.capitals.update_one(
+            {"id": capital_id, "owner_id": current_user},
+            {"$set": update_dict}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Capital not found")
+    
+    updated_capital = await db.capitals.find_one({"id": capital_id})
+    return Capital(**mongo_to_dict(updated_capital))
+
 # Client management
 @api_router.post("/clients", response_model=Client)
 async def create_client(client: ClientCreate, current_user: str = Depends(get_current_user)):
