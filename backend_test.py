@@ -29,6 +29,9 @@ print(f"Using API URL: {API_URL}")
 # Test user ID (simulating Firebase auth)
 TEST_USER_ID = f"test_user_{uuid.uuid4()}"
 
+# For user persistence testing, we'll use a fixed user ID
+PERSISTENT_USER_ID = "persistent_test_user_123"
+
 # Headers for all requests
 headers = {
     "Content-Type": "application/json",
