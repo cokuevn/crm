@@ -295,11 +295,18 @@ const ExportModal = ({ isOpen, onClose, selectedCapital }) => {
 };
 
 // Progress Ring Component
-const ProgressRing = ({ progress, size = 120, strokeWidth = 8 }) => {
+const ProgressRing = ({ progress, size = 120, strokeWidth = 8, color = "emerald" }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const strokeDasharray = `${circumference} ${circumference}`;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  const colorMap = {
+    emerald: "#10b981",
+    blue: "#3b82f6",
+    purple: "#8b5cf6",
+    orange: "#f59e0b"
+  };
 
   return (
     <div className="relative inline-flex items-center justify-center">
@@ -318,7 +325,7 @@ const ProgressRing = ({ progress, size = 120, strokeWidth = 8 }) => {
           cy={size / 2}
         />
         <circle
-          stroke="#10b981"
+          stroke={colorMap[color] || colorMap.emerald}
           fill="transparent"
           strokeWidth={strokeWidth}
           strokeDasharray={strokeDasharray}
