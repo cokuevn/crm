@@ -724,13 +724,28 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
     total_payments_count = 0
     paid_payments_count = 0
     overdue_count = 0
+    current_month_expected = 0
+    monthly_profits = {}
     
     today = date.today()
+    current_month = today.strftime("%Y-%m")
+    
+    # Initialize 12 months of data (current year)
+    for month in range(1, 13):
+        month_key = f"{today.year}-{month:02d}"
+        monthly_profits[month_key] = {"income": 0, "expenses": 0, "profit": 0}
     
     for client in clients:
         # Use debt_amount if available, otherwise fall back to total_amount
         debt = client.get("debt_amount") or client.get("total_amount", 0)
         total_debt += debt
+        
+        # Get contract date to determine profit attribution month
+        try:
+            contract_date = datetime.strptime(client.get("start_date", ""), "%Y-%m-%d")
+            contract_month = contract_date.strftime("%Y-%m")
+        except (ValueError, TypeError):
+            contract_month = current_month
         
         # Calculate from schedule
         for schedule_item in client.get("schedule", []):
@@ -738,13 +753,22 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
                 payment_date = datetime.strptime(schedule_item["payment_date"], "%Y-%m-%d").date()
                 payment_amount = schedule_item.get("amount", 0)
                 payment_status = schedule_item.get("status", "pending")
+                payment_month = payment_date.strftime("%Y-%m")
                 
                 total_payments_count += 1
+                
+                # Expected payments for current month
+                if payment_month == current_month:
+                    current_month_expected += payment_amount
                 
                 # Count paid payments and their amounts
                 if payment_status == "paid":
                     total_paid += payment_amount
                     paid_payments_count += 1
+                    
+                    # Add income to the contract month (not payment month)
+                    if contract_month in monthly_profits:
+                        monthly_profits[contract_month]["income"] += payment_amount
                 
                 # Count overdue payments
                 elif (payment_status == "overdue" or 
@@ -756,12 +780,45 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
     
     active_clients = len([c for c in clients if c["status"] == "active"])
     
-    # Get expenses for this capital
+    # Get expenses for this capital and distribute by month
     expenses = await db.expenses.find({"capital_id": capital_id}).to_list(1000)
-    total_expenses = sum(expense.get("amount", 0) for expense in expenses)
+    total_expenses = 0
+    
+    for expense in expenses:
+        expense_amount = expense.get("amount", 0)
+        total_expenses += expense_amount
+        
+        try:
+            expense_date = datetime.strptime(expense.get("expense_date", ""), "%Y-%m-%d")
+            expense_month = expense_date.strftime("%Y-%m")
+            
+            if expense_month in monthly_profits:
+                monthly_profits[expense_month]["expenses"] += expense_amount
+        except (ValueError, TypeError):
+            # If no valid date, add to current month
+            if current_month in monthly_profits:
+                monthly_profits[current_month]["expenses"] += expense_amount
+    
+    # Calculate monthly profits
+    for month_key in monthly_profits:
+        monthly_data = monthly_profits[month_key]
+        monthly_data["profit"] = monthly_data["income"] - monthly_data["expenses"]
+    
+    # Convert monthly_profits to list format for frontend
+    monthly_profits_list = []
+    for month in range(1, 13):
+        month_key = f"{today.year}-{month:02d}"
+        month_data = monthly_profits[month_key]
+        monthly_profits_list.append({
+            "month": month_key,
+            "month_name": datetime(today.year, month, 1).strftime("%B"),
+            "income": month_data["income"],
+            "expenses": month_data["expenses"],
+            "profit": month_data["profit"]
+        })
     
     return {
-        "total_amount": total_debt,  # Keep API compatibility
+        "total_amount": total_debt,
         "total_paid": total_paid,
         "outstanding": total_debt - total_paid,
         "active_clients": active_clients,
@@ -773,7 +830,9 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
         "payment_completion_rate": (paid_payments_count / total_payments_count * 100) if total_payments_count > 0 else 0,
         "total_expenses": total_expenses,
         "current_balance": capital.get("balance", 0),
-        "net_profit": total_paid - total_expenses  # Доходы минус расходы
+        "net_profit": total_paid - total_expenses,
+        "current_month_expected": current_month_expected,
+        "monthly_profits": monthly_profits_list
     }
 
 # Initialize mock data
