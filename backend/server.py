@@ -43,7 +43,7 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Initialize Firebase Admin
+# Firebase configuration (for demo mode)
 firebase_config = {
     "type": "service_account",
     "project_id": "finance-a88e4",
@@ -55,18 +55,8 @@ firebase_config = {
     "token_uri": "https://oauth2.googleapis.com/token"
 }
 
-# Initialize Firebase Admin with dummy config for demo
-try:
-    import firebase_admin
-    from firebase_admin import credentials, auth
-    
-    # Create dummy credentials for demo
-    cred = credentials.Certificate(firebase_config)
-    firebase_admin.initialize_app(cred)
-    print("Firebase Admin initialized successfully")
-except Exception as e:
-    print(f"Firebase Admin initialization failed: {e}")
-    # Continue without Firebase for demo mode
+# Note: For production, you'll need to add proper Firebase Admin credentials
+# For demo mode, we use simplified authentication
 
 # Create the main app without a prefix
 app = FastAPI(title="CRM Finance System", version="1.0.0")
