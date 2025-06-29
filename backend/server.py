@@ -166,7 +166,7 @@ class ExpenseCreate(BaseModel):
 class ExpenseUpdate(BaseModel):
     amount: Optional[float] = None
     description: Optional[str] = None
-    expense_date: Optional[str] = None
+    category: Optional[str] = None
 
 class ClientCreate(BaseModel):
     capital_id: str
