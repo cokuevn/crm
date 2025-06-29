@@ -1474,30 +1474,38 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                   <label className="block text-sm font-medium text-gray-700 mb-2 px-1">
                     Капитал
                   </label>
-                  <select
-                    value={selectedCapital?.id || ''}
-                    onChange={(e) => {
-                      if (e.target.value === 'delete') {
-                        onDeleteCapital(selectedCapital);
-                        setIsMobileMenuOpen(false);
-                        return;
-                      }
-                      const capital = capitals.find(c => c.id === e.target.value);
-                      onCapitalChange(capital);
-                    }}
-                    className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-gray-300/50 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all mb-3"
-                  >
-                    {capitals.map(capital => (
-                      <option key={capital.id} value={capital.id}>
-                        {capital.name}
-                      </option>
-                    ))}
+                  <div className="flex items-center space-x-2 mb-3">
+                    <select
+                      value={selectedCapital?.id || ''}
+                      onChange={(e) => {
+                        const capital = capitals.find(c => c.id === e.target.value);
+                        onCapitalChange(capital);
+                      }}
+                      className="flex-1 px-4 py-3 bg-white/80 backdrop-blur-sm border border-gray-300/50 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    >
+                      {capitals.map(capital => (
+                        <option key={capital.id} value={capital.id}>
+                          {capital.name}
+                        </option>
+                      ))}
+                    </select>
+                    
+                    {/* Delete icon for current capital */}
                     {selectedCapital && (
-                      <option value="delete" style={{color: 'red'}}>
-                        🗑️ Удалить "{selectedCapital.name}"
-                      </option>
+                      <button
+                        onClick={() => {
+                          onDeleteCapital(selectedCapital);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors"
+                        title={`Удалить "${selectedCapital.name}"`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     )}
-                  </select>
+                  </div>
                   
                   {/* Mobile Clickable Balance */}
                   {selectedCapital && (
