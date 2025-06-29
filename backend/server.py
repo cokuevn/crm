@@ -55,8 +55,18 @@ firebase_config = {
     "token_uri": "https://oauth2.googleapis.com/token"
 }
 
-# Note: For production, you'll need to add proper Firebase Admin credentials
-# For now, we'll handle Firebase verification on frontend and pass user data
+# Initialize Firebase Admin with dummy config for demo
+try:
+    import firebase_admin
+    from firebase_admin import credentials, auth
+    
+    # Create dummy credentials for demo
+    cred = credentials.Certificate(firebase_config)
+    firebase_admin.initialize_app(cred)
+    print("Firebase Admin initialized successfully")
+except Exception as e:
+    print(f"Firebase Admin initialization failed: {e}")
+    # Continue without Firebase for demo mode
 
 # Create the main app without a prefix
 app = FastAPI(title="CRM Finance System", version="1.0.0")
