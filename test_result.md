@@ -648,6 +648,21 @@ frontend:
         -working: true
         -agent: "testing"
         -comment: "Comprehensive testing confirms enhanced client display is working correctly. Client cards in the dashboard show phone and address information. The client details page displays all client information including name, product, capital, purchase amount, debt amount, monthly payment, phone, address, and guarantor information when available. The payment schedule is displayed with correct formatting and color coding based on payment status."
+        
+  - task: "Client Import Functionality"
+    implemented: true
+    working: false
+    file: "/app/frontend/src/App.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Testing the client import functionality including JSON import, automatic balance deduction, and multiple client import."
+        -working: false
+        -agent: "testing"
+        -comment: "Unable to fully test the client import functionality due to issues with capital creation. When trying to create a new capital, the system shows an error and the capital is not created. This prevents testing the import functionality as it requires a selected capital. The import button is visible in the UI, but without a capital, the import modal cannot be properly tested. The capital creation issue appears to be a backend problem, as the UI correctly sends the request but the capital is not created."
 
 metadata:
   created_by: "testing_agent"
