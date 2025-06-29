@@ -2020,7 +2020,7 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
                 ) : (
                   <>
                     <Icons.User />
-                    <span>Добавить клиента</span>
+                    <span>Клиент</span>
                   </>
                 )}
               </button>
