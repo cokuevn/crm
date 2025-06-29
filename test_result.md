@@ -677,7 +677,9 @@ test_plan:
     - "Expense Management CRUD"
     - "Balance Integration"
     - "Data Integrity"
+    - "Client Import Functionality"
   stuck_tasks:
+    - "Client Import Functionality"
   test_all: false
   test_priority: "high_first"
 
