@@ -2667,29 +2667,47 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
   };
 
   const getFilteredClients = () => {
+    // Always start with all clients as base
+    let baseClients = dashboardData.all_clients || [];
     let filteredClients = [];
     
     switch (filter) {
       case 'today':
-        filteredClients = dashboardData.today?.map(item => ({
-          ...item.client,
+        // Filter all clients to show only those with payments due today
+        const todayItems = dashboardData.today || [];
+        const todayClientIds = todayItems.map(item => item.client.client_id);
+        filteredClients = baseClients.filter(client => 
+          todayClientIds.includes(client.client_id)
+        ).map(client => ({
+          ...client,
           filterReason: 'Платёж сегодня'
-        })) || [];
+        }));
         break;
       case 'tomorrow':
-        filteredClients = dashboardData.tomorrow?.map(item => ({
-          ...item.client,
+        // Filter all clients to show only those with payments due tomorrow
+        const tomorrowItems = dashboardData.tomorrow || [];
+        const tomorrowClientIds = tomorrowItems.map(item => item.client.client_id);
+        filteredClients = baseClients.filter(client => 
+          tomorrowClientIds.includes(client.client_id)
+        ).map(client => ({
+          ...client,
           filterReason: 'Платёж завтра'
-        })) || [];
+        }));
         break;
       case 'overdue':
-        filteredClients = dashboardData.overdue?.map(item => ({
-          ...item.client,
+        // Filter all clients to show only those with overdue payments
+        const overdueItems = dashboardData.overdue || [];
+        const overdueClientIds = overdueItems.map(item => item.client.client_id);
+        filteredClients = baseClients.filter(client => 
+          overdueClientIds.includes(client.client_id)
+        ).map(client => ({
+          ...client,
           filterReason: 'Просроченный платёж'
-        })) || [];
+        }));
         break;
       default:
-        filteredClients = dashboardData.all_clients || [];
+        // Show all clients without any filtering
+        filteredClients = [...baseClients];
     }
 
     // Apply search filter
