@@ -3009,7 +3009,6 @@ const MainApp = () => {
   const [selectedCapital, setSelectedCapital] = useState(null);
   const [showAddCapitalModal, setShowAddCapitalModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const [showExportModal, setShowExportModal] = useState(false);
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [notifications, setNotifications] = useState([]);
