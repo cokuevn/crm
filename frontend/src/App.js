@@ -1258,7 +1258,7 @@ const AddCapitalModal = ({ isOpen, onClose, onCapitalAdded }) => {
                   <span>Создание...</span>
                 </div>
               ) : (
-                '+ Капитал'
+                'Капитал'
               )}
             </button>
           </div>
