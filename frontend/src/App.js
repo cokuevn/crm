@@ -1282,7 +1282,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
 };
 
 // Add Capital Modal Component
-const AddCapitalModal = ({ isOpen, onClose, onCapitalAdded }) => {
+const AddCapitalModalComponent = ({ isOpen, onClose, onCapitalAdded }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: ''
