@@ -3565,10 +3565,9 @@ const MainApp = () => {
         onClose={() => setShowImportModal(false)}
         selectedCapital={selectedCapital}
         onClientsImported={() => {
-          if (currentPage === 'dashboard') {
-            fetchDashboardData();
-          }
+          showNotification('success', 'Импорт завершен', 'Клиенты успешно импортированы');
           fetchCapitals();
+          setCurrentPage('dashboard');
         }}
       />
 
