@@ -245,20 +245,12 @@ def generate_payment_schedule(start_date_str: str, monthly_payment: float, month
 
 # Auth dependency (simplified for demo)
 async def get_current_user(authorization: Optional[str] = Header(None)) -> str:
+    # Demo mode - simplified authentication
     if authorization and authorization.startswith('Bearer '):
         token = authorization.split(' ')[1]
-        try:
-            # Verify Firebase token and get user data
-            decoded_token = auth.verify_id_token(token)
-            user_id = decoded_token['uid']  # Use user.uid for persistent identification
-            return user_id
-        except Exception as e:
-            print(f"Token verification failed: {e}")
-            # For development, if token verification fails, extract manually
-            # This handles the case where frontend sends user email directly
-            if '@' in token:
-                return token  # Use email as user_id for demo
-            return "demo_user_uid"
+        # In demo mode, just use the token as user ID
+        # In production, this would verify the Firebase token
+        return token
     
     # Fallback to demo user for requests without proper auth
     return "demo_user_uid"
