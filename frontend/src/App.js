@@ -1,7 +1,15 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 import './App.css';
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  onAuthStateChanged
+} from 'firebase/auth';
 import axios from 'axios';
 
 // Firebase configuration
@@ -1280,7 +1288,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
 };
 
 // Add Capital Modal Component
-const AddCapitalModalComponent = ({ isOpen, onClose, onCapitalAdded }) => {
+const AddCapitalModal = ({ isOpen, onClose, onCapitalAdded }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: ''
@@ -1403,8 +1411,11 @@ const AddCapitalModalComponent = ({ isOpen, onClose, onCapitalAdded }) => {
   );
 };
 
-// Login Component
+// Navigation Component
+const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onDeleteCapital, onShowExport, onShowBalanceModal }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  return (
     <nav className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -1419,7 +1430,10 @@ const AddCapitalModalComponent = ({ isOpen, onClose, onCapitalAdded }) => {
               }`}
             >
               <div className="flex items-center space-x-2">
-                <span>📊 Дашборд</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span>Дашборд</span>
               </div>
             </button>
             <button
@@ -1431,7 +1445,10 @@ const AddCapitalModalComponent = ({ isOpen, onClose, onCapitalAdded }) => {
               }`}
             >
               <div className="flex items-center space-x-2">
-                <span>📈 Аналитика</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Аналитика</span>
               </div>
             </button>
             <button
@@ -1443,7 +1460,10 @@ const AddCapitalModalComponent = ({ isOpen, onClose, onCapitalAdded }) => {
               }`}
             >
               <div className="flex items-center space-x-2">
-                <span>💸 Расходы</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                <span>Расходы</span>
               </div>
             </button>
             <button
@@ -1455,7 +1475,10 @@ const AddCapitalModalComponent = ({ isOpen, onClose, onCapitalAdded }) => {
               }`}
             >
               <div className="flex items-center space-x-2">
-                <span>+ Клиента</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Добавить клиента</span>
               </div>
             </button>
           </div>
@@ -1586,7 +1609,10 @@ const AddCapitalModalComponent = ({ isOpen, onClose, onCapitalAdded }) => {
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/70'
                 }`}
               >
-                <span>📈 Аналитика</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Аналитика</span>
               </button>
               <button
                 onClick={() => {
@@ -2164,7 +2190,7 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
                 ) : (
                   <>
                     <Icons.User />
-                    <span>+ Клиента</span>
+                    <span>Добавить клиента</span>
                   </>
                 )}
               </button>
