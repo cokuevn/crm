@@ -2169,7 +2169,7 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
                 ) : (
                   <>
                     <Icons.User />
-                    <span>Добавить клиента</span>
+                    <span>+ Клиента</span>
                   </>
                 )}
               </button>
