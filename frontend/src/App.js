@@ -3159,7 +3159,6 @@ const MainApp = () => {
         onCapitalChange={setSelectedCapital}
         onShowAddCapital={() => setShowAddCapitalModal(true)}
         onDeleteCapital={(capital) => setShowDeleteConfirm(capital)}
-        onShowExport={() => setShowExportModal(true)}
         onShowBalanceModal={handleShowBalanceModal}
       />
       
