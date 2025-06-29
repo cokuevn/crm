@@ -1269,7 +1269,7 @@ const AddCapitalModal = ({ isOpen, onClose, onCapitalAdded }) => {
 };
 
 // Navigation Component
-const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onDeleteCapital, onShowExport, onShowBalanceModal }) => {
+const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onDeleteCapital, onShowBalanceModal }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
