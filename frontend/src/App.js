@@ -151,8 +151,7 @@ const NotificationToast = ({ notifications, onClose }) => {
   );
 };
 
-// Export Modal Component  
-const ExportModal = ({ isOpen, onClose, selectedCapital }) => {
+// Progress Ring Component
   const [exportType, setExportType] = useState('csv');
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
