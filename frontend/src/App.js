@@ -3537,17 +3537,9 @@ const MainApp = () => {
         onClose={() => setShowImportModal(false)}
         selectedCapital={selectedCapital}
         onClientsImported={() => {
-          fetchDashboardData();
-          fetchCapitals();
-        }}
-      />
-
-      <ImportModal
-        isOpen={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        selectedCapital={selectedCapital}
-        onClientsImported={() => {
-          fetchDashboardData();
+          if (currentPage === 'dashboard') {
+            fetchDashboardData();
+          }
           fetchCapitals();
         }}
       />
