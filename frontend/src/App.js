@@ -2077,7 +2077,7 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
 
     try {
       const headers = await getAuthHeaders(user);
-      const response = await axios.post(`${API}/clients`, {
+      const response = await axios.post(`${API}/api/clients`, {
         ...formData,
         purchase_amount: parseFloat(formData.purchase_amount),
         debt_amount: parseFloat(formData.debt_amount),
