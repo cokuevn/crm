@@ -3542,6 +3542,16 @@ const MainApp = () => {
         }}
       />
 
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        selectedCapital={selectedCapital}
+        onClientsImported={() => {
+          fetchDashboardData();
+          fetchCapitals();
+        }}
+      />
+
       {/* Balance Modal */}
 
       {/* Delete Confirmation Modal */}
