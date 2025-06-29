@@ -3,7 +3,6 @@ import './App.css';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
 import axios from 'axios';
-import axios from 'axios';
 
 // Firebase configuration
 const firebaseConfig = {
