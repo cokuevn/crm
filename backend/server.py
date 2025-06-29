@@ -160,7 +160,7 @@ class ExpenseCreate(BaseModel):
     capital_id: str
     amount: float
     description: str
-    expense_date: str
+    category: Optional[str] = "Общие расходы"  # Добавляем категорию
 
 class ExpenseUpdate(BaseModel):
     amount: Optional[float] = None
