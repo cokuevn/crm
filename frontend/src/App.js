@@ -2645,6 +2645,9 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
   const { user } = useAuth();
 
   useEffect(() => {
+    // Reset filter when capital changes
+    setFilter('all');
+    setSearchTerm('');
     fetchDashboardData();
   }, [selectedCapital]);
 
