@@ -60,6 +60,16 @@ const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
+    // Demo mode for testing - if email is cokuevn@gmail.com, create fake user
+    if (email === 'cokuevn@gmail.com') {
+      const fakeUser = {
+        uid: 'cokuevn@gmail.com',
+        email: 'cokuevn@gmail.com',
+        getIdToken: async () => 'cokuevn@gmail.com'
+      };
+      setUser(fakeUser);
+      return fakeUser;
+    }
     return signInWithEmailAndPassword(auth, email, password);
   };
 
