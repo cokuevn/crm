@@ -1,8 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
-import Navigation from './Navigation';
-import { AddCapitalModal, BalanceModal, ImportModal } from './App_new';
 import './App.css';
 import axios from 'axios';
 
