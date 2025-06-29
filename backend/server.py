@@ -602,7 +602,9 @@ async def create_expense(expense: ExpenseCreate, current_user: str = Depends(get
             detail=f"Недостаточно средств в капитале. Доступно: {current_balance}₽, требуется: {expense.amount}₽"
         )
     
-    expense_obj = Expense(**expense.dict())
+    expense_dict = expense.dict()
+    expense_dict["expense_date"] = datetime.utcnow().strftime("%Y-%m-%d")
+    expense_obj = Expense(**expense_dict)
     await db.expenses.insert_one(expense_obj.dict())
     
     # Deduct the expense amount from capital balance
