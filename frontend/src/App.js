@@ -336,7 +336,7 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
             capital_id: selectedCapital.id
           }, { headers });
 
-          if (response.status === 200) {
+          if (response.status === 200 || response.status === 201) {
             successCount++;
           } else {
             errorCount++;
