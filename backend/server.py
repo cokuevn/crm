@@ -134,7 +134,8 @@ class Expense(BaseModel):
     capital_id: str
     amount: float
     description: str  # Назначение расхода
-    expense_date: str  # Дата расхода
+    category: str = "Общие расходы"  # Категория расхода
+    expense_date: str = Field(default_factory=lambda: datetime.utcnow().strftime("%Y-%m-%d"))  # Дата расхода
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class Payment(BaseModel):
