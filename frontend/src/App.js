@@ -1405,7 +1405,8 @@ const AddCapitalModalComponent = ({ isOpen, onClose, onCapitalAdded }) => {
   );
 };
 
-// Navigation Component
+// Duplicate Navigation Component - Commented out to fix conflict
+/*
 const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onDeleteCapital, onShowExport, onShowBalanceModal }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
