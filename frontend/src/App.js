@@ -49,15 +49,22 @@ const AuthContext = createContext();
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   useEffect(() => {
+    // Skip Firebase auth listener if in demo mode
+    if (isDemoMode) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isDemoMode]);
 
   const login = async (email, password) => {
     // Demo mode for testing - if email is cokuevn@gmail.com, create fake user
@@ -67,7 +74,9 @@ const AuthProvider = ({ children }) => {
         email: 'cokuevn@gmail.com',
         getIdToken: async () => 'cokuevn@gmail.com'
       };
+      setIsDemoMode(true);
       setUser(fakeUser);
+      setLoading(false);
       return fakeUser;
     }
     return signInWithEmailAndPassword(auth, email, password);
