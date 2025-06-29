@@ -986,6 +986,15 @@ async def auto_init_data(current_user: str = Depends(get_current_user)):
         return await init_mock_data(current_user)
     return {"message": "Data already exists", "capitals": [mongo_to_dict(capital) for capital in existing_capitals]}
 
+# Force initialize data for specific user (temporary endpoint)
+@api_router.post("/force-init-for-user")
+async def force_init_for_user(email: str):
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    
+    # Use email as user ID for initialization
+    return await init_mock_data(email)
+
 # Delete capital
 @api_router.delete("/capitals/{capital_id}")
 async def delete_capital(capital_id: str, current_user: str = Depends(get_current_user)):
