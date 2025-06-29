@@ -1526,20 +1526,7 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                   <span>Создать капитал</span>
                 </button>
                 
-                {selectedCapital && (
-                  <button
-                    onClick={() => {
-                      onShowExport();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-purple-500 text-white font-medium rounded-xl hover:bg-purple-600 transition-all shadow-lg shadow-purple-500/30"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>Экспорт</span>
-                  </button>
-                )}
+
               </div>
             </div>
           </div>
