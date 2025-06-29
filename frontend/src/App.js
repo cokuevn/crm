@@ -3180,11 +3180,6 @@ const MainApp = () => {
         onBalanceUpdated={handleBalanceUpdated}
       />
 
-      <ExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        selectedCapital={selectedCapital}
-      />
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
