@@ -204,6 +204,334 @@ const ProgressRing = ({ progress, size = 120, strokeWidth = 8, color = "emerald"
   );
 };
 
+// Import Modal Component with Excel support
+const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) => {
+  const [importData, setImportData] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [fileInputRef] = useState(React.createRef());
+  const { user } = useAuth();
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        if (file.name.endsWith('.json')) {
+          setImportData(e.target.result);
+        } else if (file.name.endsWith('.csv')) {
+          // Parse CSV to JSON format
+          const lines = e.target.result.split('\n');
+          const headers = lines[0].split(',').map(h => h.trim());
+          const jsonData = [];
+          
+          for (let i = 1; i < lines.length; i++) {
+            if (lines[i].trim()) {
+              const values = lines[i].split(',').map(v => v.trim());
+              const obj = {};
+              headers.forEach((header, index) => {
+                obj[header] = values[index] || '';
+              });
+              jsonData.push(obj);
+            }
+          }
+          setImportData(JSON.stringify(jsonData, null, 2));
+        } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+          // Parse Excel file
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          
+          // Convert to JSON with proper mapping
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          if (jsonData.length < 2) {
+            alert('Excel файл должен содержать заголовки и данные');
+            return;
+          }
+          
+          const headers = jsonData[0];
+          const mappedData = [];
+          
+          for (let i = 1; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (row.some(cell => cell && cell.toString().trim())) { // Skip empty rows
+              const clientData = {
+                name: row[0] || '', // ФИО
+                product: row[1] || '', // Товар
+                purchase_amount: parseFloat(row[2]) || 0, // Сумма покупки
+                debt_amount: parseFloat(row[3]) || 0, // Долг
+                monthly_payment: parseFloat(row[4]) || 0, // Ежемесячный платеж
+                months: parseInt(row[5]) || 12, // Количество месяцев
+                start_date: row[6] ? formatExcelDate(row[6]) : new Date().toISOString().split('T')[0], // Дата начала
+                client_address: row[7] || '', // Адрес
+                client_phone: row[8] || '', // Телефон клиента
+                guarantor_name: row[9] || '', // ФИО гаранта
+                guarantor_phone: row[10] || '' // Телефон гаранта
+              };
+              mappedData.push(clientData);
+            }
+          }
+          
+          setImportData(JSON.stringify(mappedData, null, 2));
+        }
+      } catch (error) {
+        console.error('Error reading file:', error);
+        alert('Ошибка при чтении файла: ' + error.message);
+      }
+    };
+    
+    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
+  };
+
+  const formatExcelDate = (excelDate) => {
+    // Excel dates are stored as numbers (days since 1900-01-01)
+    if (typeof excelDate === 'number') {
+      const date = XLSX.SSF.parse_date_code(excelDate);
+      return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
+    }
+    // If it's already a string, try to parse it
+    if (typeof excelDate === 'string') {
+      const parsedDate = new Date(excelDate);
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate.toISOString().split('T')[0];
+      }
+    }
+    return new Date().toISOString().split('T')[0];
+  };
+
+  const handleImport = async () => {
+    if (!importData.trim()) {
+      alert('Выберите файл для импорта');
+      return;
+    }
+
+    if (!selectedCapital) {
+      alert('Выберите капитал для импорта');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const clients = JSON.parse(importData);
+      if (!Array.isArray(clients)) {
+        throw new Error('Данные должны быть массивом клиентов');
+      }
+
+      const headers = await getAuthHeaders(user);
+      let successCount = 0;
+      let errorCount = 0;
+      const errors = [];
+
+      for (const clientData of clients) {
+        try {
+          const response = await axios.post(`${API}/clients`, {
+            ...clientData,
+            capital_id: selectedCapital.id
+          }, { headers });
+
+          if (response.status === 200) {
+            successCount++;
+          } else {
+            errorCount++;
+            errors.push(`Клиент ${clientData.name}: ${response.data.detail || 'неизвестная ошибка'}`);
+          }
+        } catch (error) {
+          errorCount++;
+          errors.push(`Клиент ${clientData.name}: ${error.response?.data?.detail || error.message}`);
+        }
+      }
+
+      let message = `Импорт завершен: ${successCount} клиентов добавлено`;
+      if (errorCount > 0) {
+        message += `, ${errorCount} ошибок`;
+        if (errors.length > 0) {
+          message += `\n\nОшибки:\n${errors.slice(0, 5).join('\n')}`;
+          if (errors.length > 5) {
+            message += `\n... и еще ${errors.length - 5} ошибок`;
+          }
+        }
+      }
+      
+      alert(message);
+      onClientsImported();
+      setImportData('');
+      onClose();
+    } catch (error) {
+      console.error('Import error:', error);
+      alert('Ошибка при импорте данных: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const sampleData = [
+    {
+      name: "Иванов Иван Иванович",
+      product: "iPhone 15",
+      purchase_amount: 120000,
+      debt_amount: 120000,
+      monthly_payment: 10000,
+      months: 12,
+      start_date: "2024-12-01",
+      client_address: "г. Москва, ул. Примерная, д. 1",
+      client_phone: "+7 999 123-45-67",
+      guarantor_name: "Иванова Мария Петровна",
+      guarantor_phone: "+7 999 123-45-68"
+    }
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-6xl w-full max-h-[85vh] overflow-auto p-6 shadow-2xl">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">
+            Импорт клиентов в "{selectedCapital?.name}"
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-1"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Загрузить файл
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json,.csv,.xlsx,.xls"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current.click()}
+                  className="text-blue-500 hover:text-blue-600 font-medium text-lg"
+                >
+                  📁 Выбрать файл
+                </button>
+                <p className="text-sm text-gray-500 mt-2">
+                  Поддерживаемые форматы:
+                </p>
+                <div className="flex justify-center gap-2 mt-1">
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">Excel (.xlsx, .xls)</span>
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">CSV</span>
+                  <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">JSON</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Данные для импорта (JSON)
+              </label>
+              <textarea
+                value={importData}
+                onChange={(e) => setImportData(e.target.value)}
+                className="w-full h-80 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-mono text-sm"
+                placeholder="Выберите файл или вставьте JSON данные..."
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-4">
+              <h4 className="text-lg font-medium text-gray-900 mb-3">
+                🔗 Структура Excel файла:
+              </h4>
+              <div className="bg-gray-50 p-4 rounded-xl text-sm overflow-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-gray-300">
+                      <th className="text-left p-1 font-medium">A</th>
+                      <th className="text-left p-1 font-medium">B</th>
+                      <th className="text-left p-1 font-medium">C</th>
+                      <th className="text-left p-1 font-medium">D</th>
+                      <th className="text-left p-1 font-medium">E</th>
+                      <th className="text-left p-1 font-medium">F</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-gray-200">
+                      <td className="p-1">ФИО</td>
+                      <td className="p-1">Товар</td>
+                      <td className="p-1">Сумма</td>
+                      <td className="p-1">Долг</td>
+                      <td className="p-1">Платеж</td>
+                      <td className="p-1">Месяцы</td>
+                    </tr>
+                    <tr className="text-gray-600">
+                      <td className="p-1">Иванов И.И.</td>
+                      <td className="p-1">iPhone 15</td>
+                      <td className="p-1">120000</td>
+                      <td className="p-1">120000</td>
+                      <td className="p-1">10000</td>
+                      <td className="p-1">12</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div className="mt-2 text-xs text-gray-600">
+                  G: Дата начала • H: Адрес • I: Телефон • J: ФИО гаранта • K: Телефон гаранта
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h5 className="font-medium text-gray-800 mb-2">📋 Пример JSON:</h5>
+              <pre className="bg-gray-50 p-3 rounded-xl text-xs overflow-auto max-h-32">
+                {JSON.stringify(sampleData[0], null, 2)}
+              </pre>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <h5 className="font-medium text-blue-800 mb-2">ℹ️ Важно:</h5>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Первая строка Excel должна содержать данные (без заголовков)</li>
+                <li>• Суммы указывайте числами без пробелов</li>
+                <li>• Даты в формате ДД.ММ.ГГГГ или ГГГГ-ММ-ДД</li>
+                <li>• Пустые строки будут пропущены</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={handleImport}
+            disabled={loading || !selectedCapital || !importData.trim()}
+            className="px-6 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-xl hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+          >
+            {loading ? '⏳ Импортирование...' : '📥 Импортировать'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Analytics Component
 const Analytics = ({ selectedCapital }) => {
   const [analytics, setAnalytics] = useState(null);
