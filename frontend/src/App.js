@@ -3180,6 +3180,7 @@ const MainApp = () => {
         onBalanceUpdated={handleBalanceUpdated}
       />
 
+      {/* Balance Modal */}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
