@@ -331,7 +331,7 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
 
       for (const clientData of clients) {
         try {
-          const response = await axios.post(`${API}/clients`, {
+          const response = await axios.post(`${API}/api/clients`, {
             ...clientData,
             capital_id: selectedCapital.id
           }, { headers });
