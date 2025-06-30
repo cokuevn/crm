@@ -2675,7 +2675,7 @@ const Expenses = ({ selectedCapital }) => {
 
     try {
       const headers = await getAuthHeaders(user);
-      await axios.delete(`${API}/expenses/${expenseId}`, { headers });
+      await axios.delete(`${API}/api/expenses/${expenseId}`, { headers });
       setExpenses(prev => prev.filter(exp => exp.expense_id !== expenseId));
     } catch (error) {
       console.error('Error deleting expense:', error);
