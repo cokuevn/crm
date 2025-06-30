@@ -1061,7 +1061,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
   const updatePaymentStatus = async (paymentDate, status) => {
     try {
       const headers = await getAuthHeaders(user);
-      const response = await axios.put(`${API}/clients/${clientId}/payments/${paymentDate}`, { status }, { headers });
+      const response = await axios.put(`${API}/api/clients/${clientId}/payments/${paymentDate}`, { status }, { headers });
       
       // Refresh client data
       fetchClientDetails();
