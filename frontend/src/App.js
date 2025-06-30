@@ -559,20 +559,21 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
                 <div className="mb-3">
                   <h6 className="font-medium text-gray-800 mb-2">Обязательные столбцы:</h6>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div><span className="font-medium">A:</span> ФИО клиента <span className="text-red-500">*</span></div>
-                    <div><span className="font-medium">B:</span> Товар <span className="text-red-500">*</span></div>
-                    <div><span className="font-medium">C:</span> Сумма покупки <span className="text-red-500">*</span></div>
-                    <div><span className="font-medium">D:</span> Долг клиента <span className="text-red-500">*</span></div>
-                    <div><span className="font-medium">E:</span> Ежемесячный взнос <span className="text-red-500">*</span></div>
-                    <div><span className="font-medium">F:</span> Дата начала <span className="text-red-500">*</span></div>
-                    <div><span className="font-medium">G:</span> Конец платежей <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">A:</span> № клиента (не используется)</div>
+                    <div><span className="font-medium">B:</span> ФИО клиента <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">C:</span> Товар <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">D:</span> Сумма покупки <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">E:</span> Долг клиента <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">F:</span> Ежемесячный взнос <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">G:</span> Дата начала <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">H:</span> Конец платежей <span className="text-red-500">*</span></div>
                   </div>
                 </div>
                 
                 <div className="mb-3">
-                  <h6 className="font-medium text-gray-800 mb-2">График платежей (столбцы H-BC):</h6>
+                  <h6 className="font-medium text-gray-800 mb-2">График платежей (столбцы I-BD):</h6>
                   <div className="text-xs text-gray-600 bg-yellow-50 p-2 rounded">
-                    <strong>H-I:</strong> Платеж 1, Статус 1 | <strong>J-K:</strong> Платеж 2, Статус 2 | ... | <strong>BA-BB:</strong> Платеж 24, Статус 24
+                    <strong>I-J:</strong> Платеж 1, Статус 1 | <strong>K-L:</strong> Платеж 2, Статус 2 | ... | <strong>BC-BD:</strong> Платеж 24, Статус 24
                     <br />
                     <em>Статусы:</em> "Выплачен", "Просрочено", "Ожидается" (или пусто)
                   </div>
@@ -581,10 +582,10 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
                 <div>
                   <h6 className="font-medium text-gray-800 mb-2">Дополнительная информация:</h6>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div><span className="font-medium">BC:</span> ФИО Гаранта</div>
-                    <div><span className="font-medium">BD:</span> Адрес клиента</div>
-                    <div><span className="font-medium">BE:</span> Телефон клиента</div>
-                    <div><span className="font-medium">BF:</span> Телефон гаранта</div>
+                    <div><span className="font-medium">BE:</span> ФИО Гаранта</div>
+                    <div><span className="font-medium">BF:</span> Адрес клиента</div>
+                    <div><span className="font-medium">BG:</span> Телефон клиента</div>
+                    <div><span className="font-medium">BH:</span> Телефон гаранта</div>
                   </div>
                 </div>
               </div>
