@@ -546,7 +546,7 @@ const Analytics = ({ selectedCapital }) => {
     try {
       setLoading(true);
       const headers = await getAuthHeaders(user);
-      const response = await axios.get(`${API}/analytics/${selectedCapital.id}`, { headers });
+      const response = await axios.get(`${API}/api/analytics/${selectedCapital.id}`, { headers });
       setAnalytics(response.data);
     } catch (error) {
       console.error('Error fetching analytics:', error);
