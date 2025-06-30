@@ -598,7 +598,6 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
                     <tr className="border-b border-gray-300">
                       <th className="text-left p-1 font-medium border-r">№</th>
                       <th className="text-left p-1 font-medium border-r">ФИО клиента</th>
-                      <th className="text-left p-1 font-medium border-r">Товар</th>
                       <th className="text-left p-1 font-medium border-r">Сумма покупки</th>
                       <th className="text-left p-1 font-medium border-r">Долг</th>
                       <th className="text-left p-1 font-medium border-r">Ежемесячный взнос</th>
@@ -610,7 +609,6 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
                     <tr className="text-gray-600 border-b">
                       <td className="p-1 border-r">106</td>
                       <td className="p-1 border-r">Иванов И.И.</td>
-                      <td className="p-1 border-r">iPhone 15 Pro</td>
                       <td className="p-1 border-r">150000</td>
                       <td className="p-1 border-r">150000</td>
                       <td className="p-1 border-r">12500</td>
