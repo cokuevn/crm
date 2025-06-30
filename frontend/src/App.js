@@ -797,7 +797,7 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
 
     try {
       const headers = await getAuthHeaders(user);
-      const response = await axios.put(`${API}/clients/${client.client_id}`, {
+      const response = await axios.put(`${API}/api/clients/${client.client_id}`, {
         ...formData,
         purchase_amount: parseFloat(formData.purchase_amount),
         debt_amount: parseFloat(formData.debt_amount),
