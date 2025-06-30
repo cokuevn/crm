@@ -10,8 +10,6 @@ from typing import List, Optional, Any, Dict
 import uuid
 from datetime import datetime, date, timedelta
 from enum import Enum
-import firebase_admin
-from firebase_admin import credentials, auth
 import json
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
