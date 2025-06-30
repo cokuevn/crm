@@ -430,7 +430,8 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
             guarantor_name: clientData.guarantor_name,
             client_address: clientData.client_address,
             client_phone: clientData.client_phone,
-            guarantor_phone: clientData.guarantor_phone
+            guarantor_phone: clientData.guarantor_phone,
+            schedule: clientData.schedule || null  // Передаем график платежей из Excel
           };
 
           const response = await axios.post(`${API}/api/clients`, clientPayload, { headers });
