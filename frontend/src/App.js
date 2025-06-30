@@ -260,7 +260,7 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
               // Extract basic client information
               const clientData = {
                 name: row[1] || '', // ФИО клиента (столбец B)
-                product: row[1] || 'Товар не указан', // Товар (пока используем ФИО как товар или укажите правильный столбец)
+                product: 'Товар не указан', // Товар отсутствует в структуре
                 purchase_amount: parseFloat(row[2]) || 0, // Сумма покупки (столбец C)
                 debt_amount: parseFloat(row[3]) || 0, // Долг (столбец D)
                 monthly_payment: parseFloat(row[4]) || 0, // Ежемесячный взнос (столбец E)
