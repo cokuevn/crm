@@ -256,19 +256,59 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
           for (let i = 1; i < jsonData.length; i++) {
             const row = jsonData[i];
             if (row.some(cell => cell && cell.toString().trim())) { // Skip empty rows
+              
+              // Extract basic client information
               const clientData = {
-                name: row[0] || '', // ФИО
+                name: row[0] || '', // ФИО клиента
                 product: row[1] || '', // Товар
                 purchase_amount: parseFloat(row[2]) || 0, // Сумма покупки
                 debt_amount: parseFloat(row[3]) || 0, // Долг
-                monthly_payment: parseFloat(row[4]) || 0, // Ежемесячный платеж
-                months: parseInt(row[5]) || 12, // Количество месяцев
-                start_date: row[6] ? formatExcelDate(row[6]) : new Date().toISOString().split('T')[0], // Дата начала
-                client_address: row[7] || '', // Адрес
-                client_phone: row[8] || '', // Телефон клиента
-                guarantor_name: row[9] || '', // ФИО гаранта
-                guarantor_phone: row[10] || '' // Телефон гаранта
+                monthly_payment: parseFloat(row[4]) || 0, // Ежемесячный взнос
+                start_date: row[5] ? formatExcelDate(row[5]) : new Date().toISOString().split('T')[0], // Дата начала
+                end_date: row[6] ? formatExcelDate(row[6]) : '', // Конец платежей
+                schedule: []
               };
+              
+              // Extract payment schedule (Платеж 1, Статус 1, ... Платеж 24, Статус 24)
+              // Starting from column 7 (index 6), pairs of payment date and status
+              for (let j = 7; j < 55; j += 2) { // 7 to 54 (24 payments * 2 columns)
+                const paymentDate = row[j];
+                const paymentStatus = row[j + 1];
+                
+                if (paymentDate && paymentDate.toString().trim()) {
+                  let status = 'pending'; // default status
+                  
+                  if (paymentStatus && paymentStatus.toString().trim()) {
+                    const statusStr = paymentStatus.toString().toLowerCase();
+                    if (statusStr.includes('оплачено') || statusStr.includes('paid') || statusStr.includes('выплачен')) {
+                      status = 'paid';
+                    } else if (statusStr.includes('просрочено') || statusStr.includes('overdue') || statusStr.includes('просрочен')) {
+                      status = 'overdue';
+                    }
+                  }
+                  
+                  clientData.schedule.push({
+                    payment_date: formatExcelDate(paymentDate),
+                    amount: clientData.monthly_payment,
+                    status: status,
+                    paid_date: status === 'paid' ? formatExcelDate(paymentDate) : null
+                  });
+                }
+              }
+              
+              // Extract additional client information (after payment columns)
+              // ФИО Гаранта, Адрес клиента, Телефон клиента, Телефон гаранта
+              const additionalInfoStartIndex = 55; // After 24 payment pairs
+              clientData.guarantor_name = row[additionalInfoStartIndex] || '';
+              clientData.client_address = row[additionalInfoStartIndex + 1] || '';
+              clientData.client_phone = row[additionalInfoStartIndex + 2] || '';
+              clientData.guarantor_phone = row[additionalInfoStartIndex + 3] || '';
+              
+              // Calculate months from schedule if not specified
+              if (!clientData.months && clientData.schedule.length > 0) {
+                clientData.months = clientData.schedule.length;
+              }
+              
               mappedData.push(clientData);
             }
           }
