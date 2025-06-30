@@ -2525,7 +2525,7 @@ const BalanceModal = ({ isOpen, onClose, capital, onBalanceUpdated }) => {
 
     try {
       const headers = await getAuthHeaders(user);
-      const response = await axios.put(`${API}/capitals/${capital.id}`, {
+      const response = await axios.put(`${API}/api/capitals/${capital.id}`, {
         balance: parseFloat(balance)
       }, { headers });
 
