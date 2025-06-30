@@ -41,20 +41,8 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Firebase configuration (for demo mode)
-firebase_config = {
-    "type": "service_account",
-    "project_id": "finance-a88e4",
-    "private_key_id": "",
-    "private_key": "",
-    "client_email": "",
-    "client_id": "",
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token"
-}
-
-# Note: For production, you'll need to add proper Firebase Admin credentials
-# For demo mode, we use simplified authentication
+# Demo mode - simplified authentication without Firebase
+print("Running in demo mode without Firebase authentication")
 
 # Create the main app without a prefix
 app = FastAPI(title="CRM Finance System", version="1.0.0")
