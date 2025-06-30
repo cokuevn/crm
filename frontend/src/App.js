@@ -28,8 +28,11 @@ const API = BACKEND_URL;
 const getAuthHeaders = async (user) => {
   if (user) {
     try {
-      // Use user.uid as the permanent user identifier
-      // This remains constant for the user, unlike tokens which change
+      // Get the actual Firebase ID token
+      const token = await user.getIdToken();
+      console.log('Firebase token:', token);
+      console.log('User UID:', user.uid);
+      
       return {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${user.uid}`
