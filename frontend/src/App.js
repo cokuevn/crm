@@ -3461,7 +3461,7 @@ const MainApp = () => {
   const handleDeleteCapital = async (capitalId) => {
     try {
       const headers = await getAuthHeaders(user);
-      await axios.delete(`${API}/capitals/${capitalId}`, { headers });
+      await axios.delete(`${API}/api/capitals/${capitalId}`, { headers });
       setCapitals(prev => prev.filter(c => c.id !== capitalId));
       
       // Select first remaining capital or null
