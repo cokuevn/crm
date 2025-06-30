@@ -2646,7 +2646,7 @@ const Expenses = ({ selectedCapital }) => {
     setLoading(true);
     try {
       const headers = await getAuthHeaders(user);
-      const response = await axios.get(`${API}/expenses`, {
+      const response = await axios.get(`${API}/api/expenses`, {
         params: { capital_id: selectedCapital.id },
         headers
       });
