@@ -3029,7 +3029,7 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
     setLoading(true);
     try {
       const headers = await getAuthHeaders(user);
-      const response = await axios.get(`${API}/dashboard`, {
+      const response = await axios.get(`${API}/api/dashboard`, {
         params: { capital_id: selectedCapital.id },
         headers
       });
