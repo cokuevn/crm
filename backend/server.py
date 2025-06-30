@@ -328,7 +328,13 @@ async def create_client(client: ClientCreate, current_user: str = Depends(get_cu
         )
     
     # Generate payment schedule
-    schedule = generate_payment_schedule(client.start_date, client.monthly_payment, client.months)
+    if client.schedule:
+        # Use provided schedule from import
+        schedule = [PaymentSchedule(**s.dict() if hasattr(s, 'dict') else s) for s in client.schedule]
+    else:
+        # Generate default schedule
+        schedule = generate_payment_schedule(client.start_date, client.monthly_payment, client.months)
+    
     end_date = schedule[-1].payment_date if schedule else client.start_date
     
     client_dict = client.dict()
