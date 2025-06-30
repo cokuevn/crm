@@ -329,18 +329,68 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
   };
 
   const formatExcelDate = (excelDate) => {
+    // Handle empty or null values
+    if (!excelDate) {
+      return new Date().toISOString().split('T')[0];
+    }
+    
     // Excel dates are stored as numbers (days since 1900-01-01)
     if (typeof excelDate === 'number') {
-      const date = XLSX.SSF.parse_date_code(excelDate);
-      return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
-    }
-    // If it's already a string, try to parse it
-    if (typeof excelDate === 'string') {
-      const parsedDate = new Date(excelDate);
-      if (!isNaN(parsedDate.getTime())) {
-        return parsedDate.toISOString().split('T')[0];
+      try {
+        const date = XLSX.SSF.parse_date_code(excelDate);
+        return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
+      } catch (error) {
+        console.warn('Failed to parse Excel date number:', excelDate);
+        return new Date().toISOString().split('T')[0];
       }
     }
+    
+    // If it's already a string, try to parse it
+    if (typeof excelDate === 'string') {
+      const trimmed = excelDate.trim();
+      if (!trimmed) return new Date().toISOString().split('T')[0];
+      
+      // Try different date formats
+      const formats = [
+        // DD.MM.YYYY or DD/MM/YYYY
+        /^(\d{1,2})[\.\/](\d{1,2})[\.\/](\d{4})$/,
+        // YYYY-MM-DD
+        /^(\d{4})-(\d{1,2})-(\d{1,2})$/,
+        // MM/DD/YYYY
+        /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+      ];
+      
+      // Try DD.MM.YYYY format first
+      const ddmmyyyy = trimmed.match(formats[0]);
+      if (ddmmyyyy) {
+        const day = ddmmyyyy[1].padStart(2, '0');
+        const month = ddmmyyyy[2].padStart(2, '0');
+        const year = ddmmyyyy[3];
+        return `${year}-${month}-${day}`;
+      }
+      
+      // Try YYYY-MM-DD format
+      const yyyymmdd = trimmed.match(formats[1]);
+      if (yyyymmdd) {
+        const year = yyyymmdd[1];
+        const month = yyyymmdd[2].padStart(2, '0');
+        const day = yyyymmdd[3].padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      
+      // Try standard Date parsing
+      try {
+        const parsedDate = new Date(trimmed);
+        if (!isNaN(parsedDate.getTime())) {
+          return parsedDate.toISOString().split('T')[0];
+        }
+      } catch (error) {
+        console.warn('Failed to parse date string:', trimmed);
+      }
+    }
+    
+    // Fallback to current date
+    console.warn('Using fallback date for:', excelDate);
     return new Date().toISOString().split('T')[0];
   };
 
