@@ -168,6 +168,7 @@ class ClientCreate(BaseModel):
     guarantor_phone: Optional[str] = None  # Телефон гаранта
     start_date: str  # Дата начала рассрочки
     months: int
+    schedule: Optional[List[PaymentSchedule]] = None  # Готовый график платежей (опционально)
 
 class ClientUpdate(BaseModel):
     name: Optional[str] = None
