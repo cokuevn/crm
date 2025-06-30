@@ -259,13 +259,13 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
               
               // Extract basic client information
               const clientData = {
-                name: row[0] || '', // ФИО клиента
-                product: row[1] || '', // Товар
-                purchase_amount: parseFloat(row[2]) || 0, // Сумма покупки
-                debt_amount: parseFloat(row[3]) || 0, // Долг
-                monthly_payment: parseFloat(row[4]) || 0, // Ежемесячный взнос
-                start_date: row[5] ? formatExcelDate(row[5]) : new Date().toISOString().split('T')[0], // Дата начала
-                end_date: row[6] ? formatExcelDate(row[6]) : '', // Конец платежей
+                name: row[1] || '', // ФИО клиента (столбец B)
+                product: row[2] || '', // Товар (столбец C)
+                purchase_amount: parseFloat(row[3]) || 0, // Сумма покупки (столбец D)
+                debt_amount: parseFloat(row[4]) || 0, // Долг (столбец E)
+                monthly_payment: parseFloat(row[5]) || 0, // Ежемесячный взнос (столбец F)
+                start_date: row[6] ? formatExcelDate(row[6]) : new Date().toISOString().split('T')[0], // Дата начала (столбец G)
+                end_date: row[7] ? formatExcelDate(row[7]) : '', // Конец платежей (столбец H)
                 schedule: []
               };
               
