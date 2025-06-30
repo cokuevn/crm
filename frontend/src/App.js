@@ -3401,7 +3401,7 @@ const MainApp = () => {
     try {
       const headers = await getAuthHeaders(user);
       // Auto-initialize data if needed
-      await axios.get(`${API}/auto-init`, { headers });
+      await axios.get(`${API}/api/auto-init`, { headers });
       // Then fetch capitals
       fetchCapitals();
     } catch (error) {
