@@ -28,11 +28,6 @@ const API = BACKEND_URL;
 const getAuthHeaders = async (user) => {
   if (user) {
     try {
-      // Get the actual Firebase ID token
-      const token = await user.getIdToken();
-      console.log('Firebase token:', token);
-      console.log('User UID:', user.uid);
-      
       return {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${user.uid}`
