@@ -2854,7 +2854,7 @@ const ExpenseModal = ({ isOpen, onClose, expense, capital, onExpenseAdded, onExp
       } else {
         // Create new expense
         data.capital_id = capital.id;
-        const response = await axios.post(`${API}/expenses`, data, { headers });
+        const response = await axios.post(`${API}/api/expenses`, data, { headers });
         if (onExpenseAdded) {
           onExpenseAdded(response.data);
         }
