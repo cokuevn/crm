@@ -224,8 +224,23 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> str:
     # Demo mode - simplified authentication
     if authorization and authorization.startswith('Bearer '):
         token = authorization.split(' ')[1]
-        # In demo mode, just use the token as user ID
-        # In production, this would verify the Firebase token
+        # Known test users
+        known_users = [
+            "Jp06OUbk0xXqiXsQBOb6Sxwjeuo1",  # testuser@crm.com
+            "62xbQnzxWLOMi27Q0iQVmo4mYfj2",  # demo@test.com
+            "cokuevn@gmail.com",              # cokuevn@gmail.com (email as ID)
+            "demo_user_uid"                   # fallback demo user
+        ]
+        
+        # If it's a known user, use it directly
+        if token in known_users:
+            return token
+            
+        # If it contains @, treat as email (legacy support)
+        if '@' in token:
+            return token
+            
+        # Otherwise use as-is (likely a Firebase UID)
         return token
     
     # Fallback to demo user for requests without proper auth
