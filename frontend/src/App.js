@@ -3414,7 +3414,7 @@ const MainApp = () => {
   const fetchCapitals = async () => {
     try {
       const headers = await getAuthHeaders(user);
-      const response = await axios.get(`${API}/capitals`, { headers });
+      const response = await axios.get(`${API}/api/capitals`, { headers });
       setCapitals(response.data);
       if (response.data.length > 0 && !selectedCapital) {
         setSelectedCapital(response.data[0]);
