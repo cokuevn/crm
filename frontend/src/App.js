@@ -1034,7 +1034,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
     try {
       setLoading(true);
       const headers = await getAuthHeaders(user);
-      const response = await axios.get(`${API}/clients/${clientId}`, { headers });
+      const response = await axios.get(`${API}/api/clients/${clientId}`, { headers });
       setClient(response.data);
     } catch (error) {
       console.error('Error fetching client details:', error);
