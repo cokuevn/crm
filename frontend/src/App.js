@@ -2847,7 +2847,7 @@ const ExpenseModal = ({ isOpen, onClose, expense, capital, onExpenseAdded, onExp
 
       if (expense) {
         // Update existing expense
-        const response = await axios.put(`${API}/expenses/${expense.expense_id}`, data, { headers });
+        const response = await axios.put(`${API}/api/expenses/${expense.expense_id}`, data, { headers });
         if (onExpenseUpdated) {
           onExpenseUpdated(response.data);
         }
