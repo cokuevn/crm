@@ -492,50 +492,74 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
           <div>
             <div className="mb-4">
               <h4 className="text-lg font-medium text-gray-900 mb-3">
-                🔗 Структура Excel файла:
+                📊 Ожидаемая структура Excel файла:
               </h4>
               <div className="bg-gray-50 p-4 rounded-xl text-sm overflow-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-gray-300">
-                      <th className="text-left p-1 font-medium">A</th>
-                      <th className="text-left p-1 font-medium">B</th>
-                      <th className="text-left p-1 font-medium">C</th>
-                      <th className="text-left p-1 font-medium">D</th>
-                      <th className="text-left p-1 font-medium">E</th>
-                      <th className="text-left p-1 font-medium">F</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b border-gray-200">
-                      <td className="p-1">ФИО</td>
-                      <td className="p-1">Товар</td>
-                      <td className="p-1">Сумма</td>
-                      <td className="p-1">Долг</td>
-                      <td className="p-1">Платеж</td>
-                      <td className="p-1">Месяцы</td>
-                    </tr>
-                    <tr className="text-gray-600">
-                      <td className="p-1">Иванов И.И.</td>
-                      <td className="p-1">iPhone 15</td>
-                      <td className="p-1">120000</td>
-                      <td className="p-1">120000</td>
-                      <td className="p-1">10000</td>
-                      <td className="p-1">12</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div className="mt-2 text-xs text-gray-600">
-                  G: Дата начала • H: Адрес • I: Телефон • J: ФИО гаранта • K: Телефон гаранта
+                <div className="mb-3">
+                  <h6 className="font-medium text-gray-800 mb-2">Обязательные столбцы:</h6>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div><span className="font-medium">A:</span> ФИО клиента <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">B:</span> Товар <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">C:</span> Сумма покупки <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">D:</span> Долг клиента <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">E:</span> Ежемесячный взнос <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">F:</span> Дата начала <span className="text-red-500">*</span></div>
+                    <div><span className="font-medium">G:</span> Конец платежей <span className="text-red-500">*</span></div>
+                  </div>
+                </div>
+                
+                <div className="mb-3">
+                  <h6 className="font-medium text-gray-800 mb-2">График платежей (столбцы H-BC):</h6>
+                  <div className="text-xs text-gray-600 bg-yellow-50 p-2 rounded">
+                    <strong>H-I:</strong> Платеж 1, Статус 1 | <strong>J-K:</strong> Платеж 2, Статус 2 | ... | <strong>BA-BB:</strong> Платеж 24, Статус 24
+                    <br />
+                    <em>Статусы:</em> "Выплачен", "Просрочено", "Ожидается" (или пусто)
+                  </div>
+                </div>
+                
+                <div>
+                  <h6 className="font-medium text-gray-800 mb-2">Дополнительная информация:</h6>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div><span className="font-medium">BC:</span> ФИО Гаранта</div>
+                    <div><span className="font-medium">BD:</span> Адрес клиента</div>
+                    <div><span className="font-medium">BE:</span> Телефон клиента</div>
+                    <div><span className="font-medium">BF:</span> Телефон гаранта</div>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="mb-4">
-              <h5 className="font-medium text-gray-800 mb-2">📋 Пример JSON:</h5>
-              <pre className="bg-gray-50 p-3 rounded-xl text-xs overflow-auto max-h-32">
-                {JSON.stringify(sampleData[0], null, 2)}
-              </pre>
+              <h5 className="font-medium text-gray-800 mb-2">📋 Пример данных Excel:</h5>
+              <div className="bg-gray-50 p-3 rounded-xl text-xs overflow-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-300">
+                      <th className="text-left p-1 font-medium border-r">ФИО клиента</th>
+                      <th className="text-left p-1 font-medium border-r">Товар</th>
+                      <th className="text-left p-1 font-medium border-r">Сумма покупки</th>
+                      <th className="text-left p-1 font-medium border-r">Долг</th>
+                      <th className="text-left p-1 font-medium border-r">Ежемесячный взнос</th>
+                      <th className="text-left p-1 font-medium border-r">Дата начала</th>
+                      <th className="text-left p-1 font-medium">Конец платежей</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="text-gray-600 border-b">
+                      <td className="p-1 border-r">Иванов И.И.</td>
+                      <td className="p-1 border-r">iPhone 15 Pro</td>
+                      <td className="p-1 border-r">150000</td>
+                      <td className="p-1 border-r">150000</td>
+                      <td className="p-1 border-r">12500</td>
+                      <td className="p-1 border-r">01.01.2025</td>
+                      <td className="p-1">31.12.2025</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div className="mt-2 text-xs text-gray-500">
+                  + Далее столбцы с датами платежей и их статусами + контактная информация
+                </div>
+              </div>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
