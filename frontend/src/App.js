@@ -1488,7 +1488,7 @@ const AddCapitalModal = ({ isOpen, onClose, onCapitalAdded }) => {
 
     try {
       const headers = await getAuthHeaders(user);
-      const response = await axios.post(`${API}/capitals`, formData, { headers });
+      const response = await axios.post(`${API}/api/capitals`, formData, { headers });
       setFormData({ name: '', description: '' });
       if (onCapitalAdded) {
         onCapitalAdded(response.data);
