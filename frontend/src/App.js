@@ -1050,7 +1050,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
   const handleDeleteClient = async () => {
     try {
       const headers = await getAuthHeaders(user);
-      await axios.delete(`${API}/clients/${clientId}`, { headers });
+      await axios.delete(`${API}/api/clients/${clientId}`, { headers });
       onBack(); // Вернуться к списку после удаления
     } catch (error) {
       console.error('Error deleting client:', error);
