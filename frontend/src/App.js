@@ -305,9 +305,7 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
               clientData.guarantor_phone = row[additionalInfoStartIndex + 3] || '';
               
               // Calculate months from schedule if not specified
-              if (!clientData.months && clientData.schedule.length > 0) {
-                clientData.months = clientData.schedule.length;
-              }
+              clientData.months = clientData.schedule.length > 0 ? clientData.schedule.length : 12;
               
               mappedData.push(clientData);
             }
