@@ -270,8 +270,8 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
               };
               
               // Extract payment schedule (Платеж 1, Статус 1, ... Платеж 24, Статус 24)
-              // Starting from column 8 (index 7), pairs of payment date and status
-              for (let j = 8; j < 56; j += 2) { // 8 to 55 (24 payments * 2 columns)
+              // Starting from column 7 (index 7), pairs of payment date and status
+              for (let j = 7; j < 55; j += 2) { // 7 to 54 (24 payments * 2 columns)
                 const paymentDate = row[j];
                 const paymentStatus = row[j + 1];
                 
@@ -298,7 +298,7 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
               
               // Extract additional client information (after payment columns)
               // ФИО Гаранта, Адрес клиента, Телефон клиента, Телефон гаранта
-              const additionalInfoStartIndex = 56; // After 24 payment pairs
+              const additionalInfoStartIndex = 55; // BD-BG columns
               clientData.guarantor_name = row[additionalInfoStartIndex] || '';
               clientData.client_address = row[additionalInfoStartIndex + 1] || '';
               clientData.client_phone = row[additionalInfoStartIndex + 2] || '';
