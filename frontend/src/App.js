@@ -419,10 +419,23 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
 
       for (const clientData of clients) {
         try {
-          const response = await axios.post(`${API}/api/clients`, {
-            ...clientData,
-            capital_id: selectedCapital.id
-          }, { headers });
+          // Prepare data according to ClientCreate model
+          const clientPayload = {
+            capital_id: selectedCapital.id,
+            name: clientData.name,
+            product: clientData.product,
+            purchase_amount: clientData.purchase_amount,
+            debt_amount: clientData.debt_amount,
+            monthly_payment: clientData.monthly_payment,
+            start_date: clientData.start_date,
+            months: clientData.months || clientData.schedule?.length || 12,
+            guarantor_name: clientData.guarantor_name,
+            client_address: clientData.client_address,
+            client_phone: clientData.client_phone,
+            guarantor_phone: clientData.guarantor_phone
+          };
+
+          const response = await axios.post(`${API}/api/clients`, clientPayload, { headers });
 
           if (response.status === 200 || response.status === 201) {
             successCount++;
