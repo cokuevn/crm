@@ -14,6 +14,19 @@ import json
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(...)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # или укажи свой фронтенд домен
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 # Custom JSON encoder for MongoDB ObjectId
 class MongoJSONEncoder(json.JSONEncoder):
     def default(self, obj):
