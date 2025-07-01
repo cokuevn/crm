@@ -49,7 +49,16 @@ app = FastAPI(title="CRM Finance System", version="1.0.0")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+api_router.get("/ping")
+async def ping():
+    return {"message": "pong"}
 
+app.include_router(api_router)
+
+@app.get("/")
+async def root():
+    return {"message": "Backend is alive!"}
+    
 # Enums
 class ClientStatus(str, Enum):
     active = "active"
