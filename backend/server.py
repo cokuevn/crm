@@ -20,7 +20,11 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://crm-vnwl.onrender.com"],
+allow_origins=[
+    "https://crm-vnwl.onrender.com",
+    "https://bd893c47-d0ba-4a06-87d3-8c1ebc8d6059.preview.emergentagent.com",
+    "http://localhost:3000"
+],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
