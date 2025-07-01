@@ -279,11 +279,17 @@ const ImportModal = ({ isOpen, onClose, selectedCapital, onClientsImported }) =>
                   let status = 'pending'; // default status
                   
                   if (paymentStatus && paymentStatus.toString().trim()) {
-                    const statusStr = paymentStatus.toString().toLowerCase();
-                    if (statusStr.includes('оплачено') || statusStr.includes('paid') || statusStr.includes('выплачен')) {
+                    const statusStr = paymentStatus.toString().toLowerCase().trim();
+                    if (statusStr.includes('оплачен') || statusStr.includes('paid') || statusStr.includes('выплачен')) {
                       status = 'paid';
-                    } else if (statusStr.includes('просрочено') || statusStr.includes('overdue') || statusStr.includes('просрочен')) {
+                    } else if (statusStr.includes('просрочен') || statusStr.includes('overdue') || statusStr.includes('просрочено')) {
                       status = 'overdue';
+                    } else if (statusStr.includes('будущий') || statusStr.includes('pending') || statusStr.includes('ожидается')) {
+                      status = 'pending';
+                    } else {
+                      // Если статус не распознан, оставляем pending
+                      console.log(`Неизвестный статус платежа: "${paymentStatus}"`);
+                      status = 'pending';
                     }
                   }
                   
