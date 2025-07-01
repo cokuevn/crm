@@ -14,6 +14,23 @@ import json
 from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+allow_origins=[
+    "https://crm-vnwl.onrender.com",
+    "https://bd893c47-d0ba-4a06-87d3-8c1ebc8d6059.preview.emergentagent.com",
+    "http://localhost:3000"
+],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 # Custom JSON encoder for MongoDB ObjectId
 class MongoJSONEncoder(json.JSONEncoder):
     def default(self, obj):
