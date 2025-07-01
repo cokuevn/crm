@@ -11,7 +11,7 @@ services:
       - key: DB_NAME
         value: production_database
 
-  - type: static
+  - type: static_site
     name: crm-frontend
     env: static
     plan: free
