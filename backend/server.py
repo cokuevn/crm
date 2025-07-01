@@ -328,7 +328,10 @@ async def create_client(client: ClientCreate, current_user: str = Depends(get_cu
         )
     
     # Generate payment schedule
+    print(f"DEBUG: client.schedule is not None: {client.schedule is not None}")
     if client.schedule:
+        print(f"DEBUG: client.schedule length: {len(client.schedule)}")
+        print(f"DEBUG: First schedule item: {client.schedule[0] if client.schedule else 'None'}")
         # Use provided schedule from import
         schedule = []
         for s in client.schedule:
@@ -338,7 +341,10 @@ async def create_client(client: ClientCreate, current_user: str = Depends(get_cu
                 schedule.append(PaymentSchedule(**s.dict()))
             else:
                 schedule.append(s)
+        print(f"DEBUG: Converted schedule length: {len(schedule)}")
+        print(f"DEBUG: First converted item status: {schedule[0].status if schedule else 'None'}")
     else:
+        print("DEBUG: Using generated schedule")
         # Generate default schedule
         schedule = generate_payment_schedule(client.start_date, client.monthly_payment, client.months)
     
