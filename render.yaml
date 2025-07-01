@@ -10,13 +10,3 @@ services:
         value: mongodb+srv://cokuevn:v5SxiAIRmFHGRFHY@cluster0.85abc7p.mongodb.net/production_database?retryWrites=true&w=majority&appName=Cluster0
       - key: DB_NAME
         value: production_database
-
-  - type: static_site
-    name: crm-frontend
-    env: static
-    plan: free
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/build
-    envVars:
-      - key: REACT_APP_BACKEND_URL
-        value: https://crm-backend.onrender.com
