@@ -20,7 +20,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # или укажи свой фронтенд домен
+    allow_origins=["https://crm-vnwl.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
