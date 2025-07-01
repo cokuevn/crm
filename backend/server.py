@@ -12,25 +12,25 @@ from datetime import datetime, date, timedelta
 from enum import Enum
 import json
 from bson import ObjectId
-from fastapi.encoders import jsonable_encoder
 import certifi
-from fastapi.middleware.cors import CORSMiddleware
 
+# Загружаем .env сразу!
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Коннект к MongoDB
 mongo_url = os.environ['MONGO_URL']
-
 client = AsyncIOMotorClient(
     mongo_url,
     tls=True,
     tlsCAFile=certifi.where()
 )
-
 db = client[os.environ['DB_NAME']]
 
-app = FastAPI()
+# Создаём FastAPI
+app = FastAPI(title="CRM Finance System", version="1.0.0")
 
+# Добавляем CORS (ТОЛЬКО ОДИН РАЗ!)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -41,11 +41,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# Demo mode - simplified authentication without Firebase
-print("Running in demo mode without Firebase authentication")
 
-# Create the main app without a prefix
-app = FastAPI(title="CRM Finance System", version="1.0.0")
+# Лог для отладки
+print("Running in demo mode without Firebase authentication")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
