@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: crm-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.server:app --host 0.0.0.0 --port 10000
+    envVars:
+      - key: MONGO_URL
+        value: mongodb+srv://crm_user:StrongPassword123@yourcluster.mongodb.net/production_database
+      - key: DB_NAME
+        value: production_database
+
+  - type: static
+    name: crm-frontend
+    env: static
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/build
+    envVars:
+      - key: REACT_APP_BACKEND_URL
+        value: https://crm-backend.onrender.com
