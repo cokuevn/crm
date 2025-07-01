@@ -16,39 +16,8 @@ from fastapi.encoders import jsonable_encoder
 import certifi
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-allow_origins=[
-    "https://crm-vnwl.onrender.com",
-    "https://bd893c47-d0ba-4a06-87d3-8c1ebc8d6059.preview.emergentagent.com",
-    "http://localhost:3000"
-],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-# Custom JSON encoder for MongoDB ObjectId
-class MongoJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, ObjectId):
-            return str(obj)
-        return super().default(obj)
-
-# Helper function to convert MongoDB documents to JSON-serializable format
-def mongo_to_dict(obj: Any) -> Dict:
-    """Convert MongoDB document to dict with string IDs instead of ObjectId."""
-    if isinstance(obj, dict):
-        return {k: mongo_to_dict(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [mongo_to_dict(item) for item in obj]
-    elif isinstance(obj, ObjectId):
-        return str(obj)
-    else:
-        return obj
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
 
 mongo_url = os.environ['MONGO_URL']
 
@@ -60,10 +29,18 @@ client = AsyncIOMotorClient(
 
 db = client[os.environ['DB_NAME']]
 
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+app = FastAPI()
 
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://crm-vnwl.onrender.com",
+        "http://localhost:3000"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Demo mode - simplified authentication without Firebase
 print("Running in demo mode without Firebase authentication")
 
