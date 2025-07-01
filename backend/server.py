@@ -49,7 +49,8 @@ app = FastAPI(title="CRM Finance System", version="1.0.0")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
-api_router.get("/ping")
+
+@api_router.get("/ping")
 async def ping():
     return {"message": "pong"}
 
