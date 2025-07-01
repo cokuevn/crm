@@ -7,7 +7,7 @@ services:
     startCommand: uvicorn backend.server:app --host 0.0.0.0 --port 10000
     envVars:
       - key: MONGO_URL
-        value: mongodb+srv://crm_user:StrongPassword123@yourcluster.mongodb.net/production_database
+        value: mongodb+srv://cokuevn:v5SxiAIRmFHGRFHY@cluster0.85abc7p.mongodb.net/production_database?retryWrites=true&w=majority&appName=Cluster0
       - key: DB_NAME
         value: production_database
 
