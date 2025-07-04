@@ -22,13 +22,9 @@ const firebaseConfig = {
 let app = null;
 let auth = null;
 
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-} catch (error) {
-  console.warn('Firebase initialization failed, using demo mode:', error.message);
-  auth = null;
-}
+// Force demo mode
+console.log('Running in demo mode without Firebase authentication');
+auth = null;
 
 // Auth context
 const AuthContext = createContext();
