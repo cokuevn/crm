@@ -100,6 +100,18 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
       
+      if (!auth) {
+        // Demo mode login
+        const userData = {
+          uid: 'demo-user-uid',
+          email: email,
+          displayName: 'Demo User'
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
+        dispatch({ type: 'SET_USER', payload: userData });
+        return userData;
+      }
+      
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const userData = {
         uid: userCredential.user.uid,
@@ -122,6 +134,18 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
       
+      if (!auth) {
+        // Demo mode register
+        const userData = {
+          uid: 'demo-user-uid-' + Date.now(),
+          email: email,
+          displayName: 'Demo User'
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
+        dispatch({ type: 'SET_USER', payload: userData });
+        return userData;
+      }
+      
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const userData = {
         uid: userCredential.user.uid,
@@ -141,7 +165,9 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      if (auth) {
+        await signOut(auth);
+      }
       localStorage.removeItem('user');
       dispatch({ type: 'LOGOUT' });
     } catch (error) {
