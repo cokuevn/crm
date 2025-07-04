@@ -64,6 +64,18 @@ export const AuthProvider = ({ children }) => {
 
   // Listen for auth state changes
   useEffect(() => {
+    if (!auth) {
+      // Demo mode - auto-login with demo user
+      const demoUser = {
+        uid: 'demo-user-uid',
+        email: 'demo@test.com',
+        displayName: 'Demo User'
+      };
+      localStorage.setItem('user', JSON.stringify(demoUser));
+      dispatch({ type: 'SET_USER', payload: demoUser });
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         const userData = {
