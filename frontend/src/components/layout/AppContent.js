@@ -2,8 +2,6 @@ import React, { useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
 import AuthScreen from '../auth/AuthScreen';
-import Header from './Header';
-import Navigation from './Navigation';
 import Dashboard from '../dashboard/Dashboard';
 import Analytics from '../analytics/Analytics';
 import Expenses from '../expenses/Expenses';
@@ -60,19 +58,14 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-      <Navigation />
-      
-      <main className="pt-16 pb-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <LoadingSpinner size="lg" />
-            </div>
-          ) : (
-            renderCurrentPage()
-          )}
-        </div>
+      <main>
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : (
+          renderCurrentPage()
+        )}
       </main>
     </div>
   );
