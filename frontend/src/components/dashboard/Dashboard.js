@@ -366,7 +366,7 @@ const Dashboard = () => {
                   }`}
                 >
                   <span>⚠️</span>
-                  <span>Просрочено ({overdueCount})</span>
+                  <span>Просрочено ({filterCounts.overdueCount})</span>
                 </button>
               </div>
             </div>
