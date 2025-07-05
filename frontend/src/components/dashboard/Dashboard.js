@@ -465,6 +465,18 @@ const Dashboard = () => {
         onClose={() => setShowImportModal(false)}
         selectedCapital={selectedCapital}
       />
+
+      <EditBalanceModal
+        isOpen={showEditBalanceModal}
+        onClose={() => setShowEditBalanceModal(false)}
+        capital={selectedCapital}
+      />
+
+      <DeleteCapitalModal
+        isOpen={showDeleteCapitalModal}
+        onClose={() => setShowDeleteCapitalModal(false)}
+        capital={selectedCapital}
+      />
     </div>
   );
 };
