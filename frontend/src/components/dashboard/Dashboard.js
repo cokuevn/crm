@@ -331,49 +331,57 @@ const Dashboard = () => {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setActiveFilter('all')}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm ${
                     activeFilter === 'all'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      ? 'bg-blue-600 text-white shadow-blue-200'
+                      : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
                   }`}
                 >
-                  <span>📋</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m0 0h10a2 2 0 002-2V7a2 2 0 00-2-2H9m0 0V3a2 2 0 012-2h4a2 2 0 012 2v2" />
+                  </svg>
                   <span>Все клиенты ({clients.length})</span>
                 </button>
 
                 <button
                   onClick={() => setActiveFilter('today')}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm ${
                     activeFilter === 'today'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      ? 'bg-blue-600 text-white shadow-blue-200'
+                      : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
                   }`}
                 >
-                  <span>📅</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
                   <span>Сегодня ({filterCounts.todayCount})</span>
                 </button>
 
                 <button
                   onClick={() => setActiveFilter('tomorrow')}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm ${
                     activeFilter === 'tomorrow'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      ? 'bg-blue-600 text-white shadow-blue-200'
+                      : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
                   }`}
                 >
-                  <span>⏰</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                   <span>Завтра ({filterCounts.tomorrowCount})</span>
                 </button>
 
                 <button
                   onClick={() => setActiveFilter('overdue')}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm ${
                     activeFilter === 'overdue'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      ? 'bg-red-600 text-white shadow-red-200'
+                      : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
                   }`}
                 >
-                  <span>⚠️</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
                   <span>Просрочено ({filterCounts.overdueCount})</span>
                 </button>
               </div>
