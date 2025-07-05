@@ -25,6 +25,12 @@ export const capitalService = {
     await apiClient.delete(API_ENDPOINTS.CAPITALS.BY_ID(id));
   },
 
+  // Update capital balance
+  updateBalance: async (id, newBalance) => {
+    const response = await apiClient.patch(API_ENDPOINTS.CAPITALS.BY_ID(id), { balance: newBalance });
+    return response.data;
+  },
+
   // Auto-initialize demo data
   autoInit: async () => {
     const response = await apiClient.get(API_ENDPOINTS.AUTH.AUTO_INIT);
