@@ -222,21 +222,21 @@ const Dashboard = () => {
         </div>
       </nav>
 
-      {/* Capital Info */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              {/* Capital selector */}
+      {/* Capital Info - Enhanced */}
+      <div className="bg-gradient-to-r from-gray-50 to-blue-50 border-2 border-blue-200 rounded-2xl shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-6">
+              {/* Capital selector with custom styling */}
               {capitals.length > 0 && (
-                <div className="flex items-center space-x-2">
+                <div className="relative">
                   <select
                     value={selectedCapital?.id || ''}
                     onChange={(e) => {
                       const capital = capitals.find(c => c.id === e.target.value);
                       selectCapital(capital);
                     }}
-                    className="text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2.5 pr-8 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:bg-gray-50 transition-all cursor-pointer"
                   >
                     {capitals.map(capital => (
                       <option key={capital.id} value={capital.id}>
@@ -244,29 +244,62 @@ const Dashboard = () => {
                       </option>
                     ))}
                   </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                    </svg>
+                  </div>
                 </div>
               )}
 
-              {/* Capital balance */}
+              {/* Balance display with edit functionality */}
               {selectedCapital && (
-                <div className="flex items-center space-x-2">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                  <span className="text-lg font-semibold text-gray-900">
-                    {formatCurrency(selectedCapital.balance)}
-                  </span>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl flex items-center justify-center">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 font-medium">Текущий баланс</div>
+                    <button 
+                      onClick={() => setShowEditBalanceModal(true)}
+                      className="text-2xl font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer group"
+                    >
+                      {formatCurrency(selectedCapital.balance)}
+                      <svg className="w-4 h-4 inline-block ml-1 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Action buttons */}
             <div className="flex items-center space-x-3">
+              {/* Delete capital button */}
+              {selectedCapital && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => setShowDeleteCapitalModal(true)}
+                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                >
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Удалить</span>
+                  </div>
+                </Button>
+              )}
+
               <Button
                 variant="success"
                 size="sm"
                 onClick={() => setShowAddCapitalModal(true)}
-                className="shadow-lg"
+                className="shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
               >
                 <div className="flex items-center space-x-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
