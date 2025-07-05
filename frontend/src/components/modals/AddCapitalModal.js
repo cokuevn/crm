@@ -17,7 +17,7 @@ const AddCapitalModal = ({ isOpen, onClose }) => {
     setLoading(true);
 
     try {
-      await addCapital(formData);
+      await createCapital(formData);
       setFormData({ name: '', description: '', balance: 0 });
       onClose();
     } catch (error) {
