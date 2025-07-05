@@ -354,7 +354,7 @@ const Dashboard = () => {
                   }`}
                 >
                   <span>⏰</span>
-                  <span>Завтра ({tomorrowCount})</span>
+                  <span>Завтра ({filterCounts.tomorrowCount})</span>
                 </button>
 
                 <button
