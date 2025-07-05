@@ -141,91 +141,10 @@ const Dashboard = () => {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Left section - Logo and Capital */}
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center">
               <h1 className="text-xl font-bold text-gray-900">CRM Рассрочка</h1>
-              
-              {/* Compact Capital Section */}
-              {capitals.length > 0 && selectedCapital && (
-                <div className="flex items-center space-x-4 px-4 py-2 bg-gray-50 rounded-xl border">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </div>
-                  
-                  <div className="relative">
-                    <select
-                      value={selectedCapital?.id || ''}
-                      onChange={(e) => {
-                        const capital = capitals.find(c => c.id === e.target.value);
-                        selectCapital(capital);
-                      }}
-                      className="appearance-none bg-transparent border-none text-sm font-semibold text-gray-900 focus:outline-none cursor-pointer pr-5 min-w-0"
-                    >
-                      {capitals.map(capital => (
-                        <option key={capital.id} value={capital.id}>
-                          {capital.name}
-                        </option>
-                      ))}
-                    </select>
-                    <svg className="absolute right-0 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-
-                  <div className="w-px h-6 bg-gray-300"></div>
-
-                  <button 
-                    onClick={() => setShowEditBalanceModal(true)}
-                    className="flex items-center space-x-2 text-sm font-bold text-gray-900 hover:text-blue-600 transition-colors cursor-pointer group"
-                  >
-                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                    <span>{formatCurrency(selectedCapital.balance)}</span>
-                    <svg className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
-
-                  <div className="flex items-center space-x-1">
-                    <button
-                      onClick={() => setShowDeleteCapitalModal(true)}
-                      className="w-6 h-6 bg-red-50 hover:bg-red-100 rounded-md flex items-center justify-center transition-all duration-200 hover:scale-110 group"
-                      title="Удалить капитал"
-                    >
-                      <svg className="w-3 h-3 text-red-600 group-hover:text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-
-                    <button
-                      onClick={() => setShowAddCapitalModal(true)}
-                      className="w-6 h-6 bg-green-50 hover:bg-green-100 rounded-md flex items-center justify-center transition-all duration-200 hover:scale-110 group"
-                      title="Добавить капитал"
-                    >
-                      <svg className="w-3 h-3 text-green-600 group-hover:text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                    </button>
-
-                    <button
-                      onClick={() => setShowImportModal(true)}
-                      disabled={!selectedCapital}
-                      className="w-6 h-6 bg-blue-50 hover:bg-blue-100 disabled:bg-gray-50 rounded-md flex items-center justify-center transition-all duration-200 hover:scale-110 group disabled:hover:scale-100"
-                      title="Импорт данных"
-                    >
-                      <svg className="w-3 h-3 text-blue-600 group-hover:text-blue-700 disabled:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Right section - User info */}
             <div className="flex items-center space-x-3">
               <div className="text-sm">
                 <span className="text-gray-900">{user?.email}</span>
