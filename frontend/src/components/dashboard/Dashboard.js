@@ -342,7 +342,7 @@ const Dashboard = () => {
                   }`}
                 >
                   <span>📅</span>
-                  <span>Сегодня ({todayCount})</span>
+                  <span>Сегодня ({filterCounts.todayCount})</span>
                 </button>
 
                 <button
