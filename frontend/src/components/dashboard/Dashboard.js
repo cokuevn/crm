@@ -366,7 +366,7 @@ const Dashboard = () => {
             </div>
 
             {/* Clients Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 loading-transition ${clientsLoading ? 'loading' : ''}`}>
               {filteredClients.map((client) => (
                 <ClientCard key={client.client_id} client={client} />
               ))}
