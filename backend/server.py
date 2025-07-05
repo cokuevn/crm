@@ -309,6 +309,11 @@ async def update_capital(capital_id: str, updates: CapitalUpdate, current_user: 
     updated_capital = await db.capitals.find_one({"id": capital_id})
     return Capital(**mongo_to_dict(updated_capital))
 
+@api_router.patch("/capitals/{capital_id}", response_model=Capital)
+async def patch_capital(capital_id: str, updates: CapitalUpdate, current_user: str = Depends(get_current_user)):
+    """Partial update for capital (same as PUT but more semantic for partial updates)"""
+    return await update_capital(capital_id, updates, current_user)
+
 # Client management
 @api_router.post("/clients", response_model=Client)
 async def create_client(client: ClientCreate, current_user: str = Depends(get_current_user)):
