@@ -59,7 +59,7 @@ const AppContent = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <main>
-        {loading ? (
+        {initializing ? (
           <div className="flex justify-center py-12">
             <LoadingSpinner size="lg" />
           </div>
