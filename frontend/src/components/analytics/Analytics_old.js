@@ -537,3 +537,71 @@ const MonthlyProfitChart = ({ data }) => {
 };
 
 export default Analytics;
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              📊 Общая статистика
+            </h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Всего клиентов:</span>
+                <span className="font-medium">{analytics.total_clients || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Активные рассрочки:</span>
+                <span className="font-medium">{analytics.active_installments || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Завершенные:</span>
+                <span className="font-medium text-green-600">{analytics.completed_installments || 0}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              💰 Финансы
+            </h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Общий оборот:</span>
+                <span className="font-medium">{analytics.total_turnover || 0} ₽</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Собрано платежей:</span>
+                <span className="font-medium text-green-600">{analytics.collected_payments || 0} ₽</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Задолженность:</span>
+                <span className="font-medium text-red-600">{analytics.total_debt || 0} ₽</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              ⚠️ Просрочки
+            </h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Просроченные платежи:</span>
+                <span className="font-medium text-red-600">{analytics.overdue_payments || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Сумма просрочек:</span>
+                <span className="font-medium text-red-600">{analytics.overdue_amount || 0} ₽</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <div className="text-gray-500">
+            Загрузка аналитики...
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Analytics;
