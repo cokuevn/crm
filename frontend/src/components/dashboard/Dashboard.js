@@ -28,6 +28,8 @@ const Dashboard = () => {
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [showAddCapitalModal, setShowAddCapitalModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showEditBalanceModal, setShowEditBalanceModal] = useState(false);
+  const [showDeleteCapitalModal, setShowDeleteCapitalModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
 
