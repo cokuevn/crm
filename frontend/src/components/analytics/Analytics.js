@@ -452,17 +452,21 @@ const Analytics = () => {
 // Stats Card Component
 const StatsCard = ({ title, value, icon, color = 'blue' }) => {
   const colorClasses = {
-    blue: 'bg-blue-50 border-blue-200 text-blue-600',
-    green: 'bg-green-50 border-green-200 text-green-600',
-    purple: 'bg-purple-50 border-purple-200 text-purple-600',
-    red: 'bg-red-50 border-red-200 text-red-600'
+    blue: 'from-blue-50 to-blue-100 border-blue-100 text-blue-700',
+    green: 'from-green-50 to-green-100 border-green-100 text-green-700',
+    purple: 'from-purple-50 to-purple-100 border-purple-100 text-purple-700',
+    red: 'from-red-50 to-red-100 border-red-100 text-red-700'
   };
 
   return (
-    <div className={`bg-white rounded-lg border-2 ${colorClasses[color]} p-6 text-center`}>
-      <div className="text-2xl mb-2">{icon}</div>
-      <div className="text-sm text-gray-600 mb-1">{title}</div>
-      <div className="text-2xl font-bold">{value}</div>
+    <div className={`bg-gradient-to-br ${colorClasses[color]} rounded-2xl border shadow-sm p-6 text-center transform hover:scale-105 transition-all duration-200`}>
+      <div className="flex justify-center mb-3">
+        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
+          {icon}
+        </div>
+      </div>
+      <div className="text-sm text-gray-600 mb-2 font-medium">{title}</div>
+      <div className="text-2xl font-bold text-gray-900">{value}</div>
     </div>
   );
 };
