@@ -4,7 +4,7 @@ import Button from '../common/Button';
 import Modal from '../common/Modal';
 
 const AddCapitalModal = ({ isOpen, onClose }) => {
-  const { addCapital } = useApp();
+  const { createCapital } = useApp();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
