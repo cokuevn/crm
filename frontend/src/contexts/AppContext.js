@@ -65,6 +65,9 @@ const appReducer = (state, action) => {
 // Initial state
 const initialState = {
   loading: false,
+  initializing: true,
+  capitalsLoading: false,
+  clientsLoading: false,
   capitals: [],
   selectedCapital: null,
   clients: [],
