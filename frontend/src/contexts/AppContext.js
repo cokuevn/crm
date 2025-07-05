@@ -130,13 +130,13 @@ export const AppProvider = ({ children }) => {
   // Client methods
   const loadClients = useCallback(async (capitalId = null) => {
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_CLIENTS_LOADING', payload: true });
       const clients = await clientService.getAll(capitalId);
       dispatch({ type: 'SET_CLIENTS', payload: clients });
     } catch (error) {
       handleError(error);
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: 'SET_CLIENTS_LOADING', payload: false });
     }
   }, [handleError]);
 
