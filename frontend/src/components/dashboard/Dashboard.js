@@ -20,7 +20,7 @@ const Dashboard = () => {
     clients,
     loadDashboard, 
     loadClients,
-    loading,
+    clientsLoading,
     currentPage,
     setCurrentPage
   } = useApp();
