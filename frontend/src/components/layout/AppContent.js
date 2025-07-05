@@ -10,7 +10,7 @@ import { PAGES } from '../../constants/api';
 
 const AppContent = () => {
   const { user, loading: authLoading } = useAuth();
-  const { currentPage, loading, loadCapitals, autoInit } = useApp();
+  const { currentPage, initializing, loadCapitals, autoInit } = useApp();
 
   useEffect(() => {
     if (user) {
