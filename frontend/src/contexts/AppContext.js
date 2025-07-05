@@ -263,6 +263,8 @@ export const AppProvider = ({ children }) => {
     loadCapitals,
     selectCapital,
     createCapital,
+    updateCapitalBalance,
+    deleteCapital,
     // Client methods
     loadClients,
     createClient,
