@@ -216,13 +216,13 @@ export const AppProvider = ({ children }) => {
   // Auto-init
   const autoInit = useCallback(async () => {
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_INITIALIZING', payload: true });
       await capitalService.autoInit();
       await loadCapitals();
     } catch (error) {
       handleError(error);
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: 'SET_INITIALIZING', payload: false });
     }
   }, [loadCapitals, handleError]);
 
