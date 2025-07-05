@@ -97,7 +97,7 @@ export const AppProvider = ({ children }) => {
   // Capital methods
   const loadCapitals = useCallback(async () => {
     try {
-      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_CAPITALS_LOADING', payload: true });
       const capitals = await capitalService.getAll();
       dispatch({ type: 'SET_CAPITALS', payload: capitals });
       
@@ -108,7 +108,7 @@ export const AppProvider = ({ children }) => {
     } catch (error) {
       handleError(error);
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: 'SET_CAPITALS_LOADING', payload: false });
     }
   }, [state.selectedCapital, handleError]);
 
