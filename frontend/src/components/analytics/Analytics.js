@@ -473,45 +473,47 @@ const StatsCard = ({ title, value, icon, color = 'blue' }) => {
 
 // Circular Chart Component
 const CircularChart = ({ title, percentage, subtitle }) => {
-  const radius = 45;
+  const radius = 50;
   const circumference = 2 * Math.PI * radius;
   const strokeDasharray = circumference;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 text-center">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">{title}</h3>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+      <h3 className="text-lg font-semibold text-gray-900 mb-6">{title}</h3>
       <div className="relative inline-flex items-center justify-center">
-        <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+        <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 120 120">
           <circle
-            cx="50"
-            cy="50"
+            cx="60"
+            cy="60"
             r={radius}
             stroke="currentColor"
-            strokeWidth="8"
+            strokeWidth="6"
             fill="transparent"
-            className="text-gray-200"
+            className="text-gray-100"
           />
           <circle
-            cx="50"
-            cy="50"
+            cx="60"
+            cy="60"
             r={radius}
             stroke="currentColor"
-            strokeWidth="8"
+            strokeWidth="6"
             fill="transparent"
             strokeDasharray={strokeDasharray}
             strokeDashoffset={strokeDashoffset}
-            className="text-green-500 transition-all duration-500"
+            className="text-blue-500 drop-shadow-sm transition-all duration-1000 ease-out"
             strokeLinecap="round"
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-2xl font-bold text-gray-900">
-            {percentage.toFixed(1)}%
-          </span>
+          <div className="text-center">
+            <span className="text-3xl font-bold text-gray-900">
+              {percentage.toFixed(1)}%
+            </span>
+          </div>
         </div>
       </div>
-      <p className="text-sm text-gray-600 mt-4">{subtitle}</p>
+      <p className="text-sm text-gray-600 mt-6 leading-relaxed">{subtitle}</p>
     </div>
   );
 };
