@@ -127,6 +127,32 @@ export const AppProvider = ({ children }) => {
     }
   }, [loadCapitals, handleError]);
 
+  const updateCapitalBalance = useCallback(async (capitalId, newBalance) => {
+    try {
+      // Update the capital balance (you might need to add this endpoint to the backend)
+      const updatedCapital = await capitalService.updateBalance(capitalId, newBalance);
+      await loadCapitals(); // Reload all capitals to get updated data
+      return updatedCapital;
+    } catch (error) {
+      handleError(error);
+      throw error;
+    }
+  }, [loadCapitals, handleError]);
+
+  const deleteCapital = useCallback(async (capitalId) => {
+    try {
+      await capitalService.delete(capitalId);
+      await loadCapitals(); // Reload all capitals
+      // If the deleted capital was selected, clear selection
+      if (state.selectedCapital?.id === capitalId) {
+        dispatch({ type: 'SET_SELECTED_CAPITAL', payload: null });
+      }
+    } catch (error) {
+      handleError(error);
+      throw error;
+    }
+  }, [loadCapitals, handleError, state.selectedCapital]);
+
   // Client methods
   const loadClients = useCallback(async (capitalId = null) => {
     try {
