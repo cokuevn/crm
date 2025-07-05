@@ -47,33 +47,35 @@ const Dashboard = () => {
   };
 
   // Filter clients based on search term and active filter
-  const filteredClients = clients.filter(client => {
-    const matchesSearch = !searchTerm || 
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.client_id.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredClients = useMemo(() => {
+    return clients.filter(client => {
+      const matchesSearch = !searchTerm || 
+        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.client_id.toLowerCase().includes(searchTerm.toLowerCase());
 
-    if (!matchesSearch) return false;
+      if (!matchesSearch) return false;
 
-    switch (activeFilter) {
-      case 'today':
-        return client.schedule?.some(p => {
-          const today = new Date().toISOString().split('T')[0];
-          return p.payment_date === today && p.status === 'pending';
-        });
-      case 'tomorrow':
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().split('T')[0];
-        return client.schedule?.some(p => {
-          return p.payment_date === tomorrowStr && p.status === 'pending';
-        });
-      case 'overdue':
-        return client.schedule?.some(p => p.status === 'overdue');
-      default:
-        return true;
-    }
-  });
+      switch (activeFilter) {
+        case 'today':
+          return client.schedule?.some(p => {
+            const today = new Date().toISOString().split('T')[0];
+            return p.payment_date === today && p.status === 'pending';
+          });
+        case 'tomorrow':
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const tomorrowStr = tomorrow.toISOString().split('T')[0];
+          return client.schedule?.some(p => {
+            return p.payment_date === tomorrowStr && p.status === 'pending';
+          });
+        case 'overdue':
+          return client.schedule?.some(p => p.status === 'overdue');
+        default:
+          return true;
+      }
+    });
+  }, [clients, searchTerm, activeFilter]);
 
   // Calculate filter counts
   const todayCount = clients.filter(client => 
