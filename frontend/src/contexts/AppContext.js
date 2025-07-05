@@ -11,6 +11,12 @@ const appReducer = (state, action) => {
   switch (action.type) {
     case 'SET_LOADING':
       return { ...state, loading: action.payload };
+    case 'SET_INITIALIZING':
+      return { ...state, initializing: action.payload };
+    case 'SET_CAPITALS_LOADING':
+      return { ...state, capitalsLoading: action.payload };
+    case 'SET_CLIENTS_LOADING':
+      return { ...state, clientsLoading: action.payload };
     case 'SET_CAPITALS':
       return { ...state, capitals: action.payload };
     case 'SET_SELECTED_CAPITAL':
