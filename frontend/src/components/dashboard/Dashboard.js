@@ -96,10 +96,31 @@ const Dashboard = () => {
     client.schedule?.some(p => p.status === 'overdue')
   ).length;
 
-  if (loading) {
+  if (clientsLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <LoadingSpinner size="lg" />
+      <div className="min-h-screen bg-gray-50">
+        {/* Header and Navigation still render */}
+        <header className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <h1 className="text-xl font-bold text-gray-900">CRM Рассрочка</h1>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="text-sm">
+                  <span className="text-gray-900">{user?.email}</span>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  Выйти
+                </Button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex justify-center py-12">
+          <LoadingSpinner size="lg" />
+        </div>
       </div>
     );
   }
