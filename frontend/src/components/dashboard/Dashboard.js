@@ -7,6 +7,8 @@ import ClientCard from '../clients/ClientCard';
 import AddClientModal from '../modals/AddClientModal';
 import AddCapitalModal from '../modals/AddCapitalModal';
 import ImportModal from '../modals/ImportModal';
+import EditBalanceModal from '../modals/EditBalanceModal';
+import DeleteCapitalModal from '../modals/DeleteCapitalModal';
 import Button from '../common/Button';
 import { PAGES } from '../../constants/api';
 
