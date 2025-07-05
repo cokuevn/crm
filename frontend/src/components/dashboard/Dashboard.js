@@ -78,25 +78,29 @@ const Dashboard = () => {
   }, [clients, searchTerm, activeFilter]);
 
   // Calculate filter counts
-  const todayCount = clients.filter(client => 
-    client.schedule?.some(p => {
-      const today = new Date().toISOString().split('T')[0];
-      return p.payment_date === today && p.status === 'pending';
-    })
-  ).length;
+  const filterCounts = useMemo(() => {
+    const todayCount = clients.filter(client => 
+      client.schedule?.some(p => {
+        const today = new Date().toISOString().split('T')[0];
+        return p.payment_date === today && p.status === 'pending';
+      })
+    ).length;
 
-  const tomorrowCount = clients.filter(client => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-    return client.schedule?.some(p => {
-      return p.payment_date === tomorrowStr && p.status === 'pending';
-    });
-  }).length;
+    const tomorrowCount = clients.filter(client => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+      return client.schedule?.some(p => {
+        return p.payment_date === tomorrowStr && p.status === 'pending';
+      });
+    }).length;
 
-  const overdueCount = clients.filter(client => 
-    client.schedule?.some(p => p.status === 'overdue')
-  ).length;
+    const overdueCount = clients.filter(client => 
+      client.schedule?.some(p => p.status === 'overdue')
+    ).length;
+
+    return { todayCount, tomorrowCount, overdueCount };
+  }, [clients]);
 
   if (clientsLoading) {
     return (
