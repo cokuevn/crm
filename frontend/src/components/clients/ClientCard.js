@@ -20,7 +20,7 @@ const ClientCard = ({ client }) => {
   return (
     <>
       <div 
-        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300 cursor-pointer animate-fade-in"
         onClick={handleCardClick}
       >
         {/* Header with name and status */}
