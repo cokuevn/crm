@@ -64,14 +64,14 @@ const Dashboard = () => {
         case 'today':
           return client.schedule?.some(p => {
             const today = new Date().toISOString().split('T')[0];
-            return p.payment_date === today && p.status === 'pending';
+            return p.payment_date === today && (p.status === 'pending' || p.status === 'overdue');
           });
         case 'tomorrow':
           const tomorrow = new Date();
           tomorrow.setDate(tomorrow.getDate() + 1);
           const tomorrowStr = tomorrow.toISOString().split('T')[0];
           return client.schedule?.some(p => {
-            return p.payment_date === tomorrowStr && p.status === 'pending';
+            return p.payment_date === tomorrowStr && (p.status === 'pending' || p.status === 'overdue');
           });
         case 'overdue':
           return client.schedule?.some(p => p.status === 'overdue');
@@ -86,7 +86,7 @@ const Dashboard = () => {
     const todayCount = clients.filter(client => 
       client.schedule?.some(p => {
         const today = new Date().toISOString().split('T')[0];
-        return p.payment_date === today && p.status === 'pending';
+        return p.payment_date === today && (p.status === 'pending' || p.status === 'overdue');
       })
     ).length;
 
@@ -95,7 +95,7 @@ const Dashboard = () => {
       tomorrow.setDate(tomorrow.getDate() + 1);
       const tomorrowStr = tomorrow.toISOString().split('T')[0];
       return client.schedule?.some(p => {
-        return p.payment_date === tomorrowStr && p.status === 'pending';
+        return p.payment_date === tomorrowStr && (p.status === 'pending' || p.status === 'overdue');
       });
     }).length;
 

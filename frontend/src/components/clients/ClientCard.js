@@ -10,7 +10,7 @@ const ClientCard = ({ client }) => {
   const paidPayments = client.schedule?.filter(p => p.status === 'paid').length || 0;
   const progressPercentage = totalPayments > 0 ? Math.round((paidPayments / totalPayments) * 100) : 0;
 
-  // Check if client is active (has pending payments)
+  // Check if client is active (has pending or overdue payments)
   const isActive = client.schedule?.some(p => p.status === 'pending' || p.status === 'overdue') || false;
 
   const handleCardClick = () => {

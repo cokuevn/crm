@@ -33,6 +33,23 @@ def mongo_to_dict(obj: Any) -> Dict:
     else:
         return obj
 
+def update_overdue_payments(schedule):
+    """Update payment statuses to overdue if they are past due date"""
+    today = date.today()
+    updated = False
+    
+    for payment in schedule:
+        if payment.get("status") == "pending":
+            try:
+                payment_date = datetime.strptime(payment["payment_date"], "%Y-%m-%d").date()
+                if payment_date < today:
+                    payment["status"] = "overdue"
+                    updated = True
+            except (ValueError, KeyError):
+                continue
+    
+    return updated
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -194,13 +211,22 @@ class UserProfile(BaseModel):
     display_name: Optional[str] = None
 
 # Helper functions
-def mongo_to_dict(mongo_doc):
-    """Convert MongoDB document to dictionary, removing MongoDB ObjectId"""
-    if mongo_doc is None:
-        return None
-    if '_id' in mongo_doc:
-        del mongo_doc['_id']
-    return mongo_doc
+def update_overdue_payments(schedule):
+    """Update payment statuses to overdue if they are past due date"""
+    today = date.today()
+    updated = False
+    
+    for payment in schedule:
+        if payment.get("status") == "pending":
+            try:
+                payment_date = datetime.strptime(payment["payment_date"], "%Y-%m-%d").date()
+                if payment_date < today:
+                    payment["status"] = "overdue"
+                    updated = True
+            except (ValueError, KeyError):
+                continue
+    
+    return updated
 
 def generate_payment_schedule(start_date_str: str, monthly_payment: float, months: int) -> List[PaymentSchedule]:
     schedule = []
@@ -397,6 +423,17 @@ async def get_clients(capital_id: Optional[str] = None, current_user: str = Depe
         query = {"capital_id": capital_id}
     
     clients = await db.clients.find(query).to_list(1000)
+    
+    # Update overdue payments for each client
+    for client in clients:
+        if "schedule" in client and client["schedule"]:
+            if update_overdue_payments(client["schedule"]):
+                # Update the client in database if statuses were changed
+                await db.clients.update_one(
+                    {"client_id": client["client_id"]},
+                    {"$set": {"schedule": client["schedule"], "updated_at": datetime.utcnow()}}
+                )
+    
     return [Client(**mongo_to_dict(client)) for client in clients]
 
 @api_router.get("/clients/{client_id}", response_model=Client)
