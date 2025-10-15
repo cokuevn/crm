@@ -112,6 +112,7 @@ class Client(BaseModel):
     client_phone: Optional[str] = None  # Телефон клиента
     guarantor_phone: Optional[str] = None  # Телефон гаранта
     start_date: str  # Дата начала рассрочки
+    contract_date: Optional[str] = None  # Дата заключения договора
     end_date: str
     schedule: List[PaymentSchedule] = []
     status: ClientStatus = ClientStatus.active
@@ -175,6 +176,7 @@ class ClientCreate(BaseModel):
     client_phone: Optional[str] = None  # Телефон клиента
     guarantor_phone: Optional[str] = None  # Телефон гаранта
     start_date: str  # Дата начала рассрочки
+    contract_date: Optional[str] = None  # Дата заключения договора
     months: int
     schedule: Optional[List[PaymentSchedule]] = None  # Готовый график платежей (опционально)
 
@@ -375,6 +377,20 @@ async def create_client(client: ClientCreate, current_user: str = Depends(get_cu
     if client_dict["purchase_amount"] is None:
         client_dict["purchase_amount"] = client_dict["debt_amount"]
     
+    # If contract_date is not provided, set it to start_date minus 1 month
+    if client_dict.get("contract_date") is None:
+        try:
+            start_date = datetime.strptime(client_dict["start_date"], "%Y-%m-%d")
+            # Subtract 1 month
+            if start_date.month == 1:
+                contract_date = start_date.replace(year=start_date.year - 1, month=12)
+            else:
+                contract_date = start_date.replace(month=start_date.month - 1)
+            client_dict["contract_date"] = contract_date.strftime("%Y-%m-%d")
+        except ValueError:
+            # If date parsing fails, use start_date as fallback
+            client_dict["contract_date"] = client_dict["start_date"]
+    
     client_obj = Client(
         **{k: v for k, v in client_dict.items() if k not in ['months', 'schedule']},
         schedule=[s.dict() for s in schedule],  # Convert to dict for MongoDB
@@ -439,6 +455,49 @@ async def update_client(client_id: str, updates: ClientUpdate, current_user: str
     
     client = await db.clients.find_one({"client_id": client_id})
     return Client(**mongo_to_dict(client))
+
+@api_router.put("/clients/{client_id}/complete")
+async def complete_client(client_id: str, current_user: str = Depends(get_current_user)):
+    """Mark client as completed (all payments made)"""
+    # Get user's capitals
+    user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+    capital_ids = [cap["id"] for cap in user_capitals]
+    
+    # Find the client
+    client = await db.clients.find_one({
+        "client_id": client_id, 
+        "capital_id": {"$in": capital_ids}
+    })
+    
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Check if all payments are completed
+    schedule = client.get("schedule", [])
+    all_paid = all(payment.get("status") == "paid" for payment in schedule)
+    
+    if not all_paid:
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot complete client: not all payments are made"
+        )
+    
+    # Update client status to completed
+    result = await db.clients.update_one(
+        {"client_id": client_id, "capital_id": {"$in": capital_ids}},
+        {"$set": {"status": "completed", "updated_at": datetime.utcnow()}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Get updated client
+    updated_client = await db.clients.find_one({"client_id": client_id})
+    
+    return {
+        "message": "Client marked as completed successfully",
+        "client": Client(**mongo_to_dict(updated_client))
+    }
 
 @api_router.delete("/clients/{client_id}")
 async def delete_client(client_id: str, current_user: str = Depends(get_current_user)):
@@ -748,7 +807,11 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
     if not capital:
         raise HTTPException(status_code=404, detail="Capital not found")
     
-    clients = await db.clients.find({"capital_id": capital_id}).to_list(1000)
+    # Get all clients except completed ones for analytics
+    clients = await db.clients.find({
+        "capital_id": capital_id,
+        "status": {"$ne": "completed"}
+    }).to_list(1000)
     
     # Calculate analytics from schedule data
     total_debt = 0
@@ -779,7 +842,9 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
         
         # Get contract date to determine profit attribution month
         try:
-            contract_date = datetime.strptime(client.get("start_date", ""), "%Y-%m-%d")
+            # Use contract_date if available, otherwise fallback to start_date
+            contract_date_str = client.get("contract_date") or client.get("start_date", "")
+            contract_date = datetime.strptime(contract_date_str, "%Y-%m-%d")
             contract_month = contract_date.strftime("%Y-%m")
             
             # Add profit to the contract month
@@ -819,6 +884,14 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
     
     active_clients = len([c for c in clients if c["status"] == "active"])
     
+    # Get completed clients count
+    completed_clients = await db.clients.find({
+        "capital_id": capital_id,
+        "status": "completed"
+    }).to_list(1000)
+    completed_clients_count = len(completed_clients)
+    print(f"DEBUG: Found {completed_clients_count} completed clients for capital {capital_id}")  # Отладочная информация
+    
     # Get expenses for this capital
     expenses = await db.expenses.find({"capital_id": capital_id}).to_list(1000)
     total_expenses = sum(expense.get("amount", 0) for expense in expenses)
@@ -845,6 +918,7 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
         "total_paid": total_paid,
         "outstanding": total_debt - total_paid,
         "active_clients": active_clients,
+        "completed_clients": completed_clients_count,
         "total_clients": len(clients),
         "overdue_payments": overdue_count,
         "collection_rate": (total_paid / total_debt * 100) if total_debt > 0 else 0,
@@ -1054,7 +1128,11 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
     
     query_capital_ids = [capital_id] if capital_id else capital_ids
     
-    clients = await db.clients.find({"capital_id": {"$in": query_capital_ids}}).to_list(1000)
+    # Get all clients except completed ones for general dashboard
+    clients = await db.clients.find({
+        "capital_id": {"$in": query_capital_ids},
+        "status": {"$ne": "completed"}
+    }).to_list(1000)
     clients = [mongo_to_dict(client) for client in clients]
     
     today = date.today()
@@ -1096,11 +1174,59 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
             except (ValueError, KeyError) as e:
                 continue  # Skip invalid date entries
     
+    # Get completed clients separately
+    completed_clients = await db.clients.find({
+        "capital_id": {"$in": query_capital_ids},
+        "status": "completed"
+    }).to_list(1000)
+    completed_clients = [mongo_to_dict(client) for client in completed_clients]
+
     return {
         "today": today_payments,
         "tomorrow": tomorrow_payments,
         "overdue": overdue_payments,
-        "all_clients": clients
+        "all_clients": clients,
+        "completed_clients": completed_clients
+    }
+
+@api_router.post("/migrate-contract-dates")
+async def migrate_contract_dates(current_user: str = Depends(get_current_user)):
+    """Migrate existing clients to add contract_date field"""
+    # Get user's capitals
+    user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+    capital_ids = [cap["id"] for cap in user_capitals]
+    
+    # Find clients without contract_date
+    clients = await db.clients.find({
+        "capital_id": {"$in": capital_ids},
+        "contract_date": {"$exists": False}
+    }).to_list(1000)
+    
+    migrated_count = 0
+    
+    for client in clients:
+        try:
+            start_date = datetime.strptime(client["start_date"], "%Y-%m-%d")
+            # Subtract 1 month
+            if start_date.month == 1:
+                contract_date = start_date.replace(year=start_date.year - 1, month=12)
+            else:
+                contract_date = start_date.replace(month=start_date.month - 1)
+            
+            # Update client with contract_date
+            await db.clients.update_one(
+                {"client_id": client["client_id"]},
+                {"$set": {"contract_date": contract_date.strftime("%Y-%m-%d"), "updated_at": datetime.utcnow()}}
+            )
+            migrated_count += 1
+        except ValueError:
+            # If date parsing fails, skip this client
+            continue
+    
+    return {
+        "message": f"Successfully migrated {migrated_count} clients",
+        "migrated_count": migrated_count,
+        "total_found": len(clients)
     }
 
 # Include the router in the main app
@@ -1124,3 +1250,538 @@ logger = logging.getLogger(__name__)
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+# AI Service Integration
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    print("WARNING: OpenAI не установлен. AI чат будет отключен.")
+
+import asyncio
+from typing import Optional
+import re
+
+# Утилиты для работы с токенами
+def estimate_tokens(text: str) -> int:
+    """Примерная оценка токенов (1 токен ≈ 4 символа для русского)"""
+    return len(text) // 3
+
+def truncate_text(text: str, max_tokens: int = 500) -> str:
+    """Обрезает текст до указанного количества токенов"""
+    max_chars = max_tokens * 3
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + "... [обрезано]"
+
+def safe_json_dumps(obj, max_tokens: int = 1000) -> str:
+    """Безопасная сериализация с ограничением размера"""
+    raw_json = json.dumps(obj, ensure_ascii=False, default=str)
+    if estimate_tokens(raw_json) <= max_tokens:
+        return raw_json
+    
+    # Если объект - список, берем только первые N элементов
+    if isinstance(obj, list):
+        preview_count = min(len(obj), 5)
+        preview_obj = {
+            "items": obj[:preview_count],
+            "total_count": len(obj),
+            "note": f"Показаны первые {preview_count} из {len(obj)} элементов"
+        }
+        return json.dumps(preview_obj, ensure_ascii=False, default=str)
+    
+    # Если объект - словарь, обрезаем строковые поля
+    if isinstance(obj, dict):
+        compressed_obj = {}
+        for key, value in obj.items():
+            if isinstance(value, str) and len(value) > 200:
+                compressed_obj[key] = value[:200] + "..."
+            elif isinstance(value, list) and len(value) > 10:
+                compressed_obj[key] = value[:10] + [f"... и еще {len(value)-10}"]
+            else:
+                compressed_obj[key] = value
+        return json.dumps(compressed_obj, ensure_ascii=False, default=str)
+    
+    return truncate_text(raw_json, max_tokens)
+
+class CRMAIService:
+    def __init__(self):
+        self.openai_api_key = os.environ.get('OPENAI_API_KEY')
+        if self.openai_api_key and OPENAI_AVAILABLE:
+            import openai
+            openai.api_key = self.openai_api_key
+    
+    async def get_client_info(self, query: str, user_id: str):
+        """Получить информацию о клиенте"""
+        user_capitals = await db.capitals.find({"owner_id": user_id}).to_list(100)
+        capital_ids = [cap["id"] for cap in user_capitals]
+        
+        # Проекция - только нужные поля
+        projection = {
+            "_id": 0, "client_id": 1, "name": 1, "product": 1, 
+            "debt_amount": 1, "total_amount": 1, "monthly_payment": 1, 
+            "client_phone": 1, "status": 1, "capital_id": 1
+        }
+        
+        # Поиск по имени или ID
+        client = await db.clients.find_one({
+            "$and": [
+                {"capital_id": {"$in": capital_ids}},
+                {"$or": [
+                    {"name": {"$regex": query, "$options": "i"}},
+                    {"client_id": query}
+                ]}
+            ]
+        }, projection)
+        
+        if client:
+            # Сжатые данные
+            client_data = mongo_to_dict(client)
+            capital = next((cap for cap in user_capitals if cap["id"] == client["capital_id"]), None)
+            
+            return {
+                "found": True,
+                "client": {
+                    "id": client_data.get("client_id"),
+                    "name": client_data.get("name"),
+                    "product": client_data.get("product"),
+                    "debt": client_data.get("debt_amount") or client_data.get("total_amount", 0),
+                    "monthly_payment": client_data.get("monthly_payment"),
+                    "phone": client_data.get("client_phone"),
+                    "status": client_data.get("status")
+                },
+                "capital_name": capital.get("name") if capital else "Неизвестно"
+            }
+        return {"found": False, "message": f"Клиент '{query}' не найден"}
+    
+    async def get_overdue_payments(self, user_id: str, capital_id: Optional[str] = None):
+        """Получить просроченные платежи с агрегацией"""
+        user_capitals = await db.capitals.find({"owner_id": user_id}).to_list(100)
+        capital_ids = [cap["id"] for cap in user_capitals]
+        
+        if capital_id and capital_id in capital_ids:
+            capital_ids = [capital_id]
+        
+        # Проекция только нужных полей
+        projection = {
+            "_id": 0, "client_id": 1, "name": 1, "schedule": 1, 
+            "client_phone": 1, "capital_id": 1
+        }
+        
+        clients = await db.clients.find({"capital_id": {"$in": capital_ids}}, projection).to_list(500)
+        overdue_payments = []
+        total_overdue_amount = 0
+        today = date.today()
+        
+        for client in clients:
+            for payment in client.get("schedule", []):
+                try:
+                    payment_date = datetime.strptime(payment["payment_date"], "%Y-%m-%d").date()
+                except (ValueError, TypeError):
+                    continue
+
+                if payment.get("status") == "pending" and payment_date < today:
+                    days_overdue = (today - payment_date).days
+                    amount = payment.get("amount", 0)
+                    total_overdue_amount += amount
+                    
+                    overdue_payments.append({
+                        "client_name": client.get("name", "")[:50],  # Обрезаем имя
+                        "client_id": client.get("client_id", ""), 
+                        "amount": amount,
+                        "payment_date": payment["payment_date"],
+                        "days_overdue": days_overdue,
+                        "phone": client.get("client_phone", "")[:15]  # Обрезаем телефон
+                    })
+        
+        # Сортируем по дням просрочки (самые проблемные первыми)
+        overdue_payments.sort(key=lambda x: x["days_overdue"], reverse=True)
+        
+        # Возвращаем агрегированные данные
+        if not overdue_payments:
+            return {"summary": "Просроченных платежей нет", "count": 0, "total_amount": 0}
+        
+        # Топ-10 самых проблемных + общая статистика
+        return {
+            "summary": f"Найдено {len(overdue_payments)} просроченных платежей на сумму {total_overdue_amount:,.0f}₽",
+            "count": len(overdue_payments),
+            "total_amount": total_overdue_amount,
+            "top_overdue": overdue_payments[:10],  # Только топ-10
+            "worst_case_days": overdue_payments[0]["days_overdue"] if overdue_payments else 0
+        }
+    
+    async def search_clients(self, user_id: str, **filters):
+        """Поиск клиентов по фильтрам с ограничениями"""
+        user_capitals = await db.capitals.find({"owner_id": user_id}).to_list(100)
+        capital_ids = [cap["id"] for cap in user_capitals]
+        
+        query = {"capital_id": {"$in": capital_ids}}
+        
+        # Построение фильтров
+        if filters.get("name"):
+            query["name"] = {"$regex": filters["name"], "$options": "i"}
+        if filters.get("phone"):
+            query["client_phone"] = {"$regex": filters["phone"], "$options": "i"}
+        if filters.get("product"):
+            query["product"] = {"$regex": filters["product"], "$options": "i"}
+        if filters.get("status"):
+            query["status"] = filters["status"]
+        
+        # Проекция только основных полей
+        projection = {
+            "_id": 0, "client_id": 1, "name": 1, "product": 1,
+            "debt_amount": 1, "total_amount": 1, "monthly_payment": 1,
+            "client_phone": 1, "status": 1
+        }
+        
+        # Лимит результатов
+        limit = min(filters.get("limit", 20), 50)  # Максимум 50 записей
+        
+        clients = await db.clients.find(query, projection).limit(limit).to_list(limit)
+        
+        # Подсчет общего количества для статистики
+        total_count = await db.clients.count_documents(query)
+        
+        # Сжатые данные клиентов
+        result_clients = []
+        for client in clients:
+            client_data = mongo_to_dict(client)
+            result_clients.append({
+                "id": client_data.get("client_id"),
+                "name": client_data.get("name", "")[:50],  # Обрезаем имя
+                "product": client_data.get("product", "")[:30],  # Обрезаем продукт
+                "debt": client_data.get("debt_amount") or client_data.get("total_amount", 0),
+                "monthly_payment": client_data.get("monthly_payment", 0),
+                "phone": client_data.get("client_phone", "")[:15],  # Обрезаем телефон
+                "status": client_data.get("status", "active")
+            })
+        
+        return {
+            "clients": result_clients,
+            "found_count": len(result_clients),
+            "total_count": total_count,
+            "note": f"Показано {len(result_clients)} из {total_count} найденных клиентов" if total_count > len(result_clients) else None
+        }
+    
+    async def get_income_statistics(self, user_id: str, capital_id: Optional[str] = None):
+        """Получить статистику доходов с детализацией"""
+        user_capitals = await db.capitals.find({"owner_id": user_id}).to_list(100)
+        capital_ids = [cap["id"] for cap in user_capitals]
+        
+        if capital_id and capital_id in capital_ids:
+            capital_ids = [capital_id]
+        
+        # Проекция нужных полей
+        clients_projection = {
+            "_id": 0, "name": 1, "debt_amount": 1, "total_amount": 1, 
+            "monthly_payment": 1, "capital_id": 1, "schedule": 1
+        }
+        
+        clients = await db.clients.find({"capital_id": {"$in": capital_ids}}, clients_projection).to_list(500)
+        
+        # Получаем расходы
+        expenses = await db.expenses.find({"capital_id": {"$in": capital_ids}}).to_list(100)
+        
+        # Вычисляем статистику
+        total_debt = 0
+        total_paid = 0
+        monthly_income = 0
+        active_clients = 0
+        completed_clients = 0
+        
+        for client in clients:
+            client_debt = client.get("debt_amount") or client.get("total_amount", 0)
+            total_debt += client_debt
+            monthly_income += client.get("monthly_payment", 0)
+            
+            # Подсчитываем оплаченную сумму
+            paid_amount = 0
+            for payment in client.get("schedule", []):
+                if payment.get("status") == "paid":
+                    paid_amount += payment.get("amount", 0)
+            
+            total_paid += paid_amount
+            
+            # Статус клиента
+            if paid_amount >= client_debt:
+                completed_clients += 1
+            else:
+                active_clients += 1
+        
+        # Общие расходы
+        total_expenses = sum(exp.get("amount", 0) for exp in expenses)
+        
+        # Чистая прибыль
+        net_profit = total_paid - total_expenses
+        
+        # Эффективность сбора
+        collection_rate = (total_paid / total_debt * 100) if total_debt > 0 else 0
+        
+        # Ежемесячный потенциал
+        potential_monthly = monthly_income
+        
+        return {
+            "summary": f"📊 Финансовая статистика по {len(capital_ids)} капитал(ам)",
+            "total_debt": total_debt,
+            "total_paid": total_paid,
+            "total_expenses": total_expenses,
+            "net_profit": net_profit,
+            "collection_rate": round(collection_rate, 1),
+            "monthly_potential": potential_monthly,
+            "clients_stats": {
+                "active": active_clients,
+                "completed": completed_clients,
+                "total": len(clients)
+            },
+            "top_expenses": sorted([
+                {
+                    "description": exp.get("description", "")[:40],
+                    "amount": exp.get("amount", 0),
+                    "date": exp.get("date", "")
+                }
+                for exp in expenses
+            ], key=lambda x: x["amount"], reverse=True)[:5]
+        }
+    
+    async def handle_function_call(self, function_name: str, arguments: dict, user_id: str):
+        """Обработка вызовов функций от ИИ"""
+        if function_name == "get_client_info":
+            return await self.get_client_info(arguments["query"], user_id)
+        elif function_name == "get_overdue_payments":
+            return await self.get_overdue_payments(user_id, arguments.get("capital_id"))
+        elif function_name == "get_analytics":
+            # Используем существующий endpoint аналитики
+            capital_id = arguments["capital_id"]
+            user_capitals = await db.capitals.find({"owner_id": user_id}).to_list(100)
+            if capital_id in [cap["id"] for cap in user_capitals]:
+                # Вызываем функцию аналитики
+                analytics = await get_capital_analytics(capital_id, user_id)
+                return analytics
+            return {"error": "Капитал не найден"}
+        elif function_name == "search_clients":
+            return await self.search_clients(user_id, **arguments)
+        elif function_name == "get_income_statistics":
+            return await self.get_income_statistics(user_id, arguments.get("capital_id"))
+        
+        return {"error": f"Неизвестная функция: {function_name}"}
+    
+    def safe_chat_completion(self, client, messages, functions, **kwargs):
+        """Безопасный вызов OpenAI с контролем размера"""
+        MAX_TOKENS = 7500  # Оставляем запас для ответа
+        
+        # Подсчитываем общий размер
+        total_size = 0
+        for msg in messages:
+            total_size += estimate_tokens(str(msg))
+        
+        # Оцениваем размер функций
+        functions_size = estimate_tokens(json.dumps(functions, ensure_ascii=False))
+        total_size += functions_size
+        
+        # Если превышает лимит, обрезаем историю
+        while total_size > MAX_TOKENS and len(messages) > 2:
+            # Удаляем самое старое сообщение пользователя (но оставляем system)
+            if len(messages) > 2:
+                messages.pop(1)  # Удаляем второе сообщение (первое user message)
+                total_size = sum(estimate_tokens(str(msg)) for msg in messages) + functions_size
+        
+        # Дополнительное сжатие system prompt если нужно
+        if total_size > MAX_TOKENS:
+            system_msg = messages[0]
+            if system_msg["role"] == "system":
+                content = system_msg["content"]
+                if len(content) > 1000:
+                    messages[0]["content"] = content[:800] + "\n\n[Системное сообщение обрезано для экономии токенов]"
+        
+        return client.chat.completions.create(
+            messages=messages,
+            functions=functions,
+            **kwargs
+        )
+
+    async def chat_with_ai(self, message: str, user_context: dict) -> dict:
+        """Основной метод чата с ИИ"""
+        if not OPENAI_AVAILABLE:
+            return {
+                "response": "😔 Извините, ИИ-ассистент временно недоступен.\n\nДля активации нужно:\n1. Установить OpenAI: pip install openai\n2. Перезапустить сервер\n\nПока что используйте обычный поиск в CRM.",
+                "error": "OpenAI не установлен"
+            }
+            
+        if not self.openai_api_key:
+            return {"error": "OpenAI API key не настроен"}
+        
+        try:
+            import openai
+            client = openai.OpenAI(api_key=self.openai_api_key)
+            
+            functions = [
+                {
+                    "name": "get_client_info",
+                    "description": "Найти конкретного клиента по имени или ID (возвращает краткую сводку)",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {"type": "string", "description": "Имя клиента или ID для поиска"}
+                        },
+                        "required": ["query"]
+                    }
+                },
+                {
+                    "name": "get_overdue_payments", 
+                    "description": "Получить агрегированную статистику просроченных платежей (топ-10 + общие цифры)",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "capital_id": {"type": "string", "description": "ID конкретного капитала (необязательно)"}
+                        }
+                    }
+                },
+                {
+                    "name": "search_clients",
+                    "description": "Поиск клиентов с фильтрами (максимум 20 результатов + общий счетчик)",
+                    "parameters": {
+                        "type": "object", 
+                        "properties": {
+                            "name": {"type": "string", "description": "Поиск по имени клиента"},
+                            "phone": {"type": "string", "description": "Поиск по телефону"},
+                            "product": {"type": "string", "description": "Поиск по товару"},
+                            "status": {"type": "string", "enum": ["active", "overdue", "completed"], "description": "Статус клиента"},
+                            "limit": {"type": "integer", "minimum": 1, "maximum": 50, "description": "Количество результатов (по умолчанию 20)"}
+                        }
+                    }
+                },
+                {
+                    "name": "get_income_statistics",
+                    "description": "Получить детальную статистику доходов, расходов и прибыли (топ-5 расходов + общие цифры)",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "capital_id": {"type": "string", "description": "ID конкретного капитала (необязательно)"}
+                        }
+                    }
+                }
+            ]
+            
+            messages = [
+                {
+                    "role": "system",
+                    "content": f"""Ты - ИИ-ассистент CRM рассрочки.
+
+КОНТЕКСТ: ID={user_context.get('user_id')}, Капитал={user_context.get('current_capital', 'не выбран')}
+
+ФУНКЦИИ:
+- get_client_info: поиск клиента по имени/ID
+- get_overdue_payments: просроченные платежи (агрегированные данные)
+- search_clients: поиск клиентов по фильтрам (лимит 20)
+- get_income_statistics: статистика доходов, расходов и прибыли
+
+ПРАВИЛА:
+- Используй функции для получения данных
+- Отвечай кратко и по делу
+- Числа форматируй с разделителями (1,000₽)
+- При больших списках показывай топ-10 + общую статистику"""
+                },
+                {
+                    "role": "user",
+                    "content": truncate_text(message, 200)  # Обрезаем длинные вопросы
+                }
+            ]
+            
+            # Используем безопасный wrapper
+            response = self.safe_chat_completion(
+                client=client,
+                messages=messages,
+                functions=functions,
+                model="gpt-4",
+                function_call="auto", 
+                temperature=0.1
+            )
+            
+            message = response.choices[0].message
+            
+            # Если ИИ хочет вызвать функцию
+            if message.function_call:
+                function_name = message.function_call.name
+                function_args = json.loads(message.function_call.arguments)
+                
+                # Вызываем функцию
+                function_result = await self.handle_function_call(
+                    function_name, function_args, user_context["user_id"]
+                )
+                
+                # Отправляем результат обратно ИИ
+                messages.append(message)
+
+                # Используем безопасную сериализацию с автоматическим сжатием
+                content_to_send = safe_json_dumps(function_result, max_tokens=800)
+
+                messages.append({
+                    "role": "function",
+                    "name": function_name,
+                    "content": content_to_send
+                })
+                
+                # Получаем финальный ответ через безопасный wrapper
+                final_response = self.safe_chat_completion(
+                    client=client,
+                    messages=messages,
+                    functions=functions,
+                    model="gpt-4",
+                    temperature=0.1
+                )
+                
+                return {
+                    "response": final_response.choices[0].message.content,
+                    "function_used": function_name,
+                    "function_result": function_result
+                }
+            
+            return {"response": message.content}
+            
+        except Exception as e:
+            return {"error": f"Ошибка ИИ: {str(e)}"}
+
+# Создаем экземпляр AI сервиса
+ai_service = CRMAIService()
+
+# AI Chat endpoint
+@api_router.post("/ai/chat")
+async def ai_chat(request: dict, current_user: str = Depends(get_current_user)):
+    """Чат с ИИ-ассистентом"""
+    message = request.get("message", "")
+    if not message:
+        raise HTTPException(status_code=400, detail="Сообщение не может быть пустым")
+    
+    # Получаем контекст пользователя
+    user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+    current_capital = user_capitals[0] if user_capitals else None
+    
+    user_context = {
+        "user_id": current_user,
+        "current_capital": current_capital["name"] if current_capital else None,
+        "capital_count": len(user_capitals)
+    }
+    
+    # Отправляем в ИИ
+    ai_response = await ai_service.chat_with_ai(message, user_context)
+    
+    # Сохраняем историю чата (опционально)
+    chat_record = {
+        "user_id": current_user,
+        "message": message,
+        "ai_response": ai_response.get("response", ""),
+        "timestamp": datetime.utcnow(),
+        "function_used": ai_response.get("function_used")
+    }
+    
+    await db.ai_chat_history.insert_one(chat_record)
+    
+    return ai_response
+
+# Добавляем router снова, чтобы зарегистрировать AI endpoint если он был добавлен после первого include
+app.include_router(api_router)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
