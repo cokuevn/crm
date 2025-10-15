@@ -40,23 +40,34 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
 
           {/* Right: Capital selector + Balance + Actions */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Capital selector positioned near action buttons */}
+            {/* Capital selector with delete button */}
             {capitals.length > 0 && (
-              <select
-                value={selectedCapital?.id || ''}
-                onChange={(e) => {
-                  const capital = capitals.find(c => c.id === e.target.value);
-                  onCapitalChange(capital);
-                }}
-                className="hidden md:block px-3 h-9 text-sm border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[220px]"
-              >
-                <option value="">Выберите капитал</option>
-                {capitals.map((capital) => (
-                  <option key={capital.id} value={capital.id}>
-                    {capital.name}
-                  </option>
-                ))}
-              </select>
+              <div className="hidden md:flex items-center gap-2">
+                <select
+                  value={selectedCapital?.id || ''}
+                  onChange={(e) => {
+                    const capital = capitals.find(c => c.id === e.target.value);
+                    onCapitalChange(capital);
+                  }}
+                  className="px-3 h-9 text-sm border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[220px]"
+                >
+                  <option value="">Выберите капитал</option>
+                  {capitals.map((capital) => (
+                    <option key={capital.id} value={capital.id}>
+                      {capital.name}
+                    </option>
+                  ))}
+                </select>
+                {selectedCapital && (
+                  <button
+                    onClick={onDeleteCapital}
+                    className="inline-flex items-center justify-center h-9 w-9 rounded-2xl bg-red-50 text-red-500 hover:bg-red-100 border border-red-100 transition-colors"
+                    title="Удалить капитал"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  </button>
+                )}
+              </div>
             )}
 
             {selectedCapital && (
@@ -69,15 +80,6 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2"/></svg>
                 </span>
                 {selectedCapital.balance?.toLocaleString('ru-RU')} ₽
-              </button>
-            )}
-            {selectedCapital && (
-              <button
-                onClick={onDeleteCapital}
-                className="hidden md:inline-flex items-center justify-center h-9 w-9 rounded-2xl bg-red-50 text-red-500 hover:bg-red-100 border border-red-100"
-                title="Удалить капитал"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </button>
             )}
             <Button onClick={onShowAddCapital} variant="success" size="lg" iconSize="md" leadingIcon={<Icons.Plus />}>Капитал</Button>
