@@ -33,12 +33,9 @@ app = FastAPI(title="CRM Finance System", version="1.0.0")
 # Добавляем CORS (ТОЛЬКО ОДИН РАЗ!)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://crm-vnwl.onrender.com",
-        "http://localhost:3000"
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],  # Разрешаем все домены для простоты
+    allow_credentials=False,  # Отключаем credentials для "*" origins
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -1231,14 +1228,6 @@ async def migrate_contract_dates(current_user: str = Depends(get_current_user)):
 
 # Include the router in the main app
 app.include_router(api_router)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Configure logging
 logging.basicConfig(
