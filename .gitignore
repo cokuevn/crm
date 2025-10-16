@@ -37,6 +37,7 @@ dist
 .env.test.local
 .env.production.local
 backend/.env
+backend/.env.local.backup
 frontend/.env
 *token.json*
 *credentials.json*
