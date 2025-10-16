@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Button from './Button';
 
-const AnimatedActionMenu = ({ onShowImport, onMigrateContractDates, selectedCapital }) => {
+const AnimatedActionMenu = ({ onShowImport, onMigrateContractDates, onShowAddCapital, selectedCapital }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -15,6 +15,11 @@ const AnimatedActionMenu = ({ onShowImport, onMigrateContractDates, selectedCapi
 
   const handleMigration = () => {
     onMigrateContractDates();
+    setIsOpen(false);
+  };
+
+  const handleAddCapital = () => {
+    onShowAddCapital();
     setIsOpen(false);
   };
 
@@ -70,6 +75,37 @@ const AnimatedActionMenu = ({ onShowImport, onMigrateContractDates, selectedCapi
             <div className="flex-1">
               <div className="font-medium">Импорт</div>
               <div className="text-sm text-gray-500">Импорт клиентов</div>
+            </div>
+            <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
+
+          {/* Divider */}
+          <div className={`h-px bg-gray-200 my-2 transition-all duration-300 ${
+            isOpen ? 'opacity-100' : 'opacity-0'
+          }`}></div>
+
+          {/* Add Capital Button */}
+          <button
+            onClick={handleAddCapital}
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 text-gray-700 hover:bg-green-50 hover:text-green-700 hover:shadow-sm group"
+            title="Создать новый капитал"
+            style={{
+              animationDelay: isOpen ? '50ms' : '150ms',
+              animation: isOpen ? 'slideInFromTop 0.3s ease-out forwards' : 'none'
+            }}
+          >
+            <div className="flex-shrink-0 transition-transform duration-200 group-hover:scale-110">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <div className="font-medium">+ Капитал</div>
+              <div className="text-sm text-gray-500">Создать капитал</div>
             </div>
             <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

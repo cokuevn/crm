@@ -49,7 +49,8 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                     const capital = capitals.find(c => c.id === e.target.value);
                     onCapitalChange(capital);
                   }}
-                  className="px-3 h-9 text-sm border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[220px]"
+                  className="px-3 h-9 text-sm border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[220px] appearance-none"
+                  style={{ backgroundImage: 'none' }}
                 >
                   <option value="">Выберите капитал</option>
                   {capitals.map((capital) => (
@@ -82,13 +83,13 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                 {selectedCapital.balance?.toLocaleString('ru-RU')} ₽
               </button>
             )}
-            <Button onClick={onShowAddCapital} variant="success" size="lg" iconSize="md" leadingIcon={<Icons.Plus />}>Капитал</Button>
-            
+
             {/* Animated Action Menu */}
             <div className="flex items-center">
               <AnimatedActionMenu 
                 onShowImport={onShowImport}
                 onMigrateContractDates={onMigrateContractDates}
+                onShowAddCapital={onShowAddCapital}
                 selectedCapital={selectedCapital}
               />
             </div>
