@@ -277,19 +277,20 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
         </div>
       </div>
 
-      {/* iOS-style Filter Buttons */}
-      <div className="flex flex-wrap gap-3">
-        <button
-          onClick={setFilterAll}
-          className={`px-5 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
-            filter === 'all'
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
-              : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white border border-gray-200/50'
-          }`}
-        >
-          <Icons.Grid />
-          <span>Все клиенты ({dashboardData.all_clients?.length || 0})</span>
-        </button>
+      {/* Mobile-optimized Filter Buttons (horizontal scroll) */}
+      <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="flex gap-2 md:flex-wrap pb-2">
+          <button
+            onClick={setFilterAll}
+            className={`px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all flex items-center gap-1.5 touch-safe ${
+              filter === 'all'
+                ? 'bg-primary-600 text-white shadow-md'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+            }`}
+          >
+            <Icons.Grid />
+            <span>Все ({dashboardData.all_clients?.length || 0})</span>
+          </button>
         <button
           onClick={setFilterToday}
           className={`px-5 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
@@ -331,9 +332,10 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
               : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white border border-gray-200/50'
           }`}
         >
-          <Icons.CheckCircle />
-          <span>Завершённые ({dashboardData.completed_clients?.length || 0})</span>
-        </button>
+            <Icons.Check />
+            <span>Завершённые ({dashboardData.completed_clients?.length || 0})</span>
+          </button>
+        </div>
       </div>
 
       {/* Search Results Info */}
