@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useSwipeable } from 'react-swipeable';
-import { User, Phone, MapPin, AlertCircle, Edit, Trash2 } from 'lucide-react';
 import Icons from './Icons';
 import ProgressBar from './ProgressBar';
 
@@ -53,7 +52,7 @@ function ClientCard({ client, onClick, onEdit, onDelete }) {
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
             }`}
           >
-            <User size={20} />
+            <Icons.User />
           </div>
           
           {/* Name + Badge */}
@@ -84,7 +83,7 @@ function ClientCard({ client, onClick, onEdit, onDelete }) {
         {/* Debt Chip */}
         {total > 0 && (
           <div className="flex items-center mt-2 mb-3 text-error-600 dark:text-error-400 font-semibold text-sm">
-            <AlertCircle size={16} className="mr-1 flex-shrink-0" />
+            <Icons.Warning />
             <span>Долг: {total.toLocaleString('ru-RU')}₽</span>
             <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
               Оплачено: {paid.toLocaleString('ru-RU')}₽
@@ -96,14 +95,14 @@ function ClientCard({ client, onClick, onEdit, onDelete }) {
         <div className="space-y-2 mb-3">
           {client.client_phone && (
             <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-              <Phone size={14} className="mr-2 flex-shrink-0" />
-              <span className="truncate">{client.client_phone}</span>
+              <Icons.Phone />
+              <span className="ml-2 truncate">{client.client_phone}</span>
             </div>
           )}
           {client.client_address && (
             <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-              <MapPin size={14} className="mr-2 flex-shrink-0" />
-              <span className="truncate">{client.client_address}</span>
+              <Icons.Location />
+              <span className="ml-2 truncate">{client.client_address}</span>
             </div>
           )}
         </div>
@@ -145,7 +144,7 @@ function ClientCard({ client, onClick, onEdit, onDelete }) {
             className="bg-primary-600 text-white rounded-xl p-3 touch-safe shadow-lg"
             title="Редактировать"
           >
-            <Edit size={20} />
+            <Icons.Edit />
           </button>
           <button
             onClick={(e) => {
@@ -156,7 +155,7 @@ function ClientCard({ client, onClick, onEdit, onDelete }) {
             className="bg-error-600 text-white rounded-xl p-3 touch-safe shadow-lg"
             title="Удалить"
           >
-            <Trash2 size={20} />
+            <Icons.Trash />
           </button>
         </div>
       )}
