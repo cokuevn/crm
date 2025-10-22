@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navigation from './Navigation';
@@ -17,6 +18,7 @@ import { getAuthHeaders } from './lib/api';
 import apiClient from './lib/apiClient';
 import NotificationToast from './components/ui/NotificationToast';
 import { autoInit, migrateContractDates } from './lib/services/systemService';
+import Skeleton from './components/ui/Skeleton';
 
 // API helpers moved to lib/api
 
@@ -157,6 +159,22 @@ const MainApp = () => {
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const { user, logout } = useAuth();
+
+  // PWA Support: Service Worker registration
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker
+          .register('/sw.js')
+          .then(registration => {
+            console.log('SW registered:', registration);
+          })
+          .catch(error => {
+            console.log('SW registration failed:', error);
+          });
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -308,7 +326,12 @@ const MainApp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <motion.div 
+      className="min-h-screen bg-bg-light dark:bg-bg-dark transition-colors duration-300"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
+    >
       <Navigation
         currentPage={currentPage}
         onPageChange={setCurrentPage}
@@ -324,9 +347,18 @@ const MainApp = () => {
         onLogout={logout}
       />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {renderCurrentPage()}
-      </main>
+      <AnimatePresence mode="wait">
+        <motion.main 
+          key={currentPage}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+        >
+          {renderCurrentPage()}
+        </motion.main>
+      </AnimatePresence>
 
       {/* Modals */}
       <AddCapitalModal
@@ -372,7 +404,7 @@ const MainApp = () => {
 
       {/* Notifications */}
       <NotificationToast notifications={notifications} onClose={removeNotification} />
-    </div>
+    </motion.div>
   );
 };
 
@@ -382,12 +414,22 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Загрузка...</p>
+      <motion.div 
+        className="min-h-screen bg-bg-light dark:bg-bg-dark flex items-center justify-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-600 border-t-transparent mx-auto"></div>
+          <p className="mt-2 text-gray-600 dark:text-gray-400 font-medium">Загрузка...</p>
+          <div className="space-y-2 max-w-md mx-auto px-4">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4 mx-auto" />
+            <Skeleton className="h-4 w-1/2 mx-auto" />
+          </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 

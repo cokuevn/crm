@@ -104,7 +104,7 @@ const AnimatedActionMenu = ({ onShowImport, onMigrateContractDates, onShowAddCap
               </svg>
             </div>
             <div className="flex-1">
-              <div className="font-medium">+ Капитал</div>
+              <div className="font-medium">Капитал</div>
               <div className="text-sm text-gray-500">Создать капитал</div>
             </div>
             <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
