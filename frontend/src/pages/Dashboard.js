@@ -362,7 +362,7 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
       {filteredClients.length === 0 ? (
         <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            {searchTerm ? <Icons.Search /> : filter === 'today' ? <Icons.Calendar /> : filter === 'tomorrow' ? <Icons.Clock /> : filter === 'overdue' ? <Icons.Warning /> : filter === 'completed' ? <Icons.CheckCircle /> : <Icons.Grid />}
+            {searchTerm ? <Icons.Search /> : filter === 'today' ? <Icons.Calendar /> : filter === 'tomorrow' ? <Icons.Clock /> : filter === 'overdue' ? <Icons.Warning /> : filter === 'completed' ? <Icons.Check /> : <Icons.Grid />}
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             {searchTerm 
