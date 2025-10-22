@@ -5,6 +5,7 @@ import ProgressBar from '../components/ui/ProgressBar';
 import ClientCard from '../components/ui/ClientCard';
 import { useAuth } from '../contexts/AuthContext';
 import { API } from '../lib/api';
+import useAppStore from '../store/useAppStore';
 
 // Minimal icon set used in dashboard (to avoid coupling with App.js)
 const Icons = {
@@ -121,6 +122,10 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
       const data = await fetchDashboard(selectedCapital.id);
       console.log('Dashboard data received:', data); // Отладочная информация
       setDashboardData(data);
+      
+      // Update Zustand store with clients for overdueCount
+      const allClients = [...(data.all_clients || []), ...(data.completed_clients || [])];
+      useAppStore.getState().setClients(allClients);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
