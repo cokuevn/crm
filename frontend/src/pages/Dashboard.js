@@ -96,10 +96,14 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingClient, setEditingClient] = useState(null);
+  const [deletingClient, setDeletingClient] = useState(null);
   const { user } = useAuth();
   const [visibleCount, setVisibleCount] = useState(9);
   const sentinelRef = useRef(null);
   const handleCardClick = useCallback((id) => onClientClick(id), [onClientClick]);
+  const handleEditClient = useCallback((client) => setEditingClient(client), []);
+  const handleDeleteClient = useCallback((client) => setDeletingClient(client), []);
   const clearSearch = useCallback(() => setSearchTerm(''), []);
   const setFilterAll = useCallback(() => setFilter('all'), []);
   const setFilterToday = useCallback(() => setFilter('today'), []);
@@ -399,9 +403,15 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredClients.slice(0, visibleCount).map((client) => (
-              <ClientCard key={client.client_id} client={client} onClick={handleCardClick} />
+              <ClientCard 
+                key={client.client_id} 
+                client={client} 
+                onClick={handleCardClick}
+                onEdit={handleEditClient}
+                onDelete={handleDeleteClient}
+              />
             ))}
           </div>
           {visibleCount < filteredClients.length && (
