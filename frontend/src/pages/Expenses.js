@@ -9,8 +9,15 @@ import ExpenseCard from '../components/ui/ExpenseCard';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Icons from '../components/ui/Icons';
 
+// Arrow Left Icon
+const ArrowLeftIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+);
+
 // Placeholder: actual implementation can be ported here
-const Expenses = ({ selectedCapital }) => {
+const Expenses = ({ selectedCapital, onBack }) => {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -62,19 +69,56 @@ const Expenses = ({ selectedCapital }) => {
 
   if (!selectedCapital) {
     return (
-      <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl">
+      <div className="space-y-4 sm:space-y-6">
+        {/* Mobile Header with Back Button */}
+        {onBack && (
+          <div className="flex items-center space-x-4 mb-4 sm:mb-6">
+            <button
+              onClick={onBack}
+              className="flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-xl rounded-xl shadow-sm border border-gray-200/50 text-gray-700 hover:bg-white transition-all duration-200"
+              aria-label="Назад"
+            >
+              <ArrowLeftIcon />
+            </button>
+            <div className="flex-1">
+              <h1 className="text-lg font-semibold text-gray-900">Расходы</h1>
+              <p className="text-sm text-gray-600">Управление расходами</p>
+            </div>
+          </div>
+        )}
+        
+        <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl">
         <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Icons.Receipt />
         </div>
         <h3 className="text-xl font-semibold text-gray-900 mb-2">Выберите капитал</h3>
         <p className="text-gray-600">Выберите капитал для просмотра расходов</p>
+        </div>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
+        {/* Mobile Header with Back Button */}
+        {onBack && (
+          <div className="flex items-center space-x-4 mb-4 sm:mb-6">
+            <button
+              onClick={onBack}
+              className="flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-xl rounded-xl shadow-sm border border-gray-200/50 text-gray-700 hover:bg-white transition-all duration-200"
+              aria-label="Назад"
+            >
+              <ArrowLeftIcon />
+            </button>
+            <div className="flex-1">
+              <h1 className="text-lg font-semibold text-gray-900">Расходы</h1>
+              <p className="text-sm text-gray-600">{selectedCapital?.name || 'Загрузка...'}</p>
+            </div>
+          </div>
+        )}
+        
+        <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <SkeletonCircle size={40} />
@@ -105,12 +149,30 @@ const Expenses = ({ selectedCapital }) => {
             </div>
           ))}
         </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Mobile Header with Back Button */}
+      {onBack && (
+        <div className="flex items-center space-x-4 mb-4 sm:mb-6">
+          <button
+            onClick={onBack}
+            className="flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-xl rounded-xl shadow-sm border border-gray-200/50 text-gray-700 hover:bg-white transition-all duration-200"
+            aria-label="Назад"
+          >
+            <ArrowLeftIcon />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold text-gray-900">Расходы</h1>
+            <p className="text-sm text-gray-600">{selectedCapital?.name}</p>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">

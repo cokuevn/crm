@@ -5,7 +5,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { API } from '../lib/api';
 import Icons from '../components/ui/Icons';
 
-const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
+// Arrow Left Icon
+const ArrowLeftIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+);
+
+const AddClientForm = ({ capitals, selectedCapital, onClientAdded, onBack }) => {
   const [formData, setFormData] = useState({
     capital_id: selectedCapital?.id || '',
     name: '',
@@ -86,6 +93,22 @@ const AddClientForm = ({ capitals, selectedCapital, onClientAdded }) => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Mobile Header with Back Button */}
+      {onBack && (
+        <div className="flex items-center space-x-4 mb-4 sm:mb-6">
+          <button
+            onClick={onBack}
+            className="flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-xl rounded-xl shadow-sm border border-gray-200/50 text-gray-700 hover:bg-white transition-all duration-200"
+            aria-label="Назад"
+          >
+            <ArrowLeftIcon />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold text-gray-900">Добавить клиента</h1>
+            <p className="text-sm text-gray-600">{selectedCapital?.name || 'Новый клиент'}</p>
+          </div>
+        </div>
+      )}
       <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
         
         {/* Header */}

@@ -296,15 +296,16 @@ const MainApp = () => {
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'analytics':
-        return <Analytics selectedCapital={selectedCapital} />;
+        return <Analytics selectedCapital={selectedCapital} onBack={() => setCurrentPage('dashboard')} />;
       case 'expenses':
-        return <Expenses selectedCapital={selectedCapital} />;
+        return <Expenses selectedCapital={selectedCapital} onBack={() => setCurrentPage('dashboard')} />;
       case 'add-client':
         return (
           <AddClientForm 
             capitals={capitals}
             selectedCapital={selectedCapital}
             onClientAdded={handleClientAdded}
+            onBack={() => setCurrentPage('dashboard')}
           />
         );
       case 'client-details':

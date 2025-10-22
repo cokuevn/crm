@@ -2,22 +2,59 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 
-// TODO: move to env variables
+// Firebase configuration from environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyCi_syoMD2Co6AqaRCS2kIjV_t2sfVqWJw",
-  authDomain: "finance-a88e4.firebaseapp.com",
-  projectId: "finance-a88e4",
-  storageBucket: "finance-a88e4.firebasestorage.app",
-  messagingSenderId: "982874806548",
-  appId: "1:982874806548:web:aa25e7a3a3bb7dded5ca01",
-  measurementId: "G-TDGVVHBS0S"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "AIzaSyCi_syoMD2Co6AqaRCS2kIjV_t2sfVqWJw",
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "finance-a88e4.firebaseapp.com",
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "finance-a88e4",
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "finance-a88e4.firebasestorage.app",
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "982874806548",
+  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:982874806548:web:aa25e7a3a3bb7dded5ca01",
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || "G-TDGVVHBS0S"
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+
+// Configure Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 const AuthContext = createContext(null);
+
+// Helper function to get user-friendly error messages
+const getAuthErrorMessage = (error) => {
+  switch (error.code) {
+    case 'auth/user-not-found':
+      return 'Пользователь не найден';
+    case 'auth/wrong-password':
+      return 'Неверный пароль';
+    case 'auth/email-already-in-use':
+      return 'Этот email уже используется';
+    case 'auth/weak-password':
+      return 'Пароль слишком слабый';
+    case 'auth/invalid-email':
+      return 'Неверный формат email';
+    case 'auth/popup-closed-by-user':
+      return 'Окно авторизации было закрыто';
+    case 'auth/popup-blocked':
+      return 'Всплывающие окна заблокированы браузером';
+    case 'auth/cancelled-popup-request':
+      return 'Запрос авторизации отменен';
+    case 'auth/unauthorized-domain':
+      return 'Домен не авторизован для OAuth операций';
+    case 'auth/operation-not-allowed':
+      return 'Данный способ авторизации отключен';
+    case 'auth/network-request-failed':
+      return 'Ошибка сети. Проверьте подключение к интернету';
+    case 'auth/too-many-requests':
+      return 'Слишком много попыток. Попробуйте позже';
+    default:
+      return error.message || 'Произошла ошибка авторизации';
+  }
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -46,9 +83,33 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
-  const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
-  const register = (email, password) => createUserWithEmailAndPassword(auth, email, password);
-  const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
+  const login = async (email, password) => {
+    try {
+      return await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw new Error(getAuthErrorMessage(error));
+    }
+  };
+
+  const register = async (email, password) => {
+    try {
+      return await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw new Error(getAuthErrorMessage(error));
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    try {
+      return await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error('Google login error:', error);
+      throw new Error(getAuthErrorMessage(error));
+    }
+  };
+
   const logout = () => signOut(auth);
   const toggleDarkMode = () => setDarkMode(prev => !prev);
 
@@ -76,4 +137,3 @@ export const useAuth = () => {
   if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
   return ctx;
 };
-

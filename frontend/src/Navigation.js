@@ -160,9 +160,9 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
             </div>
 
           </div>
+          </div>
         </div>
-      </div>
-        
+
       </nav>
 
       {/* Mobile Drawer Menu (Hamburger) - вне nav для правильного z-index */}
@@ -188,11 +188,11 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                 {/* User Info */}
                 <div className="pb-3 border-b border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-600 dark:text-gray-400">{user?.email}</p>
-                  <button
-                    onClick={() => {
+            <button
+              onClick={() => {
                       onLogout();
-                      setIsMobileMenuOpen(false);
-                    }}
+                setIsMobileMenuOpen(false);
+              }}
                     className="mt-2 w-full py-2 px-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-sm font-medium"
                   >
                     Выйти
@@ -204,7 +204,7 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                   <button
                     onClick={goDashboard}
                     className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg transition-all touch-safe ${
-                      currentPage === 'dashboard'
+                currentPage === 'dashboard'
                         ? 'bg-primary-600 text-white'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
@@ -252,7 +252,7 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                   >
                     <UserPlus size={20} />
                     <span>Добавить клиента</span>
-                  </button>
+            </button>
                 </div>
 
                 {/* Capital Info & Management */}

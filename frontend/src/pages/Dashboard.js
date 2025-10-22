@@ -96,14 +96,10 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [editingClient, setEditingClient] = useState(null);
-  const [deletingClient, setDeletingClient] = useState(null);
   const { user } = useAuth();
   const [visibleCount, setVisibleCount] = useState(9);
   const sentinelRef = useRef(null);
   const handleCardClick = useCallback((id) => onClientClick(id), [onClientClick]);
-  const handleEditClient = useCallback((client) => setEditingClient(client), []);
-  const handleDeleteClient = useCallback((client) => setDeletingClient(client), []);
   const clearSearch = useCallback(() => setSearchTerm(''), []);
   const setFilterAll = useCallback(() => setFilter('all'), []);
   const setFilterToday = useCallback(() => setFilter('today'), []);
@@ -252,19 +248,19 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Modern iOS-style Search Bar */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-4">
-        <div className="flex items-center space-x-4">
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-gray-200/50 p-3 sm:p-4">
+        <div className="flex items-center space-x-3 sm:space-x-4">
           <div className="flex-1 relative">
             <input
               type="text"
-              placeholder="Поиск по имени, товару или ID клиента..."
+              placeholder="Поиск по имени, товару или ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-gray-50/80 border-0 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all duration-200 placeholder-gray-500"
+              className="w-full pl-10 sm:pl-11 pr-4 py-2.5 sm:py-3 bg-gray-50/80 border-0 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all duration-200 placeholder-gray-500 text-sm sm:text-base"
             />
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
               <div className="text-gray-400">
                 <Icons.Search />
               </div>
@@ -281,23 +277,23 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
         </div>
       </div>
 
-      {/* Mobile-optimized Filter Buttons (horizontal scroll) */}
-      <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-        <div className="flex gap-2 md:flex-wrap pb-2">
-          <button
-            onClick={setFilterAll}
-            className={`px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all flex items-center gap-1.5 touch-safe ${
-              filter === 'all'
-                ? 'bg-primary-600 text-white shadow-md'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
-            }`}
-          >
-            <Icons.Grid />
-            <span>Все ({dashboardData.all_clients?.length || 0})</span>
-          </button>
+      {/* iOS-style Filter Buttons */}
+      <div className="flex flex-wrap gap-2 sm:gap-3 overflow-x-auto scrollbar-hide pb-2">
+        <button
+          onClick={setFilterAll}
+          className={`px-3 sm:px-5 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm whitespace-nowrap ${
+            filter === 'all'
+              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
+              : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white border border-gray-200/50'
+          }`}
+        >
+          <Icons.Grid />
+          <span className="hidden sm:inline">Все клиенты ({dashboardData.all_clients?.length || 0})</span>
+          <span className="sm:hidden">Все ({dashboardData.all_clients?.length || 0})</span>
+        </button>
         <button
           onClick={setFilterToday}
-          className={`px-5 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
+          className={`px-3 sm:px-5 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm whitespace-nowrap ${
             filter === 'today'
               ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
               : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white border border-gray-200/50'
@@ -308,7 +304,7 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
         </button>
         <button
           onClick={setFilterTomorrow}
-          className={`px-5 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
+          className={`px-3 sm:px-5 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm whitespace-nowrap ${
             filter === 'tomorrow'
               ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25'
               : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white border border-gray-200/50'
@@ -319,7 +315,7 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
         </button>
         <button
           onClick={setFilterOverdue}
-          className={`px-5 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
+          className={`px-3 sm:px-5 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm whitespace-nowrap ${
             filter === 'overdue'
               ? 'bg-red-500 text-white shadow-lg shadow-red-500/25'
               : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white border border-gray-200/50'
@@ -330,21 +326,21 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
         </button>
         <button
           onClick={setFilterCompleted}
-          className={`px-5 py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
+          className={`px-3 sm:px-5 py-2 sm:py-3 rounded-xl font-medium transition-all duration-200 flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm whitespace-nowrap ${
             filter === 'completed'
               ? 'bg-green-500 text-white shadow-lg shadow-green-500/25'
               : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white border border-gray-200/50'
           }`}
         >
-            <Icons.Check />
-            <span>Завершённые ({dashboardData.completed_clients?.length || 0})</span>
-          </button>
-        </div>
+          <Icons.CheckCircle />
+          <span className="hidden sm:inline">Завершённые ({dashboardData.completed_clients?.length || 0})</span>
+          <span className="sm:hidden">Завершён. ({dashboardData.completed_clients?.length || 0})</span>
+        </button>
       </div>
 
       {/* Search Results Info */}
       {searchTerm && (
-        <div className="bg-blue-50/80 backdrop-blur-sm border border-blue-200/50 rounded-xl p-4">
+        <div className="bg-blue-50/80 backdrop-blur-sm border border-blue-200/50 rounded-xl p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-blue-800">
               <Icons.Search />
@@ -366,7 +362,7 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
       {filteredClients.length === 0 ? (
         <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200/50">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            {searchTerm ? <Icons.Search /> : filter === 'today' ? <Icons.Calendar /> : filter === 'tomorrow' ? <Icons.Clock /> : filter === 'overdue' ? <Icons.Warning /> : filter === 'completed' ? <Icons.Check /> : <Icons.Grid />}
+            {searchTerm ? <Icons.Search /> : filter === 'today' ? <Icons.Calendar /> : filter === 'tomorrow' ? <Icons.Clock /> : filter === 'overdue' ? <Icons.Warning /> : filter === 'completed' ? <Icons.CheckCircle /> : <Icons.Grid />}
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             {searchTerm 
@@ -403,15 +399,9 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredClients.slice(0, visibleCount).map((client) => (
-              <ClientCard 
-                key={client.client_id} 
-                client={client} 
-                onClick={handleCardClick}
-                onEdit={handleEditClient}
-                onDelete={handleDeleteClient}
-              />
+              <ClientCard key={client.client_id} client={client} onClick={handleCardClick} />
             ))}
           </div>
           {visibleCount < filteredClients.length && (
@@ -431,4 +421,3 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
 };
 
 export default Dashboard;
-

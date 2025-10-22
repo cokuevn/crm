@@ -7,7 +7,14 @@ import AnalyticsSummary from '../components/ui/AnalyticsSummary';
 import MonthlyProfitChart from '../components/ui/MonthlyProfitChart';
 import { Skeleton, SkeletonCircle, SkeletonText } from '../components/ui/Skeleton';
 
-const Analytics = ({ selectedCapital }) => {
+// Arrow Left Icon
+const ArrowLeftIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+);
+
+const Analytics = ({ selectedCapital, onBack }) => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -31,32 +38,51 @@ const Analytics = ({ selectedCapital }) => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4 lg:gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <div className="flex items-center">
-                <Skeleton className="w-12 h-12 rounded-lg" />
-                <div className="ml-4 flex-1">
-                  <Skeleton className="h-4 w-24 mb-2" />
-                  <Skeleton className="h-6 w-20" />
+      <div className="space-y-4 sm:space-y-6">
+        {/* Mobile Header with Back Button */}
+        {onBack && (
+          <div className="flex items-center space-x-4 mb-4 sm:mb-6">
+            <button
+              onClick={onBack}
+              className="flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-xl rounded-xl shadow-sm border border-gray-200/50 text-gray-700 hover:bg-white transition-all duration-200"
+              aria-label="Назад"
+            >
+              <ArrowLeftIcon />
+            </button>
+            <div className="flex-1">
+              <h1 className="text-lg font-semibold text-gray-900">Аналитика</h1>
+              <p className="text-sm text-gray-600">{selectedCapital?.name || 'Статистика'}</p>
+            </div>
+          </div>
+        )}
+        
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4 lg:gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <div className="flex items-center">
+                  <Skeleton className="w-12 h-12 rounded-lg" />
+                  <div className="ml-4 flex-1">
+                    <Skeleton className="h-4 w-24 mb-2" />
+                    <Skeleton className="h-6 w-20" />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <Skeleton className="h-5 w-40 mb-6" />
-              <div className="flex items-center justify-center">
-                <SkeletonCircle size={120} />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <Skeleton className="h-5 w-40 mb-6" />
+                <div className="flex items-center justify-center">
+                  <SkeletonCircle size={120} />
+                </div>
+                <div className="mt-4">
+                  <Skeleton className="h-4 w-2/3 mx-auto" />
+                </div>
               </div>
-              <div className="mt-4">
-                <Skeleton className="h-4 w-2/3 mx-auto" />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -64,14 +90,33 @@ const Analytics = ({ selectedCapital }) => {
 
   if (!analytics) {
     return (
-      <div className="text-center py-12">
-        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
+      <div className="space-y-4 sm:space-y-6">
+        {/* Mobile Header with Back Button */}
+        {onBack && (
+          <div className="flex items-center space-x-4 mb-4 sm:mb-6">
+            <button
+              onClick={onBack}
+              className="flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-xl rounded-xl shadow-sm border border-gray-200/50 text-gray-700 hover:bg-white transition-all duration-200"
+              aria-label="Назад"
+            >
+              <ArrowLeftIcon />
+            </button>
+            <div className="flex-1">
+              <h1 className="text-lg font-semibold text-gray-900">Аналитика</h1>
+              <p className="text-sm text-gray-600">{selectedCapital?.name || 'Статистика'}</p>
+            </div>
+          </div>
+        )}
+        
+        <div className="text-center py-12">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Нет данных для аналитики</h3>
+          <p className="text-gray-600">Добавьте клиентов для отображения аналитики</p>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Нет данных для аналитики</h3>
-        <p className="text-gray-600">Добавьте клиентов для отображения аналитики</p>
       </div>
     );
   }
@@ -89,7 +134,23 @@ const Analytics = ({ selectedCapital }) => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-8">
+      {/* Mobile Header with Back Button */}
+      {onBack && (
+        <div className="flex items-center space-x-4 mb-4 sm:mb-6">
+          <button
+            onClick={onBack}
+            className="flex items-center justify-center w-10 h-10 bg-white/80 backdrop-blur-xl rounded-xl shadow-sm border border-gray-200/50 text-gray-700 hover:bg-white transition-all duration-200"
+            aria-label="Назад"
+          >
+            <ArrowLeftIcon />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold text-gray-900">Аналитика</h1>
+            <p className="text-sm text-gray-600">{selectedCapital?.name || 'Статистика'}</p>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
         <AnalyticsSummary
           icon={<svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>}
