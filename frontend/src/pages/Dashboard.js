@@ -107,14 +107,7 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
   const setFilterOverdue = useCallback(() => setFilter('overdue'), []);
   const setFilterCompleted = useCallback(() => setFilter('completed'), []);
 
-  useEffect(() => {
-    // Reset filter when capital changes
-    setFilter('all');
-    setSearchTerm('');
-    fetchDashboardData();
-  }, [selectedCapital]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     if (!selectedCapital) return;
     
     setLoading(true);
@@ -124,47 +117,70 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
       setDashboardData(data);
       
       // Update Zustand store with clients for overdueCount
-      const allClients = [...(data.all_clients || []), ...(data.completed_clients || [])];
-      useAppStore.getState().setClients(allClients);
+      try {
+        const allClients = [...(data.all_clients || []), ...(data.completed_clients || [])];
+        useAppStore.getState().setClients(allClients);
+      } catch (storeError) {
+        console.error('Error updating store:', storeError);
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCapital]);
+
+  useEffect(() => {
+    // Reset filter when capital changes
+    setFilter('all');
+    setSearchTerm('');
+    fetchDashboardData();
+  }, [selectedCapital, fetchDashboardData]);
+
 
   const filteredClients = useMemo(() => {
-    const baseClients = dashboardData.all_clients || [];
-    const completedClients = dashboardData.completed_clients || [];
+    if (!dashboardData) return [];
+    
+    const baseClients = Array.isArray(dashboardData.all_clients) ? dashboardData.all_clients : [];
+    const completedClients = Array.isArray(dashboardData.completed_clients) ? dashboardData.completed_clients : [];
     let result = [];
 
-    if (filter === 'today') {
-      const items = dashboardData.today || [];
-      const ids = new Set(items.map((i) => i.client.client_id));
-      result = baseClients.filter((c) => ids.has(c.client_id)).map((c) => ({ ...c, filterReason: 'Платёж сегодня' }));
-    } else if (filter === 'tomorrow') {
-      const items = dashboardData.tomorrow || [];
-      console.log('Tomorrow filter - items:', items); // Отладочная информация
-      const ids = new Set(items.map((i) => i.client.client_id));
-      result = baseClients.filter((c) => ids.has(c.client_id)).map((c) => ({ ...c, filterReason: 'Платёж завтра' }));
-    } else if (filter === 'overdue') {
-      const items = dashboardData.overdue || [];
-      const ids = new Set(items.map((i) => i.client.client_id));
-      result = baseClients.filter((c) => ids.has(c.client_id)).map((c) => ({ ...c, filterReason: 'Просроченный платёж' }));
-    } else if (filter === 'completed') {
-      result = completedClients.map((c) => ({ ...c, filterReason: 'Завершённый клиент' }));
-    } else {
+    try {
+      if (filter === 'today') {
+        const items = Array.isArray(dashboardData.today) ? dashboardData.today : [];
+        const ids = new Set(items.filter(i => i?.client?.client_id).map((i) => i.client.client_id));
+        result = baseClients.filter((c) => c?.client_id && ids.has(c.client_id)).map((c) => ({ ...c, filterReason: 'Платёж сегодня' }));
+      } else if (filter === 'tomorrow') {
+        const items = Array.isArray(dashboardData.tomorrow) ? dashboardData.tomorrow : [];
+        console.log('Tomorrow filter - items:', items); // Отладочная информация
+        const ids = new Set(items.filter(i => i?.client?.client_id).map((i) => i.client.client_id));
+        result = baseClients.filter((c) => c?.client_id && ids.has(c.client_id)).map((c) => ({ ...c, filterReason: 'Платёж завтра' }));
+      } else if (filter === 'overdue') {
+        const items = Array.isArray(dashboardData.overdue) ? dashboardData.overdue : [];
+        const ids = new Set(items.filter(i => i?.client?.client_id).map((i) => i.client.client_id));
+        result = baseClients.filter((c) => c?.client_id && ids.has(c.client_id)).map((c) => ({ ...c, filterReason: 'Просроченный платёж' }));
+      } else if (filter === 'completed') {
+        result = completedClients.map((c) => ({ ...c, filterReason: 'Завершённый клиент' }));
+      } else {
+        result = baseClients.slice();
+      }
+
+      if (searchTerm && typeof searchTerm === 'string') {
+        const q = searchTerm.toLowerCase();
+        result = result.filter((client) => {
+          if (!client) return false;
+          return (
+            client.name?.toLowerCase().includes(q) ||
+            client.product?.toLowerCase().includes(q) ||
+            client.client_id?.toLowerCase().includes(q)
+          );
+        });
+      }
+    } catch (filterError) {
+      console.error('Error filtering clients:', filterError);
       result = baseClients.slice();
     }
-
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      result = result.filter((client) =>
-        client.name?.toLowerCase().includes(q) ||
-        client.product?.toLowerCase().includes(q) ||
-        client.client_id?.toLowerCase().includes(q)
-      );
-    }
+    
     return result;
   }, [dashboardData, filter, searchTerm]);
 
