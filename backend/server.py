@@ -1093,6 +1093,83 @@ async def init_mock_data(current_user: str = Depends(get_current_user)):
     
     return {"message": "Mock data initialized successfully", "capitals": [capital1.dict(), capital2.dict()]}
 
+# Migration function to fix payment schedules for existing clients
+@api_router.post("/migrate-payment-schedules")
+async def migrate_payment_schedules(current_user: str = Depends(get_current_user)):
+    """
+    Migrates existing clients to use the corrected payment schedule logic.
+    Preserves the status of already paid payments.
+    """
+    try:
+        # Get all user's capitals
+        user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+        capital_ids = [cap["id"] for cap in user_capitals]
+        
+        if not capital_ids:
+            return {"message": "No capitals found for user", "migrated_count": 0}
+        
+        # Get all clients for user's capitals
+        clients = await db.clients.find({"capital_id": {"$in": capital_ids}}).to_list(1000)
+        migrated_count = 0
+        
+        for client_data in clients:
+            try:
+                # Parse client data
+                start_date = client_data.get("start_date")
+                monthly_payment = client_data.get("monthly_payment")
+                current_schedule = client_data.get("schedule", [])
+                
+                if not start_date or not monthly_payment or not current_schedule:
+                    continue
+                
+                # Calculate months from current schedule length
+                months = len(current_schedule)
+                
+                # Generate new correct schedule
+                new_schedule = generate_payment_schedule(start_date, monthly_payment, months)
+                
+                # Preserve payment statuses from old schedule
+                preserved_schedule = []
+                for i, new_payment in enumerate(new_schedule):
+                    new_payment_dict = new_payment.dict()
+                    
+                    # Try to find matching payment in old schedule by index or amount
+                    if i < len(current_schedule):
+                        old_payment = current_schedule[i]
+                        if old_payment.get("status") == "paid":
+                            new_payment_dict["status"] = "paid" 
+                            new_payment_dict["paid_date"] = old_payment.get("paid_date")
+                    
+                    preserved_schedule.append(new_payment_dict)
+                
+                # Update client with new schedule
+                await db.clients.update_one(
+                    {"client_id": client_data["client_id"]},
+                    {
+                        "$set": {
+                            "schedule": preserved_schedule,
+                            "updated_at": datetime.utcnow(),
+                            "migration_applied": True  # Mark as migrated
+                        }
+                    }
+                )
+                
+                migrated_count += 1
+                
+            except Exception as e:
+                print(f"Error migrating client {client_data.get('client_id', 'unknown')}: {e}")
+                continue
+        
+        return {
+            "message": f"Successfully migrated {migrated_count} clients",
+            "migrated_count": migrated_count,
+            "total_clients": len(clients)
+        }
+        
+    except Exception as e:
+        print(f"Migration error: {e}")
+        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
+
 # Auto-initialize mock data on first login
 @api_router.get("/auto-init")
 async def auto_init_data(current_user: str = Depends(get_current_user)):

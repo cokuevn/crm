@@ -7,7 +7,7 @@ import AnimatedActionMenu from './components/ui/AnimatedActionMenu';
 import useAppStore from './store/useAppStore';
 
 // Navigation Component  
-const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onShowImport, onShowBalanceModal, onDeleteCapital, onMigrateContractDates, user, onLogout }) => {
+const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onShowImport, onShowBalanceModal, onDeleteCapital, onMigrateContractDates, onMigratePaymentSchedules, user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { darkMode, toggleDarkMode } = useAuth();
   const overdueCount = useAppStore((state) => state.overdueCount);
@@ -154,6 +154,7 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
               <AnimatedActionMenu 
                 onShowImport={onShowImport}
                 onMigrateContractDates={onMigrateContractDates}
+                onMigratePaymentSchedules={onMigratePaymentSchedules}
                 onShowAddCapital={onShowAddCapital}
                 selectedCapital={selectedCapital}
               />

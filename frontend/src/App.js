@@ -293,6 +293,22 @@ const MainApp = () => {
     }
   };
 
+  const handleMigratePaymentSchedules = async () => {
+    try {
+      const response = await apiClient.post('/api/migrate-payment-schedules');
+      const result = response.data;
+      showNotification('success', 'Миграция графиков завершена', 
+        `Обновлено ${result.migrated_count} из ${result.total_clients} клиентов`);
+      
+      // Refresh dashboard data to show updated schedules
+      fetchCapitals();
+    } catch (error) {
+      console.error('Error migrating payment schedules:', error);
+      const errorMessage = error.response?.data?.detail || 'Не удалось обновить графики платежей';
+      showNotification('error', 'Ошибка миграции', errorMessage);
+    }
+  };
+
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'analytics':
@@ -344,6 +360,7 @@ const MainApp = () => {
         onShowImport={() => setShowImportModal(true)}
         onDeleteCapital={() => setShowDeleteConfirm(selectedCapital)}
         onMigrateContractDates={handleMigrateContractDates}
+        onMigratePaymentSchedules={handleMigratePaymentSchedules}
         user={user}
         onLogout={logout}
       />

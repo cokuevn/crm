@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Button from './Button';
 
-const AnimatedActionMenu = ({ onShowImport, onMigrateContractDates, onShowAddCapital, selectedCapital }) => {
+const AnimatedActionMenu = ({ onShowImport, onMigrateContractDates, onMigratePaymentSchedules, onShowAddCapital, selectedCapital }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -13,8 +13,13 @@ const AnimatedActionMenu = ({ onShowImport, onMigrateContractDates, onShowAddCap
     setIsOpen(false);
   };
 
-  const handleMigration = () => {
+  const handleContractMigration = () => {
     onMigrateContractDates();
+    setIsOpen(false);
+  };
+
+  const handlePaymentMigration = () => {
+    onMigratePaymentSchedules();
     setIsOpen(false);
   };
 
@@ -119,9 +124,9 @@ const AnimatedActionMenu = ({ onShowImport, onMigrateContractDates, onShowAddCap
             isOpen ? 'opacity-100' : 'opacity-0'
           }`}></div>
 
-          {/* Migration Button */}
+          {/* Contract Migration Button */}
           <button
-            onClick={handleMigration}
+            onClick={handleContractMigration}
             className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 text-gray-700 hover:bg-purple-50 hover:text-purple-700 hover:shadow-sm group"
             title="Обновить даты договоров для существующих клиентов"
             style={{
@@ -135,8 +140,39 @@ const AnimatedActionMenu = ({ onShowImport, onMigrateContractDates, onShowAddCap
               </svg>
             </div>
             <div className="flex-1">
-              <div className="font-medium">Миграция</div>
-              <div className="text-sm text-gray-500">Обновить даты</div>
+              <div className="font-medium">Миграция дат</div>
+              <div className="text-sm text-gray-500">Обновить даты договоров</div>
+            </div>
+            <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
+
+          {/* Divider */}
+          <div className={`h-px bg-gray-200 my-2 transition-all duration-300 ${
+            isOpen ? 'opacity-100' : 'opacity-0'
+          }`}></div>
+
+          {/* Payment Schedule Migration Button */}
+          <button
+            onClick={handlePaymentMigration}
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 text-gray-700 hover:bg-orange-50 hover:text-orange-700 hover:shadow-sm group"
+            title="Исправить графики платежей для существующих клиентов"
+            style={{
+              animationDelay: isOpen ? '150ms' : '250ms',
+              animation: isOpen ? 'slideInFromTop 0.3s ease-out forwards' : 'none'
+            }}
+          >
+            <div className="flex-shrink-0 transition-transform duration-200 group-hover:scale-110">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3-3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <div className="font-medium">Миграция платежей</div>
+              <div className="text-sm text-gray-500">Исправить графики</div>
             </div>
             <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
