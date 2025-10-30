@@ -46,8 +46,10 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
     setLoading(true);
     setError('');
     try {
-      // Check if dates have changed to trigger schedule recalculation
-      const datesChanged = client.start_date !== formData.start_date || client.end_date !== formData.end_date;
+      // Check if dates or payment amount have changed to trigger schedule recalculation
+      const datesChanged = client.start_date !== formData.start_date || 
+                           client.end_date !== formData.end_date ||
+                           client.monthly_payment !== parseFloat(formData.monthly_payment);
       
       const response = await apiClient.put(
         `/api/clients/${client.client_id}`,
@@ -65,11 +67,16 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
       
       // Show success notification if schedule was recalculated
       if (datesChanged) {
+        let message = 'График платежей пересчитан';
+        if (client.start_date !== formData.start_date) message += ' с новой даты начала';
+        if (client.end_date !== formData.end_date) message += ' с новой даты окончания';
+        if (client.monthly_payment !== parseFloat(formData.monthly_payment)) message += ' с новым ежемесячным платежом';
+        
         window.dispatchEvent(new CustomEvent('app:notify', { 
           detail: { 
             type: 'success', 
             title: 'Успешно обновлено', 
-            message: 'График платежей пересчитан с учетом новых дат' 
+            message: message
           } 
         }));
       }
@@ -85,7 +92,7 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
     setFormData((prev) => {
       const newFormData = { ...prev, [name]: value };
       
-      // Auto-calculate end_date when start_date or monthly_payment changes
+      // Auto-calculate end_date when start_date or monthly_payment or debt_amount changes
       if ((name === 'start_date' || name === 'monthly_payment' || name === 'debt_amount') && 
           newFormData.start_date && newFormData.monthly_payment && newFormData.debt_amount) {
         try {
@@ -103,6 +110,28 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
           }
         } catch (error) {
           console.error('Error calculating end date:', error);
+        }
+      }
+      
+      // Auto-calculate monthly_payment when end_date changes
+      if (name === 'end_date' && newFormData.start_date && newFormData.end_date && newFormData.debt_amount) {
+        try {
+          const startDate = new Date(newFormData.start_date);
+          const endDate = new Date(newFormData.end_date);
+          const debtAmount = parseFloat(newFormData.debt_amount);
+          
+          if (endDate > startDate && debtAmount > 0) {
+            // Calculate months between dates
+            const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                              (endDate.getMonth() - startDate.getMonth()) + 1; // +1 to include both start and end months
+            
+            if (monthsDiff > 0) {
+              const calculatedMonthlyPayment = Math.round((debtAmount / monthsDiff) * 100) / 100; // Round to 2 decimal places
+              newFormData.monthly_payment = calculatedMonthlyPayment.toString();
+            }
+          }
+        } catch (error) {
+          console.error('Error calculating monthly payment:', error);
         }
       }
       
@@ -160,7 +189,17 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Ежемесячный платёж (₽) *</label>
-                <input type="number" name="monthly_payment" value={formData.monthly_payment} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required min="0" step="0.01" />
+                <input 
+                  type="number" 
+                  name="monthly_payment" 
+                  value={formData.monthly_payment} 
+                  onChange={handleChange} 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                  required 
+                  min="0" 
+                  step="0.01" 
+                />
+                <p className="text-xs text-gray-500 mt-1">💡 Автоматически рассчитывается при изменении дат</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Дата заключения договора</label>
@@ -193,7 +232,7 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50" 
                   title="Дата рассчитывается автоматически или может быть изменена вручную"
                 />
-                <p className="text-xs text-gray-500 mt-1">💡 Рассчитывается автоматически по долгу и платежу</p>
+                <p className="text-xs text-gray-500 mt-1">💡 Рассчитывается автоматически или изменяет ежемесячный платёж</p>
               </div>
             </div>
           </div>

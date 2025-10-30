@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime, date, timedelta
 from enum import Enum
 import json
+import math
 from bson import ObjectId
 import certifi
 
@@ -188,6 +189,10 @@ class ClientUpdate(BaseModel):
     client_phone: Optional[str] = None
     guarantor_phone: Optional[str] = None
     status: Optional[ClientStatus] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    contract_date: Optional[str] = None
+    recalculate_schedule: Optional[bool] = False
 
 class PaymentCreate(BaseModel):
     client_id: str
@@ -451,10 +456,81 @@ async def update_client(client_id: str, updates: ClientUpdate, current_user: str
     user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
     capital_ids = [cap["id"] for cap in user_capitals]
     
+    # Get current client data
+    current_client = await db.clients.find_one({"client_id": client_id, "capital_id": {"$in": capital_ids}})
+    if not current_client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
     # Convert updates to dict and filter out None values
-    update_dict = {k: v for k, v in updates.dict().items() if v is not None}
+    update_dict = {k: v for k, v in updates.dict().items() if v is not None and k != "recalculate_schedule"}
     update_dict["updated_at"] = datetime.utcnow()
     
+    # Check if schedule recalculation is needed
+    should_recalculate = updates.recalculate_schedule
+    if should_recalculate and updates.start_date:
+        try:
+            months = None
+            monthly_payment = None
+            
+            # Determine calculation method based on available data
+            if updates.end_date and updates.debt_amount:
+                # Calculate months from start_date to end_date
+                start_date = datetime.strptime(updates.start_date, "%Y-%m-%d")
+                end_date = datetime.strptime(updates.end_date, "%Y-%m-%d")
+                
+                # Calculate months between dates
+                months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month) + 1
+                
+                if months > 0 and updates.debt_amount > 0:
+                    # Calculate monthly payment based on months
+                    monthly_payment = updates.debt_amount / months
+                else:
+                    raise ValueError("Invalid date range or debt amount")
+                    
+            elif updates.monthly_payment and updates.debt_amount:
+                # Calculate months based on debt and monthly payment (original logic)
+                months = math.ceil(updates.debt_amount / updates.monthly_payment)
+                monthly_payment = updates.monthly_payment
+            else:
+                raise ValueError("Insufficient data for schedule recalculation. Need (start_date + end_date + debt_amount) or (start_date + monthly_payment + debt_amount)")
+            
+            # Generate new payment schedule
+            new_schedule = generate_payment_schedule(updates.start_date, monthly_payment, months)
+            
+            # Preserve payment statuses from existing schedule if possible
+            existing_schedule = current_client.get("schedule", [])
+            preserved_schedule = []
+            
+            for i, new_payment in enumerate(new_schedule):
+                new_payment_dict = new_payment.dict()
+                
+                # Try to find matching payment in existing schedule by index
+                if i < len(existing_schedule):
+                    existing_payment = existing_schedule[i]
+                    if existing_payment.get("status") == "paid":
+                        new_payment_dict["status"] = "paid"
+                        new_payment_dict["paid_date"] = existing_payment.get("paid_date")
+                
+                preserved_schedule.append(new_payment_dict)
+            
+            # Update schedule in the update dict
+            update_dict["schedule"] = preserved_schedule
+            
+            # Set calculated end_date if not provided
+            if preserved_schedule:
+                update_dict["end_date"] = preserved_schedule[-1]["payment_date"]
+            
+            # Update monthly_payment if it was calculated
+            if updates.end_date and not updates.monthly_payment:
+                update_dict["monthly_payment"] = monthly_payment
+            
+            print(f"Recalculated schedule for client {client_id}: {len(preserved_schedule)} payments, monthly payment: {monthly_payment}")
+            
+        except Exception as e:
+            print(f"Error recalculating schedule: {e}")
+            raise HTTPException(status_code=400, detail=f"Error recalculating payment schedule: {str(e)}")
+    
+    # Update the client
     result = await db.clients.update_one(
         {"client_id": client_id, "capital_id": {"$in": capital_ids}},
         {"$set": update_dict}
