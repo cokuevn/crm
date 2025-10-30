@@ -704,6 +704,71 @@ async def update_payment_status(
         "new_balance": new_balance
     }
 
+# Update scheduled payment amount with carry-over logic
+class PaymentAmountUpdate(BaseModel):
+    amount: float
+
+@api_router.put("/clients/{client_id}/payments/{payment_date}/amount", response_model=Client)
+async def update_payment_amount(
+    client_id: str,
+    payment_date: str,
+    payload: PaymentAmountUpdate,
+    current_user: str = Depends(get_current_user)
+):
+    # Verify client ownership
+    user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+    capital_ids = [cap["id"] for cap in user_capitals]
+    
+    client = await db.clients.find_one({"client_id": client_id, "capital_id": {"$in": capital_ids}})
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    schedule = client.get("schedule", [])
+    if not schedule:
+        raise HTTPException(status_code=400, detail="Client has no schedule")
+    
+    # Find payment index by date
+    idx = -1
+    for i, p in enumerate(schedule):
+        if p.get("payment_date") == payment_date:
+            idx = i
+            break
+    if idx == -1:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    
+    old_amount = float(schedule[idx].get("amount", 0))
+    new_amount = float(payload.amount)
+    delta = new_amount - old_amount
+    schedule[idx]["amount"] = round(new_amount, 2)
+    
+    # Carry delta to next payments
+    remaining = delta
+    j = idx + 1
+    while abs(remaining) > 1e-9 and j < len(schedule):
+        curr = float(schedule[j].get("amount", 0))
+        adjusted = curr - remaining
+        if adjusted < 0:
+            remaining = -(adjusted)
+            adjusted = 0.0
+        else:
+            remaining = 0.0
+        schedule[j]["amount"] = round(adjusted, 2)
+        j += 1
+    
+    # Trim trailing zero-amount payments
+    while schedule and abs(float(schedule[-1].get("amount", 0))) < 1e-9:
+        schedule.pop()
+    
+    # Update end_date based on new schedule
+    end_date = schedule[-1]["payment_date"] if schedule else client.get("start_date")
+    
+    await db.clients.update_one(
+        {"client_id": client_id},
+        {"$set": {"schedule": schedule, "end_date": end_date, "updated_at": datetime.utcnow()}}
+    )
+    updated = await db.clients.find_one({"client_id": client_id})
+    return Client(**mongo_to_dict(updated))
+
 @api_router.put("/clients/{client_id}", response_model=Client)
 async def update_client_old(client_id: str, updates: dict, current_user: str = Depends(get_current_user)):
     # Get user's capitals

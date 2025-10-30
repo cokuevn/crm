@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getClient, deleteClient as deleteClientApi, updatePaymentStatus as updatePaymentStatusApi, completeClient as completeClientApi } from '../lib/services/clientsService';
+import { getClient, deleteClient as deleteClientApi, updatePaymentStatus as updatePaymentStatusApi, completeClient as completeClientApi, updatePaymentAmount as updatePaymentAmountApi } from '../lib/services/clientsService';
 import { Skeleton, SkeletonCircle, SkeletonText } from '../components/ui/Skeleton';
 import ProgressBar from '../components/ui/ProgressBar';
 import Button from '../components/ui/Button';
@@ -71,6 +71,24 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
     } catch (error) {
       console.error('Error updating payment status:', error);
       window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'error', title: 'Ошибка', message: 'Не удалось изменить статус платежа' } }));
+    }
+  };
+
+  const updatePaymentAmount = async (paymentDate) => {
+    const current = client?.schedule?.find(p => p.payment_date === paymentDate)?.amount;
+    const input = window.prompt('Введите сумму платежа', current != null ? String(current) : '');
+    if (input == null) return;
+    const amount = parseFloat(input);
+    if (Number.isNaN(amount) || amount < 0) {
+      window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'error', title: 'Ошибка', message: 'Введите корректную сумму' } }));
+      return;
+    }
+    try {
+      await updatePaymentAmountApi(clientId, paymentDate, amount);
+      await fetchClientDetails();
+      window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'success', title: 'Успешно', message: 'Сумма платежа обновлена' } }));
+    } catch (error) {
+      window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'error', title: 'Ошибка', message: error.response?.data?.detail || 'Не удалось обновить сумму' } }));
     }
   };
 
@@ -389,17 +407,31 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
                     </span>
                   </div>
                   
-                  <button
-                    onClick={() => setShowPaymentModal(payment)}
-                    className="w-full mt-4 px-4 py-3 bg-white/60 backdrop-blur-sm rounded-2xl border border-current hover:bg-white/80 transition-all text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      <span>Изменить статус</span>
-                    </div>
-                  </button>
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={() => setShowPaymentModal(payment)}
+                      className="flex-1 px-4 py-3 bg-white/60 backdrop-blur-sm rounded-2xl border border-current hover:bg-white/80 transition-all text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <div className="flex items-center justify-center space-x-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Статус</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => updatePaymentAmount(payment.payment_date)}
+                      className="px-4 py-3 bg-white/60 backdrop-blur-sm rounded-2xl border border-blue-600 text-blue-700 hover:bg-white/80 transition-all text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      title="Изменить сумму платежа (разница будет перенесена на следующие платежи)"
+                    >
+                      <div className="flex items-center justify-center space-x-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v8m-4-4h8" />
+                        </svg>
+                        <span>Сумма</span>
+                      </div>
+                    </button>
+                  </div>
                   
                   {payment.status === 'paid' && payment.paid_date && (
                     <p className="text-xs font-medium mt-3 text-center opacity-75">

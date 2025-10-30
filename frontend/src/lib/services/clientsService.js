@@ -19,3 +19,8 @@ export async function updatePaymentStatus(clientId, paymentDate, status) {
   return data;
 }
 
+export async function updatePaymentAmount(clientId, paymentDate, amount) {
+  const { data } = await apiClient.put(`/api/clients/${clientId}/payments/${paymentDate}/amount`, { amount });
+  return data;
+}
+
