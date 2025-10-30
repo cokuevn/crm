@@ -987,6 +987,7 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
     total_payments_count = 0
     paid_payments_count = 0
     overdue_count = 0
+    total_overdue_amount = 0  # Total sum of overdue payments
     current_month_expected = 0
     monthly_profits = {}
     total_profit = 0  # Общая прибыль (долг - покупка)
@@ -1042,10 +1043,11 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
                     total_paid += payment_amount
                     paid_payments_count += 1
                 
-                # Count overdue payments
+                # Count overdue payments and sum their amounts
                 elif (payment_status == "overdue" or 
                       (payment_status == "pending" and payment_date < today)):
                     overdue_count += 1
+                    total_overdue_amount += payment_amount
                     
             except (ValueError, KeyError):
                 continue
@@ -1089,6 +1091,7 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
         "completed_clients": completed_clients_count,
         "total_clients": len(clients),
         "overdue_payments": overdue_count,
+        "total_overdue_amount": total_overdue_amount,  # Total sum of all overdue payments
         "collection_rate": (total_paid / total_debt * 100) if total_debt > 0 else 0,
         "total_payments": total_payments_count,
         "paid_payments": paid_payments_count,

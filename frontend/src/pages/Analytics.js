@@ -185,7 +185,7 @@ const Analytics = ({ selectedCapital, onBack }) => {
           bgColor="bg-red-100"
           textColor="text-red-600"
           label="Просроченные"
-          value={analytics.overdue_payments?.toLocaleString('ru-RU')}
+          value={`${analytics.overdue_payments?.toLocaleString('ru-RU')} шт. / ${(analytics.total_overdue_amount || 0)?.toLocaleString('ru-RU')}₽`}
         />
         <AnalyticsSummary
           icon={<svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>}
@@ -280,6 +280,13 @@ const Analytics = ({ selectedCapital, onBack }) => {
                 <span className="font-medium">К оплате</span>
               </div>
               <span className="font-bold text-xl tabular-nums">{((analytics.total_amount || 0) - (analytics.total_paid || 0)).toLocaleString('ru-RU')}₽</span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <span className="font-medium">Сумма просрочек</span>
+              </div>
+              <span className="font-bold text-xl tabular-nums">{(analytics.total_overdue_amount || 0).toLocaleString('ru-RU')}₽</span>
             </div>
             <div className="flex items-center justify-between rounded-xl bg-purple-50 border border-purple-200 text-purple-700 px-4 py-4">
               <div className="flex items-center gap-3">

@@ -6,6 +6,24 @@ function ClientCard({ client, onClick }) {
   const total = client.debt_amount || client.total_amount || 0;
   const paid = client.schedule?.filter((p) => p.status === 'paid').reduce((s, p) => s + p.amount, 0) || 0;
   const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
+  
+  // Calculate overdue payments
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const overduePayments = (client.schedule || []).filter(payment => {
+    if (payment.status === 'paid') return false;
+    try {
+      const paymentDate = new Date(payment.payment_date);
+      paymentDate.setHours(0, 0, 0, 0);
+      return paymentDate < today;
+    } catch {
+      return false;
+    }
+  });
+  
+  const overdueCount = overduePayments.length;
+  const overdueAmount = overduePayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
 
   return (
     <div
@@ -56,6 +74,18 @@ function ClientCard({ client, onClick }) {
           </div>
           <span className="font-semibold text-gray-900">{(client.debt_amount || client.total_amount || 0).toLocaleString()}₽</span>
         </div>
+        {overdueCount > 0 && (
+          <div className="flex items-center justify-between text-xs sm:text-sm p-2 bg-red-50/80 border border-red-200/50 rounded-lg">
+            <div className="flex items-center space-x-1.5 sm:space-x-2 text-red-700">
+              <Icons.Warning />
+              <span>Просрочено:</span>
+            </div>
+            <div className="text-right">
+              <span className="font-semibold text-red-700">{overdueCount} шт.</span>
+              <span className="font-bold text-red-800 ml-2">{overdueAmount.toLocaleString()}₽</span>
+            </div>
+          </div>
+        )}
         <div className="hidden sm:flex items-center justify-between text-sm">
           <div className="flex items-center space-x-2 text-gray-600">
             <Icons.Phone />
