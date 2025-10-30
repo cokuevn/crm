@@ -214,6 +214,19 @@ def mongo_to_dict(mongo_doc):
         del mongo_doc['_id']
     return mongo_doc
 
+def normalize_client_end_date(client_doc: dict) -> dict:
+    """Ensure client end_date equals the last payment_date in schedule if present."""
+    try:
+        schedule = client_doc.get("schedule") or []
+        if schedule:
+            last_date = schedule[-1].get("payment_date") if isinstance(schedule[-1], dict) else getattr(schedule[-1], "payment_date", None)
+            if last_date:
+                client_doc["end_date"] = last_date
+    except Exception:
+        # Do not fail response on normalization issues
+        pass
+    return client_doc
+
 def generate_payment_schedule(start_date_str: str, monthly_payment: float, months: int) -> List[PaymentSchedule]:
     from calendar import monthrange
     
@@ -437,7 +450,8 @@ async def get_clients(capital_id: Optional[str] = None, current_user: str = Depe
         query = {"capital_id": capital_id}
     
     clients = await db.clients.find(query).to_list(1000)
-    return [Client(**mongo_to_dict(client)) for client in clients]
+    normalized = [normalize_client_end_date(mongo_to_dict(client)) for client in clients]
+    return [Client(**client) for client in normalized]
 
 @api_router.get("/clients/{client_id}", response_model=Client)
 async def get_client(client_id: str, current_user: str = Depends(get_current_user)):
@@ -448,7 +462,8 @@ async def get_client(client_id: str, current_user: str = Depends(get_current_use
     client = await db.clients.find_one({"client_id": client_id, "capital_id": {"$in": capital_ids}})
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-    return Client(**mongo_to_dict(client))
+    normalized = normalize_client_end_date(mongo_to_dict(client))
+    return Client(**normalized)
 
 @api_router.put("/clients/{client_id}", response_model=Client)
 async def update_client(client_id: str, updates: ClientUpdate, current_user: str = Depends(get_current_user)):
@@ -1221,12 +1236,13 @@ async def migrate_payment_schedules(current_user: str = Depends(get_current_user
                     
                     preserved_schedule.append(new_payment_dict)
                 
-                # Update client with new schedule
+                # Update client with new schedule and normalized end_date
                 await db.clients.update_one(
                     {"client_id": client_data["client_id"]},
                     {
                         "$set": {
                             "schedule": preserved_schedule,
+                            "end_date": preserved_schedule[-1]["payment_date"] if preserved_schedule else client_data.get("end_date"),
                             "updated_at": datetime.utcnow(),
                             "migration_applied": True  # Mark as migrated
                         }
