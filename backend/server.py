@@ -210,21 +210,34 @@ def mongo_to_dict(mongo_doc):
     return mongo_doc
 
 def generate_payment_schedule(start_date_str: str, monthly_payment: float, months: int) -> List[PaymentSchedule]:
+    from calendar import monthrange
+    
     schedule = []
     start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
     current_date = start_date
     
-    for _ in range(months):
-        # Move to next month
-        if current_date.month == 12:
-            current_date = current_date.replace(year=current_date.year + 1, month=1)
-        else:
-            current_date = current_date.replace(month=current_date.month + 1)
-        
+    for i in range(months):
+        # Add payment for current month
         schedule.append(PaymentSchedule(
             payment_date=current_date.strftime("%Y-%m-%d"),
             amount=monthly_payment
         ))
+        
+        # Move to next month with proper handling of month-end dates
+        if i < months - 1:  # Don't calculate next month for the last iteration
+            next_year = current_date.year
+            next_month = current_date.month + 1
+            
+            if next_month > 12:
+                next_year += 1
+                next_month = 1
+            
+            # Handle month-end dates properly (e.g., Jan 31 -> Feb 28/29, not Feb 31)
+            max_day_next_month = monthrange(next_year, next_month)[1]
+            next_day = min(current_date.day, max_day_next_month)
+            
+            current_date = current_date.replace(year=next_year, month=next_month, day=next_day)
+    
     return schedule
 
 # Auth dependency (simplified for demo)
