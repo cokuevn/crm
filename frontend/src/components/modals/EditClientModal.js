@@ -93,6 +93,7 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
       const newFormData = { ...prev, [name]: value };
       
       // Auto-calculate end_date when start_date or monthly_payment or debt_amount changes
+      // BUT: do NOT change monthly_payment when dates change
       if ((name === 'start_date' || name === 'monthly_payment' || name === 'debt_amount') && 
           newFormData.start_date && newFormData.monthly_payment && newFormData.debt_amount) {
         try {
@@ -113,27 +114,8 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
         }
       }
       
-      // Auto-calculate monthly_payment when end_date changes
-      if (name === 'end_date' && newFormData.start_date && newFormData.end_date && newFormData.debt_amount) {
-        try {
-          const startDate = new Date(newFormData.start_date);
-          const endDate = new Date(newFormData.end_date);
-          const debtAmount = parseFloat(newFormData.debt_amount);
-          
-          if (endDate > startDate && debtAmount > 0) {
-            // Calculate months between dates
-            const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
-                              (endDate.getMonth() - startDate.getMonth()) + 1; // +1 to include both start and end months
-            
-            if (monthsDiff > 0) {
-              const calculatedMonthlyPayment = Math.round((debtAmount / monthsDiff) * 100) / 100; // Round to 2 decimal places
-              newFormData.monthly_payment = calculatedMonthlyPayment.toString();
-            }
-          }
-        } catch (error) {
-          console.error('Error calculating monthly payment:', error);
-        }
-      }
+      // When end_date changes: keep monthly_payment the same, just calculate for display
+      // The schedule will be recalculated on backend with preserved monthly_payment
       
       return newFormData;
     });
@@ -199,7 +181,7 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
                   min="0" 
                   step="0.01" 
                 />
-                <p className="text-xs text-gray-500 mt-1">💡 Автоматически рассчитывается при изменении дат</p>
+                <p className="text-xs text-gray-500 mt-1">💡 Остается неизменным при изменении дат</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Дата заключения договора</label>
@@ -232,7 +214,7 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50" 
                   title="Дата рассчитывается автоматически или может быть изменена вручную"
                 />
-                <p className="text-xs text-gray-500 mt-1">💡 Рассчитывается автоматически или изменяет ежемесячный платёж</p>
+                <p className="text-xs text-gray-500 mt-1">💡 Изменение дат добавит/уберет месяцы, платёж останется тем же</p>
               </div>
             </div>
           </div>
