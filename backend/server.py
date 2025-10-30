@@ -482,39 +482,38 @@ async def update_client(client_id: str, updates: ClientUpdate, current_user: str
     
     # Check if schedule recalculation is needed
     should_recalculate = updates.recalculate_schedule
-    if should_recalculate and updates.start_date:
+    if should_recalculate:
         try:
-            months = None
-            monthly_payment = None
-            
-            # Get current monthly_payment from client (preserve it, don't recalculate)
-            current_monthly_payment = current_client.get("monthly_payment") or updates.monthly_payment
-            
-            if not current_monthly_payment:
-                raise ValueError("Monthly payment is required for schedule recalculation")
-            
-            monthly_payment = current_monthly_payment
-            
-            # Determine months from dates or calculate from debt
-            if updates.end_date:
-                # Calculate months from start_date to end_date
-                start_date = datetime.strptime(updates.start_date, "%Y-%m-%d")
-                end_date = datetime.strptime(updates.end_date, "%Y-%m-%d")
-                
-                # Calculate months between dates
-                months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month) + 1
-                
+            months: Optional[int] = None
+            # Determine values using updates with fallback to current client
+            start_date_str = updates.start_date or current_client.get("start_date")
+            end_date_str = updates.end_date  # may be None
+            debt_amount = (
+                updates.debt_amount if updates.debt_amount is not None else current_client.get("debt_amount")
+            )
+            monthly_payment = (
+                updates.monthly_payment if updates.monthly_payment is not None else current_client.get("monthly_payment")
+            )
+
+            if not start_date_str:
+                raise ValueError("start_date is required for schedule recalculation")
+            if not monthly_payment:
+                raise ValueError("monthly_payment is required for schedule recalculation")
+
+            # Determine months from date range or from debt/amount
+            if end_date_str:
+                start_date_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
+                end_date_dt = datetime.strptime(end_date_str, "%Y-%m-%d")
+                months = (end_date_dt.year - start_date_dt.year) * 12 + (end_date_dt.month - start_date_dt.month) + 1
                 if months <= 0:
                     raise ValueError("End date must be after start date")
-                    
-            elif updates.debt_amount:
-                # Calculate months based on debt and monthly payment
-                months = math.ceil(updates.debt_amount / monthly_payment)
             else:
-                raise ValueError("Insufficient data for schedule recalculation. Need start_date + (end_date OR debt_amount)")
-            
-            # Generate new payment schedule with preserved monthly_payment
-            new_schedule = generate_payment_schedule(updates.start_date, monthly_payment, months)
+                if not debt_amount:
+                    raise ValueError("debt_amount is required when end_date is not provided")
+                months = max(1, math.ceil(float(debt_amount) / float(monthly_payment)))
+
+            # Generate new payment schedule
+            new_schedule = generate_payment_schedule(start_date_str, float(monthly_payment), months)
             
             # Preserve payment statuses from existing schedule if possible
             existing_schedule = current_client.get("schedule", [])
@@ -539,8 +538,8 @@ async def update_client(client_id: str, updates: ClientUpdate, current_user: str
             if preserved_schedule:
                 update_dict["end_date"] = preserved_schedule[-1]["payment_date"]
             
-            # Ensure monthly_payment is preserved (don't change it)
-            update_dict["monthly_payment"] = monthly_payment
+            # Ensure monthly_payment is saved (use updated if provided)
+            update_dict["monthly_payment"] = float(monthly_payment)
             
             print(f"Recalculated schedule for client {client_id}: {len(preserved_schedule)} payments, monthly payment preserved: {monthly_payment}")
             
