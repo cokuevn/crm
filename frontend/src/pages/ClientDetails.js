@@ -285,14 +285,18 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
                 </div>
 
                 {/* Даты */}
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="p-4 bg-gray-50/80 rounded-2xl">
                     <p className="text-sm font-medium text-gray-600 mb-1">Дата начала рассрочки</p>
-                    <p className="text-lg font-semibold text-gray-900">{client.start_date || 'Не указана'}</p>
+                    <p className="text-lg font-semibold text-blue-600">{client.start_date ? formatDate(client.start_date) : 'Не указана'}</p>
+                  </div>
+                  <div className="p-4 bg-gray-50/80 rounded-2xl">
+                    <p className="text-sm font-medium text-gray-600 mb-1">Дата окончания рассрочки</p>
+                    <p className="text-lg font-semibold text-purple-600">{client.end_date ? formatDate(client.end_date) : 'Не указана'}</p>
                   </div>
                   <div className="p-4 bg-gray-50/80 rounded-2xl">
                     <p className="text-sm font-medium text-gray-600 mb-1">Дата заключения договора</p>
-                    <p className="text-lg font-semibold text-green-600">{client.contract_date || 'Не указана'}</p>
+                    <p className="text-lg font-semibold text-green-600">{client.contract_date ? formatDate(client.contract_date) : 'Не указана'}</p>
                   </div>
                 </div>
 

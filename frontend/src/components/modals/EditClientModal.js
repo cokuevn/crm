@@ -15,6 +15,8 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
     client_phone: '',
     guarantor_phone: '',
     contract_date: '',
+    start_date: '',
+    end_date: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,6 +35,8 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
         client_phone: client.client_phone || '',
         guarantor_phone: client.guarantor_phone || '',
         contract_date: client.contract_date || '',
+        start_date: client.start_date || '',
+        end_date: client.end_date || '',
       });
     }
   }, [client, isOpen]);
@@ -42,6 +46,9 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
     setLoading(true);
     setError('');
     try {
+      // Check if dates have changed to trigger schedule recalculation
+      const datesChanged = client.start_date !== formData.start_date || client.end_date !== formData.end_date;
+      
       const response = await apiClient.put(
         `/api/clients/${client.client_id}`,
         {
@@ -49,11 +56,23 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
           purchase_amount: parseFloat(formData.purchase_amount),
           debt_amount: parseFloat(formData.debt_amount),
           monthly_payment: parseFloat(formData.monthly_payment),
+          recalculate_schedule: datesChanged, // Flag to recalculate payment schedule
         },
         {}
       );
       onClientUpdated?.(response.data);
       onClose();
+      
+      // Show success notification if schedule was recalculated
+      if (datesChanged) {
+        window.dispatchEvent(new CustomEvent('app:notify', { 
+          detail: { 
+            type: 'success', 
+            title: 'Успешно обновлено', 
+            message: 'График платежей пересчитан с учетом новых дат' 
+          } 
+        }));
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Ошибка при обновлении клиента');
     } finally {
@@ -63,7 +82,32 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const newFormData = { ...prev, [name]: value };
+      
+      // Auto-calculate end_date when start_date or monthly_payment changes
+      if ((name === 'start_date' || name === 'monthly_payment' || name === 'debt_amount') && 
+          newFormData.start_date && newFormData.monthly_payment && newFormData.debt_amount) {
+        try {
+          const debtAmount = parseFloat(newFormData.debt_amount);
+          const monthlyPayment = parseFloat(newFormData.monthly_payment);
+          
+          if (debtAmount > 0 && monthlyPayment > 0) {
+            const months = Math.ceil(debtAmount / monthlyPayment);
+            const startDate = new Date(newFormData.start_date);
+            const endDate = new Date(startDate);
+            
+            // Add months to start date
+            endDate.setMonth(endDate.getMonth() + months - 1); // -1 because we start from the same month
+            newFormData.end_date = endDate.toISOString().split('T')[0];
+          }
+        } catch (error) {
+          console.error('Error calculating end date:', error);
+        }
+      }
+      
+      return newFormData;
+    });
   };
 
   if (!isOpen) return null;
@@ -121,6 +165,35 @@ const EditClientModal = ({ isOpen, onClose, client, onClientUpdated }) => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Дата заключения договора</label>
                 <input type="date" name="contract_date" value={formData.contract_date} onChange={handleChange} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-md font-medium text-gray-900 mb-4">📅 Даты рассрочки</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Дата начала рассрочки *</label>
+                <input 
+                  type="date" 
+                  name="start_date" 
+                  value={formData.start_date} 
+                  onChange={handleChange} 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                  required 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Дата окончания рассрочки</label>
+                <input 
+                  type="date" 
+                  name="end_date" 
+                  value={formData.end_date} 
+                  onChange={handleChange} 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50" 
+                  title="Дата рассчитывается автоматически или может быть изменена вручную"
+                />
+                <p className="text-xs text-gray-500 mt-1">💡 Рассчитывается автоматически по долгу и платежу</p>
               </div>
             </div>
           </div>
