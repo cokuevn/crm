@@ -66,16 +66,9 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
   const updatePaymentStatus = async (paymentDate, status) => {
     try {
       // Normalize payment date format for API call
-      let normalizedDate = paymentDate;
-      try {
-        // Try to parse and normalize the date
-        const parsed = parsePaymentDate(paymentDate);
-        if (parsed && !isNaN(parsed.getTime())) {
-          // Format as YYYY-MM-DD for API without timezone shifts
-          normalizedDate = formatDateForApi(parsed);
-        }
-      } catch (e) {
-        console.warn('Could not normalize date, using as-is:', paymentDate);
+      let normalizedDate = formatDateForApi(paymentDate);
+      if (!normalizedDate) {
+        normalizedDate = typeof paymentDate === 'string' ? paymentDate.trim() : paymentDate;
       }
       
       const response = await updatePaymentStatusApi(clientId, normalizedDate, status);
@@ -135,13 +128,11 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
     try {
       // Normalize payment date format for API call
       let normalizedDate = paymentDate;
-      try {
-        const parsed = parsePaymentDate(paymentDate);
-        if (parsed && !isNaN(parsed.getTime())) {
-          normalizedDate = formatDateForApi(parsed);
-        }
-      } catch (e) {
-        console.warn('Could not normalize date, using as-is:', paymentDate);
+      const formatted = formatDateForApi(paymentDate);
+      if (formatted) {
+        normalizedDate = formatted;
+      } else if (typeof paymentDate === 'string') {
+        normalizedDate = paymentDate.trim();
       }
       
       await updatePaymentAmountApi(clientId, normalizedDate, amount);
@@ -185,14 +176,46 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
     }
   };
 
-  const formatDateForApi = (dateObj) => {
-    if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return '';
+  const formatDateForApi = (dateInput) => {
+    if (!dateInput && dateInput !== 0) return '';
 
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
+    if (dateInput instanceof Date) {
+      if (isNaN(dateInput.getTime())) return '';
+      const year = dateInput.getFullYear();
+      const month = String(dateInput.getMonth() + 1).padStart(2, '0');
+      const day = String(dateInput.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
 
-    return `${year}-${month}-${day}`;
+    const raw = String(dateInput).trim();
+
+    if (raw.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return raw;
+    }
+
+    const dotFormat = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/);
+    if (dotFormat) {
+      let [, day, month, year] = dotFormat;
+      if (year.length === 2) {
+        year = `20${year}`;
+      }
+      const normalizedDay = String(day).padStart(2, '0');
+      const normalizedMonth = String(month).padStart(2, '0');
+      return `${year}-${normalizedMonth}-${normalizedDay}`;
+    }
+
+    const slashFormat = raw.match(/^(\d{1,2})[\/](\d{1,2})[\/](\d{2}|\d{4})$/);
+    if (slashFormat) {
+      let [, day, month, year] = slashFormat;
+      if (year.length === 2) {
+        year = `20${year}`;
+      }
+      const normalizedDay = String(day).padStart(2, '0');
+      const normalizedMonth = String(month).padStart(2, '0');
+      return `${year}-${normalizedMonth}-${normalizedDay}`;
+    }
+
+    return raw;
   };
 
   const getPaymentStatusColor = (payment) => {
