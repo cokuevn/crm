@@ -628,10 +628,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
                 {showPaymentModal.amount?.toLocaleString()}₽
               </p>
               <p className="text-sm text-gray-600">
-                {formatDate(showPaymentModal.payment_date)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Raw: {showPaymentModal.payment_date}
+                {showPaymentModal.payment_date}
               </p>
             </div>
             <div className="space-y-3 mb-8">

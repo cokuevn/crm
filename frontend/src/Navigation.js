@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useMemo } from 'react';
 import { useAuth } from './contexts/AuthContext';
-import { Users, BarChart3, CreditCard, UserPlus, Menu, X } from 'lucide-react';
+import { Users, BarChart3, CreditCard, UserPlus, Menu, X, MessageCircle } from 'lucide-react';
 import Icons from './components/ui/Icons';
 import Button from './components/ui/Button';
 import AnimatedActionMenu from './components/ui/AnimatedActionMenu';
@@ -32,6 +32,11 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
     setIsMobileMenuOpen(false);
   }, [onPageChange]);
 
+  const goChat = useCallback(() => {
+    onPageChange('chat');
+    setIsMobileMenuOpen(false);
+  }, [onPageChange]);
+
   return (
     <>
       {/* Desktop & Tablet Top Navigation */}
@@ -39,7 +44,7 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
       <div className="px-4 sm:px-6 lg:px-8">
           {/* Top row: Brand on left, user/controls on right */}
         <div className="flex justify-between items-center h-12">
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">CRM Рассрочка</h1>
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Comfort CRM</h1>
             <div className="flex items-center gap-2 sm:gap-3 text-sm text-gray-600 dark:text-gray-300">
               {/* Capital Selector (mobile compact) */}
               {capitals.length > 0 && (
@@ -412,6 +417,21 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
             <UserPlus size={24} strokeWidth={currentPage === 'add-client' ? 2.5 : 2} />
             <span className={`text-xs mt-1 font-medium ${currentPage === 'add-client' ? 'text-success-500 dark:text-success-400' : ''}`}>
               Клиент
+            </span>
+          </button>
+
+          {/* Chat Tab */}
+          <button
+            onClick={goChat}
+            className={`flex flex-col items-center justify-center touch-safe px-3 py-2 rounded-lg transition-all ${
+              currentPage === 'chat'
+                ? 'text-purple-600 dark:text-purple-400'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+            }`}
+          >
+            <MessageCircle size={24} strokeWidth={currentPage === 'chat' ? 2.5 : 2} />
+            <span className={`text-xs mt-1 font-medium ${currentPage === 'chat' ? 'text-purple-600 dark:text-purple-400' : ''}`}>
+              Чат
             </span>
           </button>
       </div>

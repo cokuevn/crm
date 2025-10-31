@@ -1,28 +1,21 @@
 {
-  "short_name": "CRM",
-  "name": "CRM Рассрочка",
+  "short_name": "Comfort CRM",
+  "name": "Comfort CRM",
   "description": "Система управления рассрочками и клиентами",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#1E3A8A",
-  "background_color": "#F0F4FF",
-  "orientation": "portrait"
+  "theme_color": "#1E40AF",
+  "background_color": "#FFFFFF",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "ru"
 }
 

@@ -29,7 +29,16 @@ export const withAuth = (extra = {}) => ({ headers: { ...extra } });
 
 // Global response interceptor for auth errors
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Log response data for debugging date issues
+    if (response.config.url?.includes('/clients/')) {
+      console.debug('[API] Response from', response.config.url, {
+        hasData: !!response.data,
+        dataType: typeof response.data
+      });
+    }
+    return response;
+  },
   async (error) => {
     const status = error?.response?.status;
     if (status === 401) {

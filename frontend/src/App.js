@@ -6,6 +6,7 @@ import Navigation from './Navigation';
 import { listCapitals, deleteCapital as deleteCapitalService } from './lib/services/capitalsService';
 import Analytics from './pages/Analytics';
 import AIChat from './features/chat/AIChat';
+import Chat from './pages/Chat';
 import ImportModal from './components/modals/ImportModal';
 import AddCapitalModal from './components/modals/AddCapitalModal';
 import BalanceModal from './components/modals/BalanceModal';
@@ -160,7 +161,7 @@ const MainApp = () => {
   const [notifications, setNotifications] = useState([]);
   const { user, logout } = useAuth();
 
-  // PWA Support: Service Worker registration
+  // PWA Support: Service Worker registration with auto-update
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -168,6 +169,42 @@ const MainApp = () => {
           .register('/sw.js')
           .then(registration => {
             console.log('SW registered:', registration);
+            
+            // Проверяем обновления каждые 60 секунд
+            setInterval(() => {
+              registration.update();
+            }, 60000);
+            
+            // Слушаем событие обновления
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // Новая версия доступна - показываем уведомление и перезагружаем
+                    console.log('New version available! Reloading...');
+                    
+                    // Показываем уведомление пользователю
+                    if (window.dispatchEvent) {
+                      window.dispatchEvent(
+                        new CustomEvent('app:notify', {
+                          detail: {
+                            type: 'info',
+                            title: 'Обновление',
+                            message: 'Загружена новая версия приложения...',
+                          },
+                        })
+                      );
+                    }
+                    
+                    // Ждем 2 секунды и перезагружаем страницу
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 2000);
+                  }
+                });
+              }
+            });
           })
           .catch(error => {
             console.log('SW registration failed:', error);
@@ -324,6 +361,8 @@ const MainApp = () => {
             onBack={() => setCurrentPage('dashboard')}
           />
         );
+      case 'chat':
+        return <Chat selectedCapital={selectedCapital} />;
       case 'client-details':
         return (
           <ClientDetails

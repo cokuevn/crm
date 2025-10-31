@@ -1,5 +1,5 @@
 // Service Worker для PWA поддержки
-const CACHE_NAME = 'crm-cache-v3'; // Обновлено: v3 для полного пропуска API запросов (не перехватываем их)
+const CACHE_NAME = 'crm-cache-v4'; // Обновлено: v4 - исправлена проблема с датами и уведомлениями
 const urlsToCache = [
   '/',
   '/index.html',
