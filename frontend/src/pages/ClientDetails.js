@@ -65,17 +65,66 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
 
   const updatePaymentStatus = async (paymentDate, status) => {
     try {
-      await updatePaymentStatusApi(clientId, paymentDate, status);
-      fetchClientDetails();
+      // Normalize payment date format for API call
+      let normalizedDate = paymentDate;
+      try {
+        // Try to parse and normalize the date
+        const parsed = parsePaymentDate(paymentDate);
+        if (parsed && !isNaN(parsed.getTime())) {
+          // Format as YYYY-MM-DD for API
+          normalizedDate = parsed.toISOString().split('T')[0];
+        }
+      } catch (e) {
+        console.warn('Could not normalize date, using as-is:', paymentDate);
+      }
+      
+      const response = await updatePaymentStatusApi(clientId, normalizedDate, status);
+      
+      // Update client data immediately if provided in response
+      if (response?.client) {
+        setClient(response.client);
+      } else {
+        // Fallback to full refresh if client data not in response
+        await fetchClientDetails();
+      }
+      
       setShowPaymentModal(null);
+      
+      window.dispatchEvent(new CustomEvent('app:notify', { 
+        detail: { 
+          type: 'success', 
+          title: 'Успешно', 
+          message: 'Статус платежа обновлен' 
+        } 
+      }));
     } catch (error) {
       console.error('Error updating payment status:', error);
-      window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'error', title: 'Ошибка', message: 'Не удалось изменить статус платежа' } }));
+      const errorMsg = error.response?.data?.detail || 'Не удалось изменить статус платежа';
+      window.dispatchEvent(new CustomEvent('app:notify', { 
+        detail: { 
+          type: 'error', 
+          title: 'Ошибка', 
+          message: errorMsg 
+        } 
+      }));
     }
   };
 
   const updatePaymentAmount = async (paymentDate) => {
-    const current = client?.schedule?.find(p => p.payment_date === paymentDate)?.amount;
+    const current = client?.schedule?.find(p => {
+      // Compare dates more flexibly
+      try {
+        const pDate = parsePaymentDate(p.payment_date);
+        const targetDate = parsePaymentDate(paymentDate);
+        if (pDate && targetDate) {
+          return pDate.getTime() === targetDate.getTime();
+        }
+      } catch {
+        return false;
+      }
+      return p.payment_date === paymentDate;
+    })?.amount;
+    
     const input = window.prompt('Введите сумму платежа', current != null ? String(current) : '');
     if (input == null) return;
     const amount = parseFloat(input);
@@ -84,7 +133,18 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
       return;
     }
     try {
-      await updatePaymentAmountApi(clientId, paymentDate, amount);
+      // Normalize payment date format for API call
+      let normalizedDate = paymentDate;
+      try {
+        const parsed = parsePaymentDate(paymentDate);
+        if (parsed && !isNaN(parsed.getTime())) {
+          normalizedDate = parsed.toISOString().split('T')[0];
+        }
+      } catch (e) {
+        console.warn('Could not normalize date, using as-is:', paymentDate);
+      }
+      
+      await updatePaymentAmountApi(clientId, normalizedDate, amount);
       await fetchClientDetails();
       window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'success', title: 'Успешно', message: 'Сумма платежа обновлена' } }));
     } catch (error) {
@@ -92,10 +152,48 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
     }
   };
 
+  // Helper function to safely parse payment date
+  const parsePaymentDate = (dateStr) => {
+    if (!dateStr) return null;
+    
+    try {
+      // Try ISO format first (YYYY-MM-DD)
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return new Date(dateStr + 'T00:00:00');
+      }
+      
+      // Try DD.MM.YY or DD.MM.YYYY format
+      const parts = dateStr.split('.');
+      if (parts.length === 3) {
+        let day = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+        let year = parseInt(parts[2], 10);
+        
+        // Handle 2-digit year
+        if (year < 100) {
+          year += 2000; // Assume 2000s
+        }
+        
+        return new Date(year, month, day);
+      }
+      
+      // Fallback to standard Date parsing
+      return new Date(dateStr);
+    } catch (e) {
+      console.error('Error parsing date:', dateStr, e);
+      return null;
+    }
+  };
+
   const getPaymentStatusColor = (payment) => {
-    const paymentDate = new Date(payment.payment_date);
+    const paymentDate = parsePaymentDate(payment.payment_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
+    if (!paymentDate || isNaN(paymentDate.getTime())) {
+      return 'bg-gray-50/80 backdrop-blur-sm text-gray-800 border-gray-200/50';
+    }
+    
     paymentDate.setHours(0, 0, 0, 0);
 
     if (payment.status === 'paid') {
@@ -110,9 +208,14 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
   };
 
   const getPaymentStatusText = (payment) => {
-    const paymentDate = new Date(payment.payment_date);
+    const paymentDate = parsePaymentDate(payment.payment_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
+    if (!paymentDate || isNaN(paymentDate.getTime())) {
+      return 'Ожидается';
+    }
+    
     paymentDate.setHours(0, 0, 0, 0);
 
     if (payment.status === 'paid') {
@@ -127,9 +230,18 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
   };
 
   const getPaymentStatusIcon = (payment) => {
-    const paymentDate = new Date(payment.payment_date);
+    const paymentDate = parsePaymentDate(payment.payment_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
+    if (!paymentDate || isNaN(paymentDate.getTime())) {
+      return (
+        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+    }
+    
     paymentDate.setHours(0, 0, 0, 0);
 
     if (payment.status === 'paid') {
@@ -160,12 +272,23 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
   };
 
   const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+    if (!dateStr) return 'Не указана';
+    
+    try {
+      const parsedDate = parsePaymentDate(dateStr);
+      if (!parsedDate || isNaN(parsedDate.getTime())) {
+        return dateStr; // Return as-is if can't parse
+      }
+      
+      return parsedDate.toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (e) {
+      console.error('Error formatting date:', dateStr, e);
+      return dateStr;
+    }
   };
 
   if (loading) {

@@ -557,7 +557,11 @@ async def update_client(client_id: str, updates: ClientUpdate, current_user: str
         raise HTTPException(status_code=404, detail="Client not found")
     
     client = await db.clients.find_one({"client_id": client_id})
-    return Client(**mongo_to_dict(client))
+    if client:
+        normalized = normalize_client_end_date(mongo_to_dict(client))
+        return Client(**normalized)
+    else:
+        raise HTTPException(status_code=404, detail="Client not found after update")
 
 @api_router.put("/clients/{client_id}/complete")
 async def complete_client(client_id: str, current_user: str = Depends(get_current_user)):
@@ -657,22 +661,74 @@ async def update_payment_status(
     payment_amount = 0
     previous_status = None
     
-    for payment in schedule:
-        if payment["payment_date"] == payment_date:
-            previous_status = payment.get("status", "pending")
-            payment_amount = payment.get("amount", 0)
+    # Normalize input payment_date to YYYY-MM-DD format
+    try:
+        # Try to parse and normalize the payment_date
+        if isinstance(payment_date, str):
+            # Parse different possible formats
+            parsed_date = None
+            for fmt in ["%Y-%m-%d", "%d.%m.%Y", "%d.%m.%y", "%Y/%m/%d", "%d/%m/%Y"]:
+                try:
+                    parsed_date = datetime.strptime(payment_date, fmt).date()
+                    break
+                except ValueError:
+                    continue
             
-            # Update payment status
-            payment["status"] = status
-            if status == "paid":
-                payment["paid_date"] = date.today().strftime("%Y-%m-%d")
+            if parsed_date:
+                normalized_payment_date = parsed_date.strftime("%Y-%m-%d")
             else:
-                payment["paid_date"] = None
-            updated = True
-            break
+                normalized_payment_date = payment_date
+        else:
+            normalized_payment_date = payment_date
+    except Exception as e:
+        print(f"Error normalizing payment_date: {e}, using as-is: {payment_date}")
+        normalized_payment_date = payment_date
+    
+    for payment in schedule:
+        # Normalize payment date for comparison
+        payment_date_str = payment.get("payment_date", "")
+        try:
+            # Try different date formats
+            payment_date_parsed = None
+            if isinstance(payment_date_str, str):
+                for fmt in ["%Y-%m-%d", "%d.%m.%Y", "%d.%m.%y", "%Y/%m/%d", "%d/%m/%Y"]:
+                    try:
+                        payment_date_parsed = datetime.strptime(payment_date_str, fmt).date()
+                        break
+                    except ValueError:
+                        continue
+                
+                if payment_date_parsed:
+                    payment_date_normalized = payment_date_parsed.strftime("%Y-%m-%d")
+                else:
+                    payment_date_normalized = payment_date_str
+            else:
+                payment_date_normalized = str(payment_date_str)
+            
+            # Compare normalized dates
+            if payment_date_normalized == normalized_payment_date:
+                previous_status = payment.get("status", "pending")
+                payment_amount = payment.get("amount", 0)
+                
+                # Update payment status
+                payment["status"] = status
+                if status == "paid":
+                    payment["paid_date"] = date.today().strftime("%Y-%m-%d")
+                elif status != "paid":
+                    # Clear paid_date if status changed from paid
+                    payment["paid_date"] = None
+                
+                updated = True
+                print(f"Updated payment {payment_date_normalized} status to {status} for client {client_id}")
+                break
+        except Exception as e:
+            print(f"Error processing payment date {payment_date_str}: {e}")
+            continue
     
     if not updated:
-        raise HTTPException(status_code=404, detail="Payment not found")
+        print(f"Payment not found: payment_date={payment_date}, normalized={normalized_payment_date}")
+        print(f"Available payment dates: {[p.get('payment_date') for p in schedule]}")
+        raise HTTPException(status_code=404, detail=f"Payment not found for date: {payment_date}")
     
     # Update capital balance based on status change
     current_balance = capital.get("balance", 0.0)
@@ -698,10 +754,19 @@ async def update_payment_status(
             {"$set": {"balance": new_balance}}
         )
     
+    # Get updated client to return
+    updated_client = await db.clients.find_one({"client_id": client_id})
+    if updated_client:
+        # Normalize end_date
+        normalized_client = normalize_client_end_date(mongo_to_dict(updated_client))
+    else:
+        normalized_client = None
+    
     return {
         "message": "Payment status updated successfully",
         "balance_change": new_balance - current_balance if abs(new_balance - current_balance) > 0.01 else 0,
-        "new_balance": new_balance
+        "new_balance": new_balance,
+        "client": normalized_client
     }
 
 # Update scheduled payment amount with carry-over logic
@@ -727,14 +792,51 @@ async def update_payment_amount(
     if not schedule:
         raise HTTPException(status_code=400, detail="Client has no schedule")
     
-    # Find payment index by date
+    # Normalize input payment_date
+    try:
+        if isinstance(payment_date, str):
+            parsed_date = None
+            for fmt in ["%Y-%m-%d", "%d.%m.%Y", "%d.%m.%y", "%Y/%m/%d", "%d/%m/%Y"]:
+                try:
+                    parsed_date = datetime.strptime(payment_date, fmt).date()
+                    break
+                except ValueError:
+                    continue
+            normalized_payment_date = parsed_date.strftime("%Y-%m-%d") if parsed_date else payment_date
+        else:
+            normalized_payment_date = payment_date
+    except Exception:
+        normalized_payment_date = payment_date
+    
+    # Find payment index by date (with flexible date matching)
     idx = -1
     for i, p in enumerate(schedule):
-        if p.get("payment_date") == payment_date:
-            idx = i
-            break
+        p_date_str = p.get("payment_date", "")
+        try:
+            # Normalize payment date from schedule
+            p_parsed = None
+            if isinstance(p_date_str, str):
+                for fmt in ["%Y-%m-%d", "%d.%m.%Y", "%d.%m.%y", "%Y/%m/%d", "%d/%m/%Y"]:
+                    try:
+                        p_parsed = datetime.strptime(p_date_str, fmt).date()
+                        break
+                    except ValueError:
+                        continue
+                p_normalized = p_parsed.strftime("%Y-%m-%d") if p_parsed else p_date_str
+            else:
+                p_normalized = str(p_date_str)
+            
+            if p_normalized == normalized_payment_date:
+                idx = i
+                break
+        except Exception:
+            # Fallback to exact match
+            if p_date_str == payment_date or p_date_str == normalized_payment_date:
+                idx = i
+                break
+    
     if idx == -1:
-        raise HTTPException(status_code=404, detail="Payment not found")
+        raise HTTPException(status_code=404, detail=f"Payment not found for date: {payment_date}")
     
     old_amount = float(schedule[idx].get("amount", 0))
     new_amount = float(payload.amount)
@@ -767,7 +869,11 @@ async def update_payment_amount(
         {"$set": {"schedule": schedule, "end_date": end_date, "updated_at": datetime.utcnow()}}
     )
     updated = await db.clients.find_one({"client_id": client_id})
-    return Client(**mongo_to_dict(updated))
+    if updated:
+        normalized = normalize_client_end_date(mongo_to_dict(updated))
+        return Client(**normalized)
+    else:
+        raise HTTPException(status_code=404, detail="Client not found after update")
 
 @api_router.put("/clients/{client_id}", response_model=Client)
 async def update_client_old(client_id: str, updates: dict, current_user: str = Depends(get_current_user)):

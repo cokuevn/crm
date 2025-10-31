@@ -7,19 +7,52 @@ function ClientCard({ client, onClick }) {
   const paid = client.schedule?.filter((p) => p.status === 'paid').reduce((s, p) => s + p.amount, 0) || 0;
   const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
   
+  // Helper function to safely parse payment date
+  const parsePaymentDate = (dateStr) => {
+    if (!dateStr) return null;
+    
+    try {
+      // Try ISO format first (YYYY-MM-DD)
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return new Date(dateStr + 'T00:00:00');
+      }
+      
+      // Try DD.MM.YY or DD.MM.YYYY format
+      const parts = dateStr.split('.');
+      if (parts.length === 3) {
+        let day = parseInt(parts[0], 10);
+        let month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+        let year = parseInt(parts[2], 10);
+        
+        // Handle 2-digit year
+        if (year < 100) {
+          year += 2000; // Assume 2000s
+        }
+        
+        return new Date(year, month, day);
+      }
+      
+      // Fallback to standard Date parsing
+      return new Date(dateStr);
+    } catch (e) {
+      return null;
+    }
+  };
+
   // Calculate overdue payments
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
   const overduePayments = (client.schedule || []).filter(payment => {
     if (payment.status === 'paid') return false;
-    try {
-      const paymentDate = new Date(payment.payment_date);
-      paymentDate.setHours(0, 0, 0, 0);
-      return paymentDate < today;
-    } catch {
+    
+    const paymentDate = parsePaymentDate(payment.payment_date);
+    if (!paymentDate || isNaN(paymentDate.getTime())) {
       return false;
     }
+    
+    paymentDate.setHours(0, 0, 0, 0);
+    return paymentDate < today;
   });
   
   const overdueCount = overduePayments.length;
