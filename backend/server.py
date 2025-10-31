@@ -95,6 +95,8 @@ class PaymentSchedule(BaseModel):
     status: PaymentStatus = PaymentStatus.pending
     paid_date: Optional[str] = None  # Changed from date to str
 
+MAX_PAYMENT_MONTHS = 600  # Safety limit to prevent runaway schedules
+
 class Client(BaseModel):
     client_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     capital_id: str
@@ -541,6 +543,22 @@ async def update_client(client_id: str, updates: ClientUpdate, current_user: str
                 if not debt_amount:
                     raise ValueError("debt_amount is required when end_date is not provided")
                 months = max(1, math.ceil(float(debt_amount) / float(monthly_payment)))
+
+            if months > MAX_PAYMENT_MONTHS:
+                logger.warning(
+                    "Recalculation aborted: client %s would produce %s payments (limit %s)",
+                    client_id,
+                    months,
+                    MAX_PAYMENT_MONTHS,
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Слишком длинный график платежей ({months} месяцев). "
+                        "Проверьте сумму долга и ежемесячный платеж. Максимально допустимо "
+                        f"{MAX_PAYMENT_MONTHS} месяцев."
+                    ),
+                )
 
             # Generate new payment schedule
             new_schedule = generate_payment_schedule(start_date_str, float(monthly_payment), months)
