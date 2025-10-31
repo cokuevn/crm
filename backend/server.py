@@ -315,27 +315,23 @@ async def create_capital(capital: CapitalCreate, current_user: str = Depends(get
 
 @api_router.get("/capitals", response_model=List[Capital])
 async def get_user_capitals(current_user: str = Depends(get_current_user)):
-    # Получаем капиталы пользователя по текущему owner_id
-    capitals = await db.capitals.find({"owner_id": current_user, "is_active": True}).to_list(100)
-    
-    # Также ищем капиталы по альтернативным идентификаторам (UID <-> email)
     # Маппинг между Firebase UID и email для пользователя
     user_mapping = {
-        "nF90MLbAVORCrePYSEL4JwIooV22": "cokuevn@gmail.com",  # UID -> email
-        "cokuevn@gmail.com": "nF90MLbAVORCrePYSEL4JwIooV22",  # email -> UID
-        # Добавьте другие маппинги при необходимости
+        "nF90MLbAVORCrePYSEL4JwIooV22": "cokuevn@gmail.com",
+        "cokuevn@gmail.com": "nF90MLbAVORCrePYSEL4JwIooV22",
     }
     
-    # Если есть маппинг для текущего пользователя, ищем капиталы по альтернативному идентификатору
+    # Используем $or для поиска по обоим ID одним запросом (более эффективно)
     if current_user in user_mapping:
         alternate_id = user_mapping[current_user]
-        alternate_capitals = await db.capitals.find({"owner_id": alternate_id, "is_active": True}).to_list(100)
-        if alternate_capitals:
-            # Объединяем капиталы (убираем дубликаты)
-            existing_ids = {cap["id"] for cap in capitals}
-            for cap in alternate_capitals:
-                if cap["id"] not in existing_ids:
-                    capitals.append(cap)
+        capitals = await db.capitals.find({
+            "$or": [
+                {"owner_id": current_user, "is_active": True},
+                {"owner_id": alternate_id, "is_active": True}
+            ]
+        }).to_list(100)
+    else:
+        capitals = await db.capitals.find({"owner_id": current_user, "is_active": True}).to_list(100)
     
     return [Capital(**mongo_to_dict(capital)) for capital in capitals]
 
@@ -1509,51 +1505,40 @@ async def delete_capital(capital_id: str, current_user: str = Depends(get_curren
 # Dashboard data
 @api_router.get("/dashboard")
 async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str = Depends(get_current_user)):
-    # Логирование для отладки
-    logger.info(f"Dashboard request - user: {current_user}, capital_id: {capital_id}")
+    # Логируем только при наличии capital_id (для отладки конкретных запросов)
+    if capital_id:
+        logger.info(f"Dashboard request - capital_id: {capital_id}")
     
-    # Получаем капиталы пользователя - ищем по текущему owner_id
-    user_capitals = await db.capitals.find({"owner_id": current_user, "is_active": True}).to_list(100)
-    
-    # Также ищем капиталы по альтернативным идентификаторам (UID <-> email)
-    # Это позволяет находить капиталы, даже если они созданы с другим форматом owner_id
-    alternate_user_capitals = []
-    
-    # Маппинг между Firebase UID и email для пользователя
+    # Получаем капиталы пользователя - ищем по текущему owner_id и альтернативным идентификаторам
+    # Используем $or для поиска по обоим ID одновременно (более эффективно)
     user_mapping = {
-        "nF90MLbAVORCrePYSEL4JwIooV22": "cokuevn@gmail.com",  # UID -> email
-        "cokuevn@gmail.com": "nF90MLbAVORCrePYSEL4JwIooV22",  # email -> UID
-        # Добавьте другие маппинги при необходимости
+        "nF90MLbAVORCrePYSEL4JwIooV22": "cokuevn@gmail.com",
+        "cokuevn@gmail.com": "nF90MLbAVORCrePYSEL4JwIooV22",
     }
     
-    # Если есть маппинг для текущего пользователя, ищем капиталы по альтернативному идентификатору
+    # Строим запрос для поиска капиталов
     if current_user in user_mapping:
         alternate_id = user_mapping[current_user]
-        alternate_user_capitals = await db.capitals.find({"owner_id": alternate_id, "is_active": True}).to_list(100)
-        if alternate_user_capitals:
-            logger.info(f"Found {len(alternate_user_capitals)} capitals using alternate ID mapping: {alternate_id}")
-            # Объединяем капиталы (убираем дубликаты)
-            existing_ids = {cap["id"] for cap in user_capitals}
-            for cap in alternate_user_capitals:
-                if cap["id"] not in existing_ids:
-                    user_capitals.append(cap)
+        # Ищем капиталы по обоим ID одним запросом (более эффективно)
+        user_capitals = await db.capitals.find({
+            "$or": [
+                {"owner_id": current_user, "is_active": True},
+                {"owner_id": alternate_id, "is_active": True}
+            ]
+        }).to_list(100)
+    else:
+        # Если маппинга нет, ищем только по current_user
+        user_capitals = await db.capitals.find({"owner_id": current_user, "is_active": True}).to_list(100)
     
     capital_ids = [cap["id"] for cap in user_capitals]
     
-    logger.info(f"User has {len(user_capitals)} active capitals. IDs: {capital_ids}")
-    
     if capital_id and capital_id not in capital_ids:
-        logger.warning(f"Access denied for user {current_user} to capital {capital_id}")
-        logger.warning(f"User active capitals: {capital_ids}")
-        
-        # Проверяем, существует ли вообще такой капитал в базе
-        capital_exists = await db.capitals.find_one({"id": capital_id})
+        # Проверяем, существует ли вообще такой капитал в базе (только при отказе, для отладки)
+        capital_exists = await db.capitals.find_one({"id": capital_id}, {"owner_id": 1})  # Только owner_id для экономии памяти
         if capital_exists:
-            logger.warning(f"Capital {capital_id} exists but belongs to owner_id: {capital_exists.get('owner_id')}")
-            logger.warning(f"Current user: {current_user}")
+            logger.warning(f"Access denied: capital {capital_id} belongs to {capital_exists.get('owner_id')}, user: {current_user}")
         else:
-            logger.warning(f"Capital {capital_id} does not exist in database")
-        
+            logger.warning(f"Access denied: capital {capital_id} does not exist")
         raise HTTPException(status_code=403, detail="Access denied")
     
     query_capital_ids = [capital_id] if capital_id else capital_ids
@@ -1612,8 +1597,9 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
         }).to_list(1000)
         completed_clients = [mongo_to_dict(client) for client in completed_clients]
         
-        logger.info(f"Dashboard data prepared - clients: {len(clients)}, completed: {len(completed_clients)}, "
-                    f"today: {len(today_payments)}, tomorrow: {len(tomorrow_payments)}, overdue: {len(overdue_payments)}")
+        # Логируем только базовую информацию (уменьшаем нагрузку)
+        if len(clients) > 100 or len(completed_clients) > 100:
+            logger.info(f"Dashboard data prepared - clients: {len(clients)}, completed: {len(completed_clients)}")
 
         result = {
             "today": today_payments,
