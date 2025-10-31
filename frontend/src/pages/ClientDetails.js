@@ -71,8 +71,8 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
         // Try to parse and normalize the date
         const parsed = parsePaymentDate(paymentDate);
         if (parsed && !isNaN(parsed.getTime())) {
-          // Format as YYYY-MM-DD for API
-          normalizedDate = parsed.toISOString().split('T')[0];
+          // Format as YYYY-MM-DD for API without timezone shifts
+          normalizedDate = formatDateForApi(parsed);
         }
       } catch (e) {
         console.warn('Could not normalize date, using as-is:', paymentDate);
@@ -138,7 +138,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
       try {
         const parsed = parsePaymentDate(paymentDate);
         if (parsed && !isNaN(parsed.getTime())) {
-          normalizedDate = parsed.toISOString().split('T')[0];
+          normalizedDate = formatDateForApi(parsed);
         }
       } catch (e) {
         console.warn('Could not normalize date, using as-is:', paymentDate);
@@ -183,6 +183,16 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
       console.error('Error parsing date:', dateStr, e);
       return null;
     }
+  };
+
+  const formatDateForApi = (dateObj) => {
+    if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return '';
+
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   };
 
   const getPaymentStatusColor = (payment) => {
