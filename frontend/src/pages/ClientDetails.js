@@ -66,10 +66,11 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
   const updatePaymentStatus = async (paymentDate, status) => {
     try {
       // Normalize payment date format for API call
-      let normalizedDate = formatDateForApi(paymentDate);
-      if (!normalizedDate) {
-        normalizedDate = typeof paymentDate === 'string' ? paymentDate.trim() : paymentDate;
-      }
+      const normalizedDate = normalizePaymentDate(paymentDate);
+      console.debug('[PaymentStatus] updatePaymentStatus', {
+        original: paymentDate,
+        normalized: normalizedDate
+      });
       
       const response = await updatePaymentStatusApi(clientId, normalizedDate, status);
       
@@ -127,13 +128,11 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
     }
     try {
       // Normalize payment date format for API call
-      let normalizedDate = paymentDate;
-      const formatted = formatDateForApi(paymentDate);
-      if (formatted) {
-        normalizedDate = formatted;
-      } else if (typeof paymentDate === 'string') {
-        normalizedDate = paymentDate.trim();
-      }
+      const normalizedDate = normalizePaymentDate(paymentDate);
+      console.debug('[PaymentStatus] updatePaymentAmount', {
+        original: paymentDate,
+        normalized: normalizedDate
+      });
       
       await updatePaymentAmountApi(clientId, normalizedDate, amount);
       await fetchClientDetails();
@@ -176,9 +175,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
     }
   };
 
-  const formatDateForApi = (dateInput) => {
-    if (!dateInput && dateInput !== 0) return '';
-
+  const normalizePaymentDate = (dateInput) => {
     if (dateInput instanceof Date) {
       if (isNaN(dateInput.getTime())) return '';
       const year = dateInput.getFullYear();
@@ -187,35 +184,11 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
       return `${year}-${month}-${day}`;
     }
 
-    const raw = String(dateInput).trim();
-
-    if (raw.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      return raw;
+    if (typeof dateInput === 'string') {
+      return dateInput.trim();
     }
 
-    const dotFormat = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/);
-    if (dotFormat) {
-      let [, day, month, year] = dotFormat;
-      if (year.length === 2) {
-        year = `20${year}`;
-      }
-      const normalizedDay = String(day).padStart(2, '0');
-      const normalizedMonth = String(month).padStart(2, '0');
-      return `${year}-${normalizedMonth}-${normalizedDay}`;
-    }
-
-    const slashFormat = raw.match(/^(\d{1,2})[\/](\d{1,2})[\/](\d{2}|\d{4})$/);
-    if (slashFormat) {
-      let [, day, month, year] = slashFormat;
-      if (year.length === 2) {
-        year = `20${year}`;
-      }
-      const normalizedDay = String(day).padStart(2, '0');
-      const normalizedMonth = String(month).padStart(2, '0');
-      return `${year}-${normalizedMonth}-${normalizedDay}`;
-    }
-
-    return raw;
+    return dateInput != null ? String(dateInput).trim() : '';
   };
 
   const getPaymentStatusColor = (payment) => {
