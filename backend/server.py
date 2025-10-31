@@ -777,8 +777,26 @@ async def update_payment_status(
             continue
     
     if not updated:
+        available_dates = [p.get('payment_date') for p in schedule]
         print(f"Payment not found: payment_date={payment_date}, normalized={normalized_payment_date}")
-        print(f"Available payment dates: {[p.get('payment_date') for p in schedule]}")
+        print(f"Available payment dates: {available_dates}")
+        
+        # Try to find similar dates for debugging
+        for idx, p_date in enumerate(available_dates):
+            try:
+                if isinstance(p_date, str):
+                    parsed = None
+                    for fmt in ["%Y-%m-%d", "%d.%m.%Y", "%d.%m.%y", "%Y/%m/%d", "%d/%m/%Y"]:
+                        try:
+                            parsed = datetime.strptime(p_date.strip(), fmt).date()
+                            break
+                        except ValueError:
+                            continue
+                    if parsed:
+                        print(f"  Schedule[{idx}]: '{p_date}' -> normalized: '{parsed.strftime('%Y-%m-%d')}'")
+            except Exception as e:
+                print(f"  Schedule[{idx}]: '{p_date}' -> error: {e}")
+        
         raise HTTPException(status_code=404, detail=f"Payment not found for date: {payment_date}")
     
     # Update capital balance based on status change
