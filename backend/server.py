@@ -315,12 +315,46 @@ async def create_capital(capital: CapitalCreate, current_user: str = Depends(get
 
 @api_router.get("/capitals", response_model=List[Capital])
 async def get_user_capitals(current_user: str = Depends(get_current_user)):
+    # Получаем капиталы пользователя по текущему owner_id
     capitals = await db.capitals.find({"owner_id": current_user, "is_active": True}).to_list(100)
+    
+    # Также ищем капиталы по альтернативным идентификаторам (UID <-> email)
+    # Маппинг между Firebase UID и email для пользователя
+    user_mapping = {
+        "nF90MLbAVORCrePYSEL4JwIooV22": "cokuevn@gmail.com",  # UID -> email
+        "cokuevn@gmail.com": "nF90MLbAVORCrePYSEL4JwIooV22",  # email -> UID
+        # Добавьте другие маппинги при необходимости
+    }
+    
+    # Если есть маппинг для текущего пользователя, ищем капиталы по альтернативному идентификатору
+    if current_user in user_mapping:
+        alternate_id = user_mapping[current_user]
+        alternate_capitals = await db.capitals.find({"owner_id": alternate_id, "is_active": True}).to_list(100)
+        if alternate_capitals:
+            # Объединяем капиталы (убираем дубликаты)
+            existing_ids = {cap["id"] for cap in capitals}
+            for cap in alternate_capitals:
+                if cap["id"] not in existing_ids:
+                    capitals.append(cap)
+    
     return [Capital(**mongo_to_dict(capital)) for capital in capitals]
 
 @api_router.get("/capitals/{capital_id}", response_model=Capital)
 async def get_capital(capital_id: str, current_user: str = Depends(get_current_user)):
+    # Проверяем право доступа - капитал должен принадлежать пользователю или альтернативному ID
+    user_mapping = {
+        "nF90MLbAVORCrePYSEL4JwIooV22": "cokuevn@gmail.com",
+        "cokuevn@gmail.com": "nF90MLbAVORCrePYSEL4JwIooV22",
+    }
+    
+    # Ищем капитал по текущему owner_id
     capital = await db.capitals.find_one({"id": capital_id, "owner_id": current_user})
+    
+    # Если не найден и есть маппинг, ищем по альтернативному ID
+    if not capital and current_user in user_mapping:
+        alternate_id = user_mapping[current_user]
+        capital = await db.capitals.find_one({"id": capital_id, "owner_id": alternate_id})
+    
     if not capital:
         raise HTTPException(status_code=404, detail="Capital not found")
     return Capital(**mongo_to_dict(capital))
@@ -1478,8 +1512,32 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
     # Логирование для отладки
     logger.info(f"Dashboard request - user: {current_user}, capital_id: {capital_id}")
     
-    # Получаем только активные капиталы (как в /api/capitals)
+    # Получаем капиталы пользователя - ищем по текущему owner_id
     user_capitals = await db.capitals.find({"owner_id": current_user, "is_active": True}).to_list(100)
+    
+    # Также ищем капиталы по альтернативным идентификаторам (UID <-> email)
+    # Это позволяет находить капиталы, даже если они созданы с другим форматом owner_id
+    alternate_user_capitals = []
+    
+    # Маппинг между Firebase UID и email для пользователя
+    user_mapping = {
+        "nF90MLbAVORCrePYSEL4JwIooV22": "cokuevn@gmail.com",  # UID -> email
+        "cokuevn@gmail.com": "nF90MLbAVORCrePYSEL4JwIooV22",  # email -> UID
+        # Добавьте другие маппинги при необходимости
+    }
+    
+    # Если есть маппинг для текущего пользователя, ищем капиталы по альтернативному идентификатору
+    if current_user in user_mapping:
+        alternate_id = user_mapping[current_user]
+        alternate_user_capitals = await db.capitals.find({"owner_id": alternate_id, "is_active": True}).to_list(100)
+        if alternate_user_capitals:
+            logger.info(f"Found {len(alternate_user_capitals)} capitals using alternate ID mapping: {alternate_id}")
+            # Объединяем капиталы (убираем дубликаты)
+            existing_ids = {cap["id"] for cap in user_capitals}
+            for cap in alternate_user_capitals:
+                if cap["id"] not in existing_ids:
+                    user_capitals.append(cap)
+    
     capital_ids = [cap["id"] for cap in user_capitals]
     
     logger.info(f"User has {len(user_capitals)} active capitals. IDs: {capital_ids}")
@@ -1487,6 +1545,15 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
     if capital_id and capital_id not in capital_ids:
         logger.warning(f"Access denied for user {current_user} to capital {capital_id}")
         logger.warning(f"User active capitals: {capital_ids}")
+        
+        # Проверяем, существует ли вообще такой капитал в базе
+        capital_exists = await db.capitals.find_one({"id": capital_id})
+        if capital_exists:
+            logger.warning(f"Capital {capital_id} exists but belongs to owner_id: {capital_exists.get('owner_id')}")
+            logger.warning(f"Current user: {current_user}")
+        else:
+            logger.warning(f"Capital {capital_id} does not exist in database")
+        
         raise HTTPException(status_code=403, detail="Access denied")
     
     query_capital_ids = [capital_id] if capital_id else capital_ids
