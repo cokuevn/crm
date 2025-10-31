@@ -69,8 +69,11 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
       const normalizedDate = normalizePaymentDate(paymentDate);
       console.debug('[PaymentStatus] updatePaymentStatus', {
         original: paymentDate,
+        originalType: typeof paymentDate,
+        originalIsDate: paymentDate instanceof Date,
         normalized: normalizedDate
       });
+      console.log('🔍 Payment modal object:', showPaymentModal);
       
       const response = await updatePaymentStatusApi(clientId, normalizedDate, status);
       
