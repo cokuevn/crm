@@ -1475,74 +1475,98 @@ async def delete_capital(capital_id: str, current_user: str = Depends(get_curren
 # Dashboard data
 @api_router.get("/dashboard")
 async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str = Depends(get_current_user)):
-    user_capitals = await db.capitals.find({"owner_id": current_user}).to_list(100)
+    # Логирование для отладки
+    logger.info(f"Dashboard request - user: {current_user}, capital_id: {capital_id}")
+    
+    # Получаем только активные капиталы (как в /api/capitals)
+    user_capitals = await db.capitals.find({"owner_id": current_user, "is_active": True}).to_list(100)
     capital_ids = [cap["id"] for cap in user_capitals]
     
+    logger.info(f"User has {len(user_capitals)} active capitals. IDs: {capital_ids}")
+    
     if capital_id and capital_id not in capital_ids:
+        logger.warning(f"Access denied for user {current_user} to capital {capital_id}")
+        logger.warning(f"User active capitals: {capital_ids}")
         raise HTTPException(status_code=403, detail="Access denied")
     
     query_capital_ids = [capital_id] if capital_id else capital_ids
     
-    # Get all clients except completed ones for general dashboard
-    clients = await db.clients.find({
-        "capital_id": {"$in": query_capital_ids},
-        "status": {"$ne": "completed"}
-    }).to_list(1000)
-    clients = [mongo_to_dict(client) for client in clients]
-    
-    today = date.today()
-    from datetime import timedelta
-    tomorrow = today + timedelta(days=1)
-    
-    today_payments = []
-    tomorrow_payments = []
-    overdue_payments = []
-    
-    for client in clients:
-        for schedule_item in client.get("schedule", []):
-            try:
-                # Handle both string and date formats
-                if isinstance(schedule_item["payment_date"], str):
-                    payment_date = datetime.strptime(schedule_item["payment_date"], "%Y-%m-%d").date()
-                else:
-                    payment_date = schedule_item["payment_date"]
-                
-                # Check if payment is overdue OR has overdue status
-                is_overdue = (schedule_item["status"] == "overdue" or 
-                            (schedule_item["status"] == "pending" and payment_date < today))
-                
-                if is_overdue:
-                    overdue_payments.append({
-                        "client": client,
-                        "payment": schedule_item
-                    })
-                elif schedule_item["status"] == "pending" and payment_date == today:
-                    today_payments.append({
-                        "client": client,
-                        "payment": schedule_item
-                    })
-                elif schedule_item["status"] == "pending" and payment_date == tomorrow:
-                    tomorrow_payments.append({
-                        "client": client,
-                        "payment": schedule_item
-                    })
-            except (ValueError, KeyError) as e:
-                continue  # Skip invalid date entries
-    
-    # Get completed clients separately
-    completed_clients = await db.clients.find({
-        "capital_id": {"$in": query_capital_ids},
-        "status": "completed"
-    }).to_list(1000)
-    completed_clients = [mongo_to_dict(client) for client in completed_clients]
+    try:
+        # Get all clients except completed ones for general dashboard
+        clients = await db.clients.find({
+            "capital_id": {"$in": query_capital_ids},
+            "status": {"$ne": "completed"}
+        }).to_list(1000)
+        clients = [mongo_to_dict(client) for client in clients]
+        
+        today = date.today()
+        from datetime import timedelta
+        tomorrow = today + timedelta(days=1)
+        
+        today_payments = []
+        tomorrow_payments = []
+        overdue_payments = []
+        
+        for client in clients:
+            for schedule_item in client.get("schedule", []):
+                try:
+                    # Handle both string and date formats
+                    if isinstance(schedule_item["payment_date"], str):
+                        payment_date = datetime.strptime(schedule_item["payment_date"], "%Y-%m-%d").date()
+                    else:
+                        payment_date = schedule_item["payment_date"]
+                    
+                    # Check if payment is overdue OR has overdue status
+                    is_overdue = (schedule_item["status"] == "overdue" or 
+                                (schedule_item["status"] == "pending" and payment_date < today))
+                    
+                    if is_overdue:
+                        overdue_payments.append({
+                            "client": client,
+                            "payment": schedule_item
+                        })
+                    elif schedule_item["status"] == "pending" and payment_date == today:
+                        today_payments.append({
+                            "client": client,
+                            "payment": schedule_item
+                        })
+                    elif schedule_item["status"] == "pending" and payment_date == tomorrow:
+                        tomorrow_payments.append({
+                            "client": client,
+                            "payment": schedule_item
+                        })
+                except (ValueError, KeyError) as e:
+                    continue  # Skip invalid date entries
+        
+        # Get completed clients separately
+        completed_clients = await db.clients.find({
+            "capital_id": {"$in": query_capital_ids},
+            "status": "completed"
+        }).to_list(1000)
+        completed_clients = [mongo_to_dict(client) for client in completed_clients]
+        
+        logger.info(f"Dashboard data prepared - clients: {len(clients)}, completed: {len(completed_clients)}, "
+                    f"today: {len(today_payments)}, tomorrow: {len(tomorrow_payments)}, overdue: {len(overdue_payments)}")
 
-    return {
-        "today": today_payments,
-        "tomorrow": tomorrow_payments,
-        "overdue": overdue_payments,
-        "all_clients": clients,
-        "completed_clients": completed_clients
-    }
+        result = {
+            "today": today_payments,
+            "tomorrow": tomorrow_payments,
+            "overdue": overdue_payments,
+            "all_clients": clients,
+            "completed_clients": completed_clients
+        }
+    except Exception as e:
+        logger.error(f"Error processing dashboard data for capital {capital_id}: {str(e)}", exc_info=True)
+        # Возвращаем пустые данные вместо ошибки, чтобы фронтенд не падал
+        return {
+            "today": [],
+            "tomorrow": [],
+            "overdue": [],
+            "all_clients": [],
+            "completed_clients": []
+        }
+    
+    return result
 
 @api_router.post("/migrate-contract-dates")
 async def migrate_contract_dates(current_user: str = Depends(get_current_user)):
