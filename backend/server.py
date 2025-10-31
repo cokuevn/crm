@@ -713,6 +713,7 @@ async def update_payment_status(
     try:
         # Try to parse and normalize the payment_date
         if isinstance(payment_date, str):
+            payment_date = payment_date.strip()
             # Parse different possible formats
             parsed_date = None
             for fmt in ["%Y-%m-%d", "%d.%m.%Y", "%d.%m.%y", "%Y/%m/%d", "%d/%m/%Y"]:
@@ -735,6 +736,8 @@ async def update_payment_status(
     for payment in schedule:
         # Normalize payment date for comparison
         payment_date_str = payment.get("payment_date", "")
+        if isinstance(payment_date_str, str):
+            payment_date_str = payment_date_str.strip()
         try:
             # Try different date formats
             payment_date_parsed = None
@@ -843,6 +846,7 @@ async def update_payment_amount(
     # Normalize input payment_date
     try:
         if isinstance(payment_date, str):
+            payment_date = payment_date.strip()
             parsed_date = None
             for fmt in ["%Y-%m-%d", "%d.%m.%Y", "%d.%m.%y", "%Y/%m/%d", "%d/%m/%Y"]:
                 try:
@@ -860,6 +864,8 @@ async def update_payment_amount(
     idx = -1
     for i, p in enumerate(schedule):
         p_date_str = p.get("payment_date", "")
+        if isinstance(p_date_str, str):
+            p_date_str = p_date_str.strip()
         try:
             # Normalize payment date from schedule
             p_parsed = None

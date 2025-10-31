@@ -1,61 +1,98 @@
 import React from 'react';
 
+const VARIANTS = {
+  success: {
+    accent: 'bg-emerald-500 text-white',
+    border: 'border border-emerald-200/80',
+    glow: 'shadow-[0_18px_45px_-15px_rgba(16,185,129,0.4)]',
+    badgeText: 'text-emerald-500',
+    title: 'text-gray-900',
+    message: 'text-gray-600',
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M5 13l4 4L19 7" />
+      </svg>
+    )
+  },
+  error: {
+    accent: 'bg-rose-500 text-white',
+    border: 'border border-rose-200/80',
+    glow: 'shadow-[0_18px_45px_-15px_rgba(244,63,94,0.45)]',
+    badgeText: 'text-rose-500',
+    title: 'text-gray-900',
+    message: 'text-gray-600',
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.08 16.5c-.77.833.192 2.5 1.732 2.5z" />
+      </svg>
+    )
+  },
+  warning: {
+    accent: 'bg-amber-500 text-white',
+    border: 'border border-amber-200/80',
+    glow: 'shadow-[0_18px_45px_-15px_rgba(245,158,11,0.45)]',
+    badgeText: 'text-amber-500',
+    title: 'text-gray-900',
+    message: 'text-gray-600',
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.08 16.5c-.77.833.192 2.5 1.732 2.5z" />
+      </svg>
+    )
+  },
+  info: {
+    accent: 'bg-sky-500 text-white',
+    border: 'border border-sky-200/80',
+    glow: 'shadow-[0_18px_45px_-15px_rgba(14,165,233,0.4)]',
+    badgeText: 'text-sky-500',
+    title: 'text-gray-900',
+    message: 'text-gray-600',
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+      </svg>
+    )
+  }
+};
+
 export default function NotificationToast({ notifications, onClose }) {
   if (!notifications || notifications.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
-      {notifications.map((notification, index) => (
-        <div
-          key={index}
-          className={`max-w-sm w-full bg-white shadow-xl rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 transition-all duration-300 ${
-            notification.type === 'success'
-              ? 'border-l-4 border-green-500'
-              : notification.type === 'error'
-              ? 'border-l-4 border-red-500'
-              : notification.type === 'warning'
-              ? 'border-l-4 border-yellow-500'
-              : 'border-l-4 border-blue-500'
-          }`}
-        >
-          <div className="p-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div
-                  className={`w-5 h-5 rounded-full ${
-                    notification.type === 'success'
-                      ? 'bg-green-500'
-                      : notification.type === 'error'
-                      ? 'bg-red-500'
-                      : notification.type === 'warning'
-                      ? 'bg-yellow-500'
-                      : 'bg-blue-500'
-                  }`}
-                />
+    <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-3">
+      {notifications.map((notification, index) => {
+        const variant = VARIANTS[notification.type] || VARIANTS.info;
+
+        return (
+          <div
+            key={index}
+            className={`max-w-md w-[360px] md:w-[380px] rounded-2xl bg-white/95 backdrop-blur-md ${variant.border} ${variant.glow} pointer-events-auto transition-transform duration-300 ease-out hover:-translate-y-0.5 hover:shadow-2xl`}
+          >
+            <div className="relative flex items-center gap-4 px-5 py-4">
+              <div className={`flex h-11 w-11 items-center justify-center rounded-full ${variant.accent} shadow-inner shadow-black/10`}>{variant.icon}</div>
+
+              <div className="flex-1 min-w-0">
+                {notification.title ? (
+                  <p className={`text-sm font-semibold tracking-[0.01em] ${variant.title}`}>{notification.title}</p>
+                ) : null}
+                {notification.message ? (
+                  <p className={`mt-1 text-sm leading-5 ${variant.message}`}>{notification.message}</p>
+                ) : null}
               </div>
-              <div className="ml-3 w-0 flex-1 pt-0.5">
-                <p className="text-sm font-medium text-gray-900">{notification.title}</p>
-                <p className="mt-1 text-sm text-gray-500">{notification.message}</p>
-              </div>
-              <div className="ml-4 flex-shrink-0 flex">
-                <button
-                  className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  onClick={() => onClose(index)}
-                >
-                  <span className="sr-only">Закрыть</span>
-                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </div>
+
+              <button
+                onClick={() => onClose(index)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500"
+              >
+                <span className="sr-only">Закрыть</span>
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
