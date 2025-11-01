@@ -5,7 +5,7 @@ import Icons from './components/ui/Icons';
 import Button from './components/ui/Button';
 import AnimatedActionMenu from './components/ui/AnimatedActionMenu';
 import useAppStore from './store/useAppStore';
-import notificationService from '../services/notificationService';
+import notificationService from './services/notificationService';
 
 // Navigation Component  
 const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onShowImport, onShowBalanceModal, onDeleteCapital, onMigrateContractDates, onMigratePaymentSchedules, user, onLogout }) => {
