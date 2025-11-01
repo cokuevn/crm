@@ -18,6 +18,7 @@ import Dashboard from './pages/Dashboard';
 import { getAuthHeaders } from './lib/api';
 import apiClient from './lib/apiClient';
 import NotificationToast from './components/ui/NotificationToast';
+import InstallPrompt from './components/InstallPrompt';
 import { autoInit, migrateContractDates } from './lib/services/systemService';
 import Skeleton from './components/ui/Skeleton';
 
@@ -461,6 +462,9 @@ const MainApp = () => {
 
       {/* Notifications */}
       <NotificationToast notifications={notifications} onClose={removeNotification} />
+      
+      {/* Install Prompt */}
+      <InstallPrompt />
     </motion.div>
   );
 };
