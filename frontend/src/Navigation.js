@@ -1,10 +1,11 @@
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
-import { Users, BarChart3, CreditCard, UserPlus, Menu, X, MessageCircle, RefreshCw } from 'lucide-react';
+import { Users, BarChart3, CreditCard, UserPlus, Menu, X, MessageCircle, RefreshCw, Download, Bell, BellOff } from 'lucide-react';
 import Icons from './components/ui/Icons';
 import Button from './components/ui/Button';
 import AnimatedActionMenu from './components/ui/AnimatedActionMenu';
 import useAppStore from './store/useAppStore';
+import notificationService from '../services/notificationService';
 
 // Navigation Component  
 const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCapitalChange, onShowAddCapital, onShowImport, onShowBalanceModal, onDeleteCapital, onMigrateContractDates, onMigratePaymentSchedules, user, onLogout }) => {
@@ -38,6 +39,127 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
   }, [onPageChange]);
 
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+
+  // Проверяем, установлено ли приложение и статус уведомлений
+  useEffect(() => {
+    const checkInstalled = window.matchMedia('(display-mode: standalone)').matches;
+    setIsInstalled(checkInstalled);
+
+    // Проверяем статус уведомлений
+    const checkNotifications = notificationService.checkPermission();
+    setNotificationsEnabled(checkNotifications === 'granted');
+
+    // Слушаем событие beforeinstallprompt
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
+  }, []);
+
+  const handleInstallApp = useCallback(async () => {
+    if (!deferredPrompt) {
+      window.dispatchEvent(
+        new CustomEvent('app:notify', {
+          detail: {
+            type: 'info',
+            title: 'Уже установлено',
+            message: 'Приложение уже установлено или недоступно для установки',
+          },
+        })
+      );
+      return;
+    }
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      window.dispatchEvent(
+        new CustomEvent('app:notify', {
+          detail: {
+            type: 'success',
+            title: 'Успешно',
+            message: 'Приложение установлено!',
+          },
+        })
+      );
+      setIsInstalled(true);
+    }
+    
+    setDeferredPrompt(null);
+    setIsMobileMenuOpen(false);
+  }, [deferredPrompt]);
+
+  const toggleNotifications = useCallback(async () => {
+    if (notificationsEnabled) {
+      // Уведомления уже включены, ничего не делаем (отключение не поддерживается браузерами)
+      window.dispatchEvent(
+        new CustomEvent('app:notify', {
+          detail: {
+            type: 'info',
+            title: 'Уведомления включены',
+            message: 'Чтобы отключить, зайдите в настройки браузера',
+          },
+        })
+      );
+    } else {
+      // Запрашиваем разрешение
+      const granted = await notificationService.requestPermission();
+      
+      if (granted) {
+        setNotificationsEnabled(true);
+        
+        // Сохраняем конфигурацию для фоновой работы
+        try {
+          const apiUrl = process.env.REACT_APP_API_URL || 'https://crm-backend-1e1e.onrender.com';
+          const currentUser = user?.uid || localStorage.getItem('authToken');
+          if (currentUser) {
+            await notificationService.saveConfigForBackgroundSync(apiUrl, currentUser);
+          }
+        } catch (error) {
+          console.error('Error saving config:', error);
+        }
+        
+        window.dispatchEvent(
+          new CustomEvent('app:notify', {
+            detail: {
+              type: 'success',
+              title: 'Уведомления включены',
+              message: 'Вы будете получать напоминания о платежах даже при закрытом приложении',
+            },
+          })
+        );
+        
+        // Показываем тестовое уведомление
+        setTimeout(() => {
+          notificationService.showNotification('✅ Уведомления работают!', {
+            body: 'Вы будете получать напоминания о платежах сегодня и завтра (каждые 12 часов)',
+          });
+        }, 500);
+      } else {
+        window.dispatchEvent(
+          new CustomEvent('app:notify', {
+            detail: {
+              type: 'error',
+              title: 'Доступ запрещён',
+              message: 'Разрешите уведомления в настройках браузера',
+            },
+          })
+        );
+      }
+    }
+    
+    setIsMobileMenuOpen(false);
+  }, [notificationsEnabled, user]);
 
   const checkForUpdates = useCallback(async () => {
     setIsCheckingUpdate(true);
@@ -448,6 +570,30 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
               >
                 <RefreshCw size={20} className={isCheckingUpdate ? 'animate-spin' : ''} />
                 <span>{isCheckingUpdate ? 'Проверяем...' : 'Проверить обновления'}</span>
+              </button>
+
+              {/* Install App Button */}
+              {!isInstalled && deferredPrompt && (
+                <button
+                  onClick={handleInstallApp}
+                  className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-all touch-safe shadow-md"
+                >
+                  <Download size={20} />
+                  <span>Установить приложение</span>
+                </button>
+              )}
+
+              {/* Enable Notifications Button */}
+              <button
+                onClick={toggleNotifications}
+                className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg transition-all touch-safe ${
+                  notificationsEnabled
+                    ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-700 dark:hover:text-yellow-400'
+                }`}
+              >
+                {notificationsEnabled ? <Bell size={20} /> : <BellOff size={20} />}
+                <span>{notificationsEnabled ? 'Уведомления включены' : 'Включить уведомления'}</span>
               </button>
                 </div>
             </div>

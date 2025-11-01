@@ -6,6 +6,7 @@ import ClientCard from '../components/ui/ClientCard';
 import { useAuth } from '../contexts/AuthContext';
 import { API } from '../lib/api';
 import useAppStore from '../store/useAppStore';
+import notificationService from '../services/notificationService';
 
 // Minimal icon set used in dashboard (to avoid coupling with App.js)
 const Icons = {
@@ -115,6 +116,13 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
       const data = await fetchDashboard(selectedCapital.id);
       console.log('Dashboard data received:', data); // Отладочная информация
       setDashboardData(data);
+      
+      // Проверяем и отправляем уведомления о платежах
+      try {
+        await notificationService.checkAndNotify(data);
+      } catch (error) {
+        console.error('Error sending notifications:', error);
+      }
       
       // Update Zustand store with clients for overdueCount
       try {

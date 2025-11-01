@@ -80,6 +80,117 @@ self.addEventListener('message', (event) => {
   }
 });
 
+// Notification click event - открываем приложение при клике на уведомление
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const urlToOpen = event.notification.data?.clientId 
+    ? `/?client=${event.notification.data.clientId}`
+    : '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // Проверяем, есть ли уже открытое окно
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Если окна нет, открываем новое
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
+
+// Periodic background sync для проверки платежей
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'check-payments') {
+    event.waitUntil(checkPaymentsAndNotify());
+  }
+});
+
+// Функция проверки платежей в фоне
+async function checkPaymentsAndNotify() {
+  try {
+    console.log('🔍 Checking for payments in background...');
+    
+    // Получаем сохранённый API URL и токен из IndexedDB или кэша
+    const cache = await caches.open(CACHE_NAME);
+    const configResponse = await cache.match('/pwa-config');
+    
+    if (!configResponse) {
+      console.log('No config found, skipping background check');
+      return;
+    }
+    
+    const config = await configResponse.json();
+    const { apiUrl, authToken } = config;
+    
+    if (!apiUrl || !authToken) {
+      console.log('Missing API credentials');
+      return;
+    }
+    
+    // Запрашиваем данные о платежах
+    const response = await fetch(`${apiUrl}/api/dashboard`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      },
+    });
+    
+    if (!response.ok) {
+      console.log('Failed to fetch dashboard data');
+      return;
+    }
+    
+    const data = await response.json();
+    
+    // Отправляем уведомления о платежах сегодня
+    const today = data.today || [];
+    for (const item of today) {
+      if (item.client && item.payment && item.payment.status === 'pending') {
+        await self.registration.showNotification('💰 Платёж сегодня!', {
+          body: `${item.client.name}\n${item.payment.amount.toLocaleString()}₽`,
+          icon: '/icon.svg',
+          badge: '/icon.svg',
+          tag: `payment-today-${item.client.client_id}`,
+          requireInteraction: true,
+          vibrate: [200, 100, 200],
+          data: {
+            clientId: item.client.client_id,
+            paymentDate: item.payment.payment_date,
+          },
+        });
+      }
+    }
+    
+    // Отправляем уведомления о платежах завтра
+    const tomorrow = data.tomorrow || [];
+    for (const item of tomorrow) {
+      if (item.client && item.payment && item.payment.status === 'pending') {
+        await self.registration.showNotification('⏰ Платёж завтра', {
+          body: `${item.client.name}\n${item.payment.amount.toLocaleString()}₽`,
+          icon: '/icon.svg',
+          badge: '/icon.svg',
+          tag: `payment-tomorrow-${item.client.client_id}`,
+          vibrate: [200],
+          data: {
+            clientId: item.client.client_id,
+            paymentDate: item.payment.payment_date,
+          },
+        });
+      }
+    }
+    
+    console.log(`✅ Sent ${today.length + tomorrow.length} payment notifications`);
+  } catch (error) {
+    console.error('Error in background payment check:', error);
+  }
+}
+
 // Activate event - очищаем старый кэш
 self.addEventListener('activate', (event) => {
   console.log(`✅ Service Worker v${VERSION} activated`);
