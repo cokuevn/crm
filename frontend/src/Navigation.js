@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useMemo } from 'react';
 import { useAuth } from './contexts/AuthContext';
-import { Users, BarChart3, CreditCard, UserPlus, Menu, X, MessageCircle } from 'lucide-react';
+import { Users, BarChart3, CreditCard, UserPlus, Menu, X, MessageCircle, RefreshCw } from 'lucide-react';
 import Icons from './components/ui/Icons';
 import Button from './components/ui/Button';
 import AnimatedActionMenu from './components/ui/AnimatedActionMenu';
@@ -36,6 +36,98 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
     onPageChange('chat');
     setIsMobileMenuOpen(false);
   }, [onPageChange]);
+
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+
+  const checkForUpdates = useCallback(async () => {
+    setIsCheckingUpdate(true);
+    
+    try {
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.update();
+          
+          // Показываем уведомление
+          window.dispatchEvent(
+            new CustomEvent('app:notify', {
+              detail: {
+                type: 'info',
+                title: 'Проверка обновлений',
+                message: 'Проверяем наличие новой версии...',
+              },
+            })
+          );
+          
+          // Проверяем, есть ли ожидающий воркер
+          setTimeout(() => {
+            if (registration.waiting) {
+              // Есть новая версия - перезагружаем
+              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+              window.location.reload();
+            } else if (registration.installing) {
+              // Новая версия загружается
+              window.dispatchEvent(
+                new CustomEvent('app:notify', {
+                  detail: {
+                    type: 'success',
+                    title: 'Обновление найдено',
+                    message: 'Загружается новая версия...',
+                  },
+                })
+              );
+            } else {
+              // Уже актуальная версия
+              window.dispatchEvent(
+                new CustomEvent('app:notify', {
+                  detail: {
+                    type: 'success',
+                    title: 'Актуальная версия',
+                    message: 'У вас установлена последняя версия приложения',
+                  },
+                })
+              );
+            }
+            setIsCheckingUpdate(false);
+          }, 1000);
+        } else {
+          window.dispatchEvent(
+            new CustomEvent('app:notify', {
+              detail: {
+                type: 'warning',
+                title: 'Service Worker не найден',
+                message: 'Приложение работает в браузерном режиме',
+              },
+            })
+          );
+          setIsCheckingUpdate(false);
+        }
+      } else {
+        window.dispatchEvent(
+          new CustomEvent('app:notify', {
+            detail: {
+              type: 'error',
+              title: 'Не поддерживается',
+              message: 'Ваш браузер не поддерживает Service Worker',
+            },
+          })
+        );
+        setIsCheckingUpdate(false);
+      }
+    } catch (error) {
+      console.error('Error checking for updates:', error);
+      window.dispatchEvent(
+        new CustomEvent('app:notify', {
+          detail: {
+            type: 'error',
+            title: 'Ошибка',
+            message: 'Не удалось проверить обновления',
+          },
+        })
+      );
+      setIsCheckingUpdate(false);
+    }
+  }, []);
 
   return (
     <>
@@ -343,6 +435,19 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                     <span>Миграция дат</span>
+              </button>
+
+              {/* Check for Updates Button */}
+              <button
+                onClick={() => {
+                  checkForUpdates();
+                  setIsMobileMenuOpen(false);
+                }}
+                disabled={isCheckingUpdate}
+                className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-700 dark:hover:text-indigo-400 transition-all touch-safe disabled:opacity-50"
+              >
+                <RefreshCw size={20} className={isCheckingUpdate ? 'animate-spin' : ''} />
+                <span>{isCheckingUpdate ? 'Проверяем...' : 'Проверить обновления'}</span>
               </button>
                 </div>
             </div>

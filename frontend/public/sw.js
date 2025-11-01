@@ -1,9 +1,12 @@
 // Service Worker для PWA поддержки
-const CACHE_NAME = 'crm-cache-v4'; // Обновлено: v4 - исправлена проблема с датами и уведомлениями
+const CACHE_NAME = 'crm-cache-v6'; // Обновлено: v5 - добавлен PWA install prompt и улучшена иконка
+const VERSION = '6'; // Версия для логирования
 const urlsToCache = [
   '/',
   '/index.html',
 ];
+
+console.log(`🔄 Service Worker v${VERSION} initializing...`);
 
 // Install event - кэшируем ресурсы (только если они доступны)
 self.addEventListener('install', (event) => {
@@ -69,14 +72,24 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
+// Message event - для принудительного обновления
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('🚀 Force activating new Service Worker...');
+    self.skipWaiting();
+  }
+});
+
 // Activate event - очищаем старый кэш
 self.addEventListener('activate', (event) => {
+  console.log(`✅ Service Worker v${VERSION} activated`);
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log(`🗑️ Deleting old cache: ${cacheName}`);
             return caches.delete(cacheName);
           }
         })
