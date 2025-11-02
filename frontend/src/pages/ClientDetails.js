@@ -386,118 +386,118 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-3">
           <button
             onClick={onBack}
-            className="flex items-center text-blue-600 hover:text-blue-500 mb-6 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl px-2 py-1"
+            className="flex items-center text-blue-600 hover:text-blue-500 mb-3 transition-colors text-sm"
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="font-medium">Назад к списку клиентов</span>
+            <span className="font-medium">Назад</span>
           </button>
           
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-gray-200/50">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900 mb-6">
+                <h1 className="text-xl font-bold text-gray-900 mb-3">
                   {client.name}
                 </h1>
                 
                 {/* Основная информация */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="p-4 bg-gray-50/80 rounded-2xl">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Товар</p>
-                    <p className="text-lg font-semibold text-gray-900">{client.product}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-medium text-gray-600 mb-0.5">Товар</p>
+                    <p className="text-sm font-semibold text-gray-900">{client.product}</p>
                   </div>
-                  <div className="p-4 bg-gray-50/80 rounded-2xl">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Капитал</p>
-                    <p className="text-lg font-semibold text-gray-900">{capital?.name || 'Неизвестно'}</p>
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-medium text-gray-600 mb-0.5">Капитал</p>
+                    <p className="text-sm font-semibold text-gray-900">{capital?.name || 'Неизвестно'}</p>
                   </div>
-                  <div className="p-4 bg-gray-50/80 rounded-2xl">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Сумма покупки</p>
-                    <p className="text-lg font-semibold text-blue-600">{(client.purchase_amount || client.total_amount || 0).toLocaleString()}₽</p>
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-medium text-gray-600 mb-0.5">Сумма покупки</p>
+                    <p className="text-sm font-semibold text-blue-600">{(client.purchase_amount || client.total_amount || 0).toLocaleString()}₽</p>
                   </div>
-                  <div className="p-4 bg-gray-50/80 rounded-2xl">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Долг клиента</p>
-                    <p className="text-lg font-semibold text-red-600">{(client.debt_amount || client.total_amount || 0).toLocaleString()}₽</p>
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-medium text-gray-600 mb-0.5">Долг клиента</p>
+                    <p className="text-sm font-semibold text-red-600">{(client.debt_amount || client.total_amount || 0).toLocaleString()}₽</p>
                   </div>
-                  <div className="p-4 bg-gray-50/80 rounded-2xl">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Ежемесячный платёж</p>
-                    <p className="text-lg font-semibold text-purple-600">{client.monthly_payment?.toLocaleString()}₽</p>
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-medium text-gray-600 mb-0.5">Ежемесячный платёж</p>
+                    <p className="text-sm font-semibold text-purple-600">{client.monthly_payment?.toLocaleString()}₽</p>
                   </div>
-                  <div className="p-4 bg-gray-50/80 rounded-2xl">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Телефон</p>
-                    <p className="text-lg font-semibold text-gray-900">{client.client_phone || 'Не указан'}</p>
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-medium text-gray-600 mb-0.5">Телефон</p>
+                    <p className="text-sm font-semibold text-gray-900">{client.client_phone || 'Не указан'}</p>
                   </div>
                 </div>
 
                 {/* Даты */}
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="p-4 bg-gray-50/80 rounded-2xl">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Дата начала рассрочки</p>
-                    <p className="text-lg font-semibold text-blue-600">{client.start_date ? formatDate(client.start_date) : 'Не указана'}</p>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-medium text-gray-600 mb-0.5">Дата начала</p>
+                    <p className="text-sm font-semibold text-blue-600">{client.start_date ? formatDate(client.start_date) : 'Не указана'}</p>
                   </div>
-                  <div className="p-4 bg-gray-50/80 rounded-2xl">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Дата окончания рассрочки</p>
-                    <p className="text-lg font-semibold text-purple-600">{client.end_date ? formatDate(client.end_date) : 'Не указана'}</p>
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-medium text-gray-600 mb-0.5">Дата окончания</p>
+                    <p className="text-sm font-semibold text-purple-600">{client.end_date ? formatDate(client.end_date) : 'Не указана'}</p>
                   </div>
-                  <div className="p-4 bg-gray-50/80 rounded-2xl">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Дата заключения договора</p>
-                    <p className="text-lg font-semibold text-green-600">{client.contract_date ? formatDate(client.contract_date) : 'Не указана'}</p>
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-medium text-gray-600 mb-0.5">Дата договора</p>
+                    <p className="text-sm font-semibold text-green-600">{client.contract_date ? formatDate(client.contract_date) : 'Не указана'}</p>
                   </div>
                 </div>
 
                 {/* Дополнительная информация */}
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-4 bg-gray-50/80 rounded-2xl">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Адрес</p>
-                    <p className="text-lg font-semibold text-gray-900">{client.client_address || 'Не указан'}</p>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-medium text-gray-600 mb-0.5">Адрес</p>
+                    <p className="text-sm font-semibold text-gray-900">{client.client_address || 'Не указан'}</p>
                   </div>
-                  <div className="p-4 bg-gray-50/80 rounded-2xl">
-                    <p className="text-sm font-medium text-gray-600 mb-1">Гарант</p>
-                    <p className="text-lg font-semibold text-gray-900">{client.guarantor_name || 'Не указан'}</p>
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs font-medium text-gray-600 mb-0.5">Гарант</p>
+                    <p className="text-sm font-semibold text-gray-900">{client.guarantor_name || 'Не указан'}</p>
                     {client.guarantor_phone && (
-                      <p className="text-sm text-gray-600 mt-1">{client.guarantor_phone}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{client.guarantor_phone}</p>
                     )}
                   </div>
                 </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-4">
-                <span className={`px-4 py-2 text-sm font-semibold rounded-2xl ${
+              <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-3">
+                <span className={`px-3 py-1 text-xs font-semibold rounded-lg ${
                   client.status === 'active'
-                    ? 'bg-green-100/80 text-green-800'
+                    ? 'bg-green-100 text-green-800'
                     : client.status === 'overdue'
-                    ? 'bg-red-100/80 text-red-800'
-                    : 'bg-gray-100/80 text-gray-800'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-gray-100 text-gray-800'
                 }`}>
                   {client.status === 'active' ? 'Активен' : 
                    client.status === 'overdue' ? 'Просрочка' : 'Завершён'}
                 </span>
                 
-                <div className="flex flex-wrap gap-3">
-                  <Button onClick={() => setShowEditModal(true)} variant="primary">Редактировать</Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => setShowEditModal(true)} variant="primary" size="sm">Редактировать</Button>
                   {client.status !== 'completed' && remainingAmount === 0 && (
-                    <Button onClick={() => setShowCompleteConfirm(true)} variant="success">
+                    <Button onClick={() => setShowCompleteConfirm(true)} variant="success" size="sm">
                       Завершить
                     </Button>
                   )}
-                  <Button onClick={() => setShowDeleteConfirm(true)} variant="danger">Удалить</Button>
+                  <Button onClick={() => setShowDeleteConfirm(true)} variant="danger" size="sm">Удалить</Button>
                 </div>
               </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="mt-8 p-6 bg-gradient-to-r from-blue-50/80 to-purple-50/80 rounded-2xl backdrop-blur-sm">
-              <div className="flex justify-between text-sm font-medium text-gray-700 mb-3">
+            <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
+              <div className="flex justify-between text-xs font-medium text-gray-700 mb-2">
                 <span>Оплачено: {totalPaid.toLocaleString()}₽</span>
                 <span>Осталось: {remainingAmount.toLocaleString()}₽</span>
               </div>
-              <ProgressBar value={Math.min(progress, 100)} className="h-4" />
-              <p className="text-sm font-semibold text-gray-700 mt-3 text-center">
+              <ProgressBar value={Math.min(progress, 100)} className="h-3" />
+              <p className="text-xs font-semibold text-gray-700 mt-2 text-center">
                 {progress.toFixed(1)}% выполнено
               </p>
             </div>
@@ -505,47 +505,47 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
         </div>
 
         {/* Payment Schedule */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200/50">
-          <div className="px-8 py-6 border-b border-gray-200/50">
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-              <svg className="w-7 h-7 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mt-3">
+          <div className="px-4 py-3 border-b border-gray-200">
+            <h2 className="text-base font-bold text-gray-900 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
               </svg>
               График платежей
             </h2>
           </div>
           
-          <div className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {client.schedule?.map((payment, index) => (
                 <div 
                   key={index}
-                  className={`border-2 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:scale-105 ${getPaymentStatusColor(payment)}`}
+                  className={`border-2 rounded-xl p-3 transition-all duration-300 hover:shadow-lg ${getPaymentStatusColor(payment)}`}
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center space-x-3">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-2">
                       {getPaymentStatusIcon(payment)}
                       <div>
-                        <p className="font-bold text-xl">
+                        <p className="font-bold text-base">
                           {payment.amount?.toLocaleString()}₽
                         </p>
-                        <p className="text-sm font-medium opacity-75">
+                        <p className="text-xs font-medium opacity-75">
                           {formatDate(payment.payment_date)}
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/50 backdrop-blur-sm">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white/50">
                       {getPaymentStatusText(payment)}
                     </span>
                   </div>
                   
-                  <div className="flex gap-2 mt-4">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => setShowPaymentModal(payment)}
-                      className="flex-1 px-4 py-3 bg-white/60 backdrop-blur-sm rounded-2xl border border-current hover:bg-white/80 transition-all text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 px-3 py-2 bg-white/60 rounded-lg border border-current hover:bg-white/80 transition-all text-xs font-semibold"
                     >
-                      <div className="flex items-center justify-center space-x-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex items-center justify-center gap-1">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                         <span>Статус</span>
@@ -553,11 +553,11 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
                     </button>
                     <button
                       onClick={() => updatePaymentAmount(payment.payment_date)}
-                      className="px-4 py-3 bg-white/60 backdrop-blur-sm rounded-2xl border border-blue-600 text-blue-700 hover:bg-white/80 transition-all text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      title="Изменить сумму платежа (разница будет перенесена на следующие платежи)"
+                      className="px-3 py-2 bg-white/60 rounded-lg border border-blue-600 text-blue-700 hover:bg-white/80 transition-all text-xs font-semibold"
+                      title="Изменить сумму платежа"
                     >
-                      <div className="flex items-center justify-center space-x-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex items-center justify-center gap-1">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v8m-4-4h8" />
                         </svg>
                         <span>Сумма</span>
@@ -566,7 +566,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
                   </div>
                   
                   {payment.status === 'paid' && payment.paid_date && (
-                    <p className="text-xs font-medium mt-3 text-center opacity-75">
+                    <p className="text-xs font-medium mt-2 text-center opacity-75">
                       <svg className="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>

@@ -160,7 +160,16 @@ const MainApp = () => {
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [showSplash, setShowSplash] = useState(true);
   const { user, logout } = useAuth();
+
+  // PWA Splash Screen Animation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2000); // 2 секунды анимации
+    return () => clearTimeout(timer);
+  }, []);
 
   // PWA Support: Service Worker registration with auto-update
   useEffect(() => {
@@ -383,12 +392,114 @@ const MainApp = () => {
   };
 
   return (
-    <motion.div 
-      className="min-h-screen bg-bg-light dark:bg-bg-dark transition-colors duration-300"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
-    >
+    <>
+      {/* Splash Screen */}
+      {showSplash && (
+        <AnimatePresence>
+          <motion.div
+            className="fixed inset-0 z-50 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <motion.div
+              className="text-center"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 1.2, opacity: 0 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+            >
+              {/* App Icon */}
+              <motion.div
+                className="w-32 h-32 mx-auto mb-6 relative"
+                animate={{
+                  rotate: [0, 10, -10, 10, 0],
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  ease: 'easeInOut',
+                  times: [0, 0.25, 0.5, 0.75, 1],
+                }}
+              >
+                <svg viewBox="0 0 200 200" className="w-full h-full">
+                  <defs>
+                    <linearGradient id="splashGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
+                      <stop offset="100%" stopColor="#ffffff" stopOpacity="0.7" />
+                    </linearGradient>
+                    <filter id="glow">
+                      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                      <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <circle cx="100" cy="100" r="90" fill="url(#splashGradient)" opacity="0.3" filter="url(#glow)"/>
+                  <path
+                    d="M100 30 C 80 30, 65 45, 65 65 L 65 85 L 55 85 L 55 115 L 65 115 L 65 135 C 65 155, 80 170, 100 170 C 120 170, 135 155, 135 135 L 135 115 L 145 115 L 145 85 L 135 85 L 135 65 C 135 45, 120 30, 100 30 Z"
+                    fill="url(#splashGradient)"
+                    filter="url(#glow)"
+                  />
+                  <text
+                    x="100"
+                    y="125"
+                    textAnchor="middle"
+                    fontSize="60"
+                    fontWeight="bold"
+                    fill="white"
+                    filter="url(#glow)"
+                  >
+                    C
+                  </text>
+                </svg>
+              </motion.div>
+              
+              {/* App Name */}
+              <motion.h1
+                className="text-3xl font-bold text-white mb-2"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+              >
+                Comfort CRM
+              </motion.h1>
+              
+              {/* Loading Dots */}
+              <motion.div
+                className="flex justify-center gap-2 mt-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="w-2 h-2 bg-white rounded-full"
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 0.6,
+                      repeat: Infinity,
+                      delay: i * 0.2,
+                    }}
+                  />
+                ))}
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
+      )}
+      
+      <motion.div 
+        className="min-h-screen bg-bg-light dark:bg-bg-dark transition-colors duration-300"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+      >
       <Navigation
         currentPage={currentPage}
         onPageChange={setCurrentPage}
@@ -466,6 +577,7 @@ const MainApp = () => {
       {/* Install Prompt */}
       <InstallPrompt />
     </motion.div>
+    </>
   );
 };
 
