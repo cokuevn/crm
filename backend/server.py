@@ -391,11 +391,12 @@ async def create_client(client: ClientCreate, current_user: str = Depends(get_cu
     current_balance = capital.get("balance", 0.0)
     purchase_amount = client.purchase_amount or client.debt_amount or client.total_amount or 0
     
-    if current_balance < purchase_amount:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Недостаточно средств в капитале. Доступно: {current_balance}₽, требуется: {purchase_amount}₽"
-        )
+    # Allow balance to go negative
+    # if current_balance < purchase_amount:
+    #     raise HTTPException(
+    #         status_code=400, 
+    #         detail=f"Недостаточно средств в капитале. Доступно: {current_balance}₽, требуется: {purchase_amount}₽"
+    #     )
     
     # Generate payment schedule
     print(f"DEBUG: client.schedule is not None: {client.schedule is not None}")
@@ -1022,11 +1023,12 @@ async def create_expense(expense: ExpenseCreate, current_user: str = Depends(get
     
     # Check if there's enough balance for the expense
     current_balance = capital.get("balance", 0.0)
-    if current_balance < expense.amount:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Недостаточно средств в капитале. Доступно: {current_balance}₽, требуется: {expense.amount}₽"
-        )
+    # Allow balance to go negative
+    # if current_balance < expense.amount:
+    #     raise HTTPException(
+    #         status_code=400, 
+    #         detail=f"Недостаточно средств в капитале. Доступно: {current_balance}₽, требуется: {expense.amount}₽"
+    #     )
     
     expense_dict = expense.dict()
     expense_dict["expense_date"] = datetime.utcnow().strftime("%Y-%m-%d")
@@ -1091,11 +1093,12 @@ async def update_expense(expense_id: str, updates: ExpenseUpdate, current_user: 
             amount_difference = new_amount - original_amount
             
             current_balance = capital.get("balance", 0.0)
-            if current_balance < amount_difference:
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Недостаточно средств в капитале для увеличения расхода на {amount_difference}₽"
-                )
+            # Allow balance to go negative
+            # if current_balance < amount_difference:
+            #     raise HTTPException(
+            #         status_code=400, 
+            #         detail=f"Недостаточно средств в капитале для увеличения расхода на {amount_difference}₽"
+            #     )
             
             # Update capital balance
             new_balance = current_balance - amount_difference
@@ -1167,6 +1170,9 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
     overdue_count = 0
     total_overdue_amount = 0  # Total sum of overdue payments
     current_month_expected = 0
+    current_month_total_payments = 0  # Total payments scheduled for current month
+    current_month_paid_payments = 0   # Total paid amount in current month
+    current_month_unpaid_payments = 0 # Total unpaid amount in current month
     monthly_profits = {}
     total_profit = 0  # Общая прибыль (долг - покупка)
     
@@ -1215,6 +1221,12 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
                 # Expected payments for current month
                 if payment_month == current_month:
                     current_month_expected += payment_amount
+                    current_month_total_payments += payment_amount
+                    
+                    if payment_status == "paid":
+                        current_month_paid_payments += payment_amount
+                    else:
+                        current_month_unpaid_payments += payment_amount
                 
                 # Count paid payments and their amounts
                 if payment_status == "paid":
@@ -1279,6 +1291,11 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
         "total_profit": total_profit,  # Общая прибыль (долг - покупка)
         "net_income": total_paid - total_expenses,  # Чистый доход (поступления - расходы)
         "current_month_expected": current_month_expected,
+        "current_month_stats": {
+            "total": current_month_total_payments,
+            "paid": current_month_paid_payments,
+            "unpaid": current_month_unpaid_payments
+        },
         "monthly_profits": monthly_profits_list
     }
 
@@ -1587,6 +1604,8 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
     
     try:
         # Get all clients except completed ones for general dashboard
+        # Оптимизация: исключаем расписание из основного запроса, если оно не нужно для фильтрации
+        # Но нам нужно расписание для определения today/tomorrow/overdue
         clients = await db.clients.find({
             "capital_id": {"$in": query_capital_ids},
             "status": {"$ne": "completed"}
@@ -1601,8 +1620,18 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
         tomorrow_payments = []
         overdue_payments = []
         
+        optimized_clients = []
+        
         for client in clients:
-            for schedule_item in client.get("schedule", []):
+            schedule = client.get("schedule", [])
+            
+            # Calculate stats for lightweight client
+            paid_amount = sum(float(p.get("amount", 0)) for p in schedule if p.get("status") == "paid")
+            
+            client_overdue_count = 0
+            client_overdue_amount = 0
+            
+            for schedule_item in schedule:
                 try:
                     # Handle both string and date formats
                     if isinstance(schedule_item["payment_date"], str):
@@ -1610,34 +1639,70 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
                     else:
                         payment_date = schedule_item["payment_date"]
                     
+                    amount = float(schedule_item.get("amount", 0))
+                    status = schedule_item.get("status", "pending")
+                    
                     # Check if payment is overdue OR has overdue status
-                    is_overdue = (schedule_item["status"] == "overdue" or 
-                                (schedule_item["status"] == "pending" and payment_date < today))
+                    is_overdue = (status == "overdue" or (status == "pending" and payment_date < today))
                     
                     if is_overdue:
+                        client_overdue_count += 1
+                        client_overdue_amount += amount
+                        
+                        # Add to overdue list (keep full info for filter logic on frontend? 
+                        # Frontend uses client_id from this list)
+                        # We use a lightweight client here to save space
                         overdue_payments.append({
-                            "client": client,
+                            "client": {"client_id": client["client_id"]}, 
                             "payment": schedule_item
                         })
-                    elif schedule_item["status"] == "pending" and payment_date == today:
+                    elif status == "pending" and payment_date == today:
                         today_payments.append({
-                            "client": client,
+                            "client": {"client_id": client["client_id"]},
                             "payment": schedule_item
                         })
-                    elif schedule_item["status"] == "pending" and payment_date == tomorrow:
+                    elif status == "pending" and payment_date == tomorrow:
                         tomorrow_payments.append({
-                            "client": client,
+                            "client": {"client_id": client["client_id"]},
                             "payment": schedule_item
                         })
                 except (ValueError, KeyError) as e:
                     continue  # Skip invalid date entries
+            
+            # Create lightweight client object (remove schedule)
+            light_client = client.copy()
+            if "schedule" in light_client:
+                del light_client["schedule"]
+            
+            light_client["stats"] = {
+                "paid_amount": paid_amount,
+                "overdue_count": client_overdue_count,
+                "overdue_amount": client_overdue_amount
+            }
+            optimized_clients.append(light_client)
         
         # Get completed clients separately
         completed_clients = await db.clients.find({
             "capital_id": {"$in": query_capital_ids},
             "status": "completed"
         }).to_list(1000)
-        completed_clients = [mongo_to_dict(client) for client in completed_clients]
+        
+        optimized_completed = []
+        for client in completed_clients:
+            client_dict = mongo_to_dict(client)
+            schedule = client_dict.get("schedule", [])
+            paid_amount = sum(float(p.get("amount", 0)) for p in schedule if p.get("status") == "paid")
+            
+            light_client = client_dict.copy()
+            if "schedule" in light_client:
+                del light_client["schedule"]
+            
+            light_client["stats"] = {
+                "paid_amount": paid_amount,
+                "overdue_count": 0,
+                "overdue_amount": 0
+            }
+            optimized_completed.append(light_client)
         
         # Логируем только базовую информацию (уменьшаем нагрузку)
         if len(clients) > 100 or len(completed_clients) > 100:
@@ -1647,8 +1712,8 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
             "today": today_payments,
             "tomorrow": tomorrow_payments,
             "overdue": overdue_payments,
-            "all_clients": clients,
-            "completed_clients": completed_clients
+            "all_clients": optimized_clients,
+            "completed_clients": optimized_completed
         }
     except Exception as e:
         logger.error(f"Error processing dashboard data for capital {capital_id}: {str(e)}", exc_info=True)

@@ -4,7 +4,12 @@ import ProgressBar from './ProgressBar';
 
 function ClientCard({ client, onClick }) {
   const total = client.debt_amount || client.total_amount || 0;
-  const paid = client.schedule?.filter((p) => p.status === 'paid').reduce((s, p) => s + p.amount, 0) || 0;
+  
+  // Use pre-calculated stats if available, otherwise calculate from schedule
+  const paid = client.stats 
+    ? client.stats.paid_amount 
+    : (client.schedule?.filter((p) => p.status === 'paid').reduce((s, p) => s + p.amount, 0) || 0);
+    
   const pct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
   
   // Helper function to safely parse payment date
@@ -39,24 +44,32 @@ function ClientCard({ client, onClick }) {
     }
   };
 
-  // Calculate overdue payments
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  const overduePayments = (client.schedule || []).filter(payment => {
-    if (payment.status === 'paid') return false;
+  // Calculate overdue payments if stats not available
+  let overdueCount = 0;
+  let overdueAmount = 0;
+
+  if (client.stats) {
+    overdueCount = client.stats.overdue_count;
+    overdueAmount = client.stats.overdue_amount;
+  } else {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    const paymentDate = parsePaymentDate(payment.payment_date);
-    if (!paymentDate || isNaN(paymentDate.getTime())) {
-      return false;
-    }
+    const overduePayments = (client.schedule || []).filter(payment => {
+      if (payment.status === 'paid') return false;
+      
+      const paymentDate = parsePaymentDate(payment.payment_date);
+      if (!paymentDate || isNaN(paymentDate.getTime())) {
+        return false;
+      }
+      
+      paymentDate.setHours(0, 0, 0, 0);
+      return paymentDate < today;
+    });
     
-    paymentDate.setHours(0, 0, 0, 0);
-    return paymentDate < today;
-  });
-  
-  const overdueCount = overduePayments.length;
-  const overdueAmount = overduePayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    overdueCount = overduePayments.length;
+    overdueAmount = overduePayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+  }
 
   return (
     <div

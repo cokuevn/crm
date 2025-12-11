@@ -64,7 +64,8 @@ class NotificationService {
   // Сохранение конфигурации для фоновой работы
   async saveConfigForBackgroundSync(apiUrl, authToken) {
     try {
-      const cache = await caches.open('crm-cache-v6');
+      // Используем тот же кэш, что и в SW (crm-cache-v7)
+      const cache = await caches.open('crm-cache-v7');
       const config = { apiUrl, authToken, savedAt: Date.now() };
       
       await cache.put(

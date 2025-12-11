@@ -227,6 +227,20 @@ const MainApp = () => {
     if (user) {
       autoInitAndFetchCapitals();
     }
+
+    // Add online listener to auto-refresh data when connection is restored
+    const handleOnline = () => {
+      console.log('App is online, refreshing data...');
+      showNotification('info', 'Подключение восстановлено', 'Обновляем данные...');
+      if (user) {
+        fetchCapitals();
+        // Emit event for other components to refresh
+        window.dispatchEvent(new CustomEvent('app:online'));
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
   }, [user]);
 
   const autoInitAndFetchCapitals = async () => {

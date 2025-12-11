@@ -218,13 +218,34 @@ const Analytics = ({ selectedCapital, onBack }) => {
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Финансовый баланс</h3>
           <div className="space-y-4">
-            <div className="flex items-center justify-between"><span className="text-sm font-medium text-gray-600">Текущий баланс</span><span className="text-lg font-semibold text-blue-600">{analytics.current_balance?.toLocaleString('ru-RU')}₽</span></div>
+            <div className="flex items-center justify-between"><span className="text-sm font-medium text-gray-600">Текущий баланс</span><span className={`text-lg font-semibold ${(analytics.current_balance || 0) >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{(analytics.current_balance || 0).toLocaleString('ru-RU')}₽</span></div>
             <div className="flex items-center justify-between"><span className="text-sm font-medium text-gray-600">Всего доходов</span><span className="text-lg font-semibold text-green-600">{analytics.total_paid?.toLocaleString('ru-RU')}₽</span></div>
             <div className="flex items-center justify-between"><span className="text-sm font-medium text-gray-600">Всего расходов</span><span className="text-lg font-semibold text-purple-600">{analytics.total_expenses?.toLocaleString('ru-RU')}₽</span></div>
             <div className="flex items-center justify-between pt-3 border-t border-gray-200"><span className="text-sm font-medium text-gray-900">Чистая прибыль</span><span className={`text-lg font-semibold ${(analytics.net_income || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>{(analytics.net_income || 0).toLocaleString('ru-RU')}₽</span></div>
           </div>
         </div>
       </div>
+
+      {/* Current Month Statistics */}
+      {analytics.current_month_stats && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Статистика за текущий месяц ({new Date().toLocaleString('ru', { month: 'long' })})</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+              <div className="text-sm text-blue-700 font-medium mb-1">Всего к оплате</div>
+              <div className="text-2xl font-bold text-blue-900">{analytics.current_month_stats.total.toLocaleString('ru-RU')}₽</div>
+            </div>
+            <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+              <div className="text-sm text-green-700 font-medium mb-1">Оплачено</div>
+              <div className="text-2xl font-bold text-green-900">{analytics.current_month_stats.paid.toLocaleString('ru-RU')}₽</div>
+            </div>
+            <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+              <div className="text-sm text-amber-700 font-medium mb-1">Осталось получить</div>
+              <div className="text-2xl font-bold text-amber-900">{analytics.current_month_stats.unpaid.toLocaleString('ru-RU')}₽</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status and Financial Summary blocks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

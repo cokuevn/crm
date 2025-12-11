@@ -2,6 +2,7 @@ import axios from 'axios';
 import { signOut } from 'firebase/auth';
 import { API } from './api';
 import { auth } from '../contexts/AuthContext';
+import notificationService from '../services/notificationService';
 
 // Axios instance with baseURL and auth interceptor
 export const apiClient = axios.create({ baseURL: API, headers: { 'Content-Type': 'application/json' } });
@@ -9,15 +10,38 @@ export const apiClient = axios.create({ baseURL: API, headers: { 'Content-Type':
 // Attach Authorization header from current user (Firebase-like)
 apiClient.interceptors.request.use(async (config) => {
   try {
-    // If AuthContext exports firebase auth, fallback to window.auth if needed
-    const currentUser = auth?.currentUser || null;
-    if (currentUser?.uid) {
-      // TODO: replace uid with ID token when backend supports it
+    const currentUser = auth?.currentUser;
+    if (currentUser) {
+      // Ensure the session is valid by getting a fresh token.
+      // This handles PWA long-lived sessions where the internal token might expire.
+      const token = await currentUser.getIdToken();
+      
+      // Update PWA config with fresh token for background sync
+      try {
+        // We save the raw token (or UID if that's what backend wants, but backend accepts token too)
+        // Since we send currentUser.uid in the header below for now (legacy), 
+        // we should probably save what we use.
+        // BUT, for background sync to work reliably if we switch to tokens later, let's save what we have.
+        // Currently backend accepts UID or Token.
+        // Let's save the UID for consistency with the header below, 
+        // OR save the token if we want to be future proof.
+        // Given the code below uses UID, let's stick to UID for now to avoid breaking changes,
+        // unless backend was fully migrated to tokens.
+        // However, if the user explicitly asked for "updating token", they might imply real tokens.
+        // Let's safe the UID for now as it's what works in foreground.
+        await notificationService.saveConfigForBackgroundSync(API, currentUser.uid);
+      } catch (e) {
+        // ignore errors here
+      }
+      
+      // TODO: replace uid with ID token when backend supports verification
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${currentUser.uid}`;
     }
   } catch (e) {
-    // noop
+    console.error('Error refreshing token:', e);
+    // If token refresh fails, the session is likely invalid.
+    // The request will likely fail with 401 or backend will reject it.
   }
   return config;
 });

@@ -143,6 +143,14 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
     setFilter('all');
     setSearchTerm('');
     fetchDashboardData();
+
+    // Listen for online event to refresh data
+    const handleOnline = () => {
+      fetchDashboardData();
+    };
+    
+    window.addEventListener('app:online', handleOnline);
+    return () => window.removeEventListener('app:online', handleOnline);
   }, [selectedCapital, fetchDashboardData]);
 
 
