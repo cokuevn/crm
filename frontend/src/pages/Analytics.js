@@ -31,17 +31,37 @@ const Analytics = ({ selectedCapital, onBack, onClientClick }) => {
   const [activeTab, setActiveTab] = useState('main'); // 'main' | 'new'
   const { user } = useAuth();
 
+  const { 
+    analyticsData: cachedV1, 
+    analyticsV2Data: cachedV2,
+    monthPaymentsData: cachedMonthPayments,
+    setAnalyticsData: setCachedAnalytics,
+    setMonthPaymentsData: setCachedMonthPayments,
+    isAnalyticsStale
+  } = useAppStore();
+
   useEffect(() => { if (selectedCapital) fetchAnalytics(); }, [selectedCapital]);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = async (force = false) => {
     try {
-      setLoading(true);
+      // Use cache if not stale and not forced
+      if (!force && cachedV1 && cachedV2 && !isAnalyticsStale()) {
+        setAnalytics(cachedV1);
+        setAnalyticsV2(cachedV2);
+        setLoading(false);
+        return;
+      }
+
+      // Only show loading if we have NO data
+      if (!cachedV1) setLoading(true);
+      
       const [v1, v2] = await Promise.all([
         fetchAnalyticsService(selectedCapital.id),
         fetchAnalyticsV2(selectedCapital.id),
       ]);
       setAnalytics(v1);
       setAnalyticsV2(v2);
+      setCachedAnalytics(v1, v2); // Save to store
     } catch (e) {
       console.error('Error fetching analytics:', e);
       setAnalytics(null);
@@ -51,12 +71,21 @@ const Analytics = ({ selectedCapital, onBack, onClientClick }) => {
     }
   };
 
-  const fetchMonthPayments = async () => {
+  const fetchMonthPayments = async (force = false) => {
     if (!selectedCapital?.id) return;
+    
+    // Check cache
+    if (!force && cachedMonthPayments && !isAnalyticsStale()) {
+      setMonthPayments(cachedMonthPayments);
+      return;
+    }
+
     try {
-      setMonthPaymentsLoading(true);
+      if (!cachedMonthPayments) setMonthPaymentsLoading(true);
       const data = await fetchMonthPaymentsV2(selectedCapital.id, { includeOverdue: includeOverdueInMonthTable });
-      setMonthPayments({ month: data?.month || null, items: Array.isArray(data?.items) ? data.items : [] });
+      const result = { month: data?.month || null, items: Array.isArray(data?.items) ? data.items : [] };
+      setMonthPayments(result);
+      setCachedMonthPayments(result); // Save to store
     } catch (e) {
       console.error('Error fetching month payments:', e);
       setMonthPayments({ month: null, items: [] });
@@ -75,8 +104,8 @@ const Analytics = ({ selectedCapital, onBack, onClientClick }) => {
     try {
       setUpdatingPaymentId(row.id);
       await updatePaymentStatusApi(row.client_id, encodeURIComponent(row.payment_date), nextStatus);
-      await fetchMonthPayments();
-      await fetchAnalytics(); // keep summary metrics in sync
+      await fetchMonthPayments(true); // force refresh cache
+      await fetchAnalytics(true); // keep summary metrics in sync
     } catch (e) {
       console.error('Failed to update payment status:', e);
       try {

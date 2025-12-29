@@ -7,10 +7,12 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { useAuth } from '../contexts/AuthContext';
 import { API } from '../lib/api';
 import EditClientModal from '../components/modals/EditClientModal';
+import useAppStore from '../store/useAppStore';
 
 const ClientDetails = ({ clientId, onBack, capitals }) => {
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
+  const invalidateCache = useAppStore(state => state.invalidateCache);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(null);
@@ -37,11 +39,13 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
 
   const handleClientUpdated = (updatedClient) => {
     setClient(updatedClient);
+    invalidateCache();
   };
 
   const handleDeleteClient = async () => {
     try {
       await deleteClientApi(clientId);
+      invalidateCache();
       onBack(); // Вернуться к списку после удаления
     } catch (error) {
       console.error('Error deleting client:', error);
@@ -54,6 +58,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
       const result = await completeClientApi(clientId);
       setClient(result.client);
       setShowCompleteConfirm(false);
+      invalidateCache();
       window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'success', title: 'Успешно', message: 'Клиент отмечен как завершённый' } }));
       // Вернуться к списку после завершения
       setTimeout(() => onBack(), 2000);
@@ -76,6 +81,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
       console.log('🔍 Payment modal object:', showPaymentModal);
       
       const response = await updatePaymentStatusApi(clientId, normalizedDate, status);
+      invalidateCache();
       
       // Update client data immediately if provided in response
       if (response?.client) {
@@ -138,6 +144,7 @@ const ClientDetails = ({ clientId, onBack, capitals }) => {
       });
       
       await updatePaymentAmountApi(clientId, normalizedDate, amount);
+      invalidateCache();
       await fetchClientDetails();
       window.dispatchEvent(new CustomEvent('app:notify', { detail: { type: 'success', title: 'Успешно', message: 'Сумма платежа обновлена' } }));
     } catch (error) {

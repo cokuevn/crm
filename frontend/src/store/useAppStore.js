@@ -39,7 +39,61 @@ export const useAppStore = create((set, get) => ({
   setCapitals: (capitals) => set({ capitals }),
   
   selectedCapital: null,
-  setSelectedCapital: (capital) => set({ selectedCapital: capital }),
+  setSelectedCapital: (capital) => {
+    const current = get().selectedCapital;
+    if (current?.id !== capital?.id) {
+      // Clear cache when capital changes
+      set({ 
+        selectedCapital: capital,
+        dashboardData: null,
+        analyticsData: null,
+        analyticsV2Data: null,
+        monthPaymentsData: null,
+        lastDashboardFetch: null,
+        lastAnalyticsFetch: null
+      });
+    } else {
+      set({ selectedCapital: capital });
+    }
+  },
+  
+  // Dashboard Cache
+  dashboardData: null,
+  lastDashboardFetch: null,
+  setDashboardData: (data) => set({ dashboardData: data, lastDashboardFetch: Date.now() }),
+  
+  // Analytics Cache
+  analyticsData: null,
+  analyticsV2Data: null,
+  monthPaymentsData: null,
+  lastAnalyticsFetch: null,
+  setAnalyticsData: (v1, v2) => set({ 
+    analyticsData: v1, 
+    analyticsV2Data: v2, 
+    lastAnalyticsFetch: Date.now() 
+  }),
+  setMonthPaymentsData: (data) => set({ monthPaymentsData: data }),
+
+  // Helpers to check if cache is stale (e.g. > 2 minutes)
+  isDashboardStale: () => {
+    const last = get().lastDashboardFetch;
+    if (!last) return true;
+    return (Date.now() - last) > 120000; // 2 minutes
+  },
+  isAnalyticsStale: () => {
+    const last = get().lastAnalyticsFetch;
+    if (!last) return true;
+    return (Date.now() - last) > 120000; // 2 minutes
+  },
+
+  invalidateCache: () => set({
+    dashboardData: null,
+    analyticsData: null,
+    analyticsV2Data: null,
+    monthPaymentsData: null,
+    lastDashboardFetch: null,
+    lastAnalyticsFetch: null
+  }),
   
   // Уведомления
   notifications: [],

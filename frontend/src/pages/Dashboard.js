@@ -100,6 +100,13 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
   const { user } = useAuth();
   const [visibleCount, setVisibleCount] = useState(9);
   const sentinelRef = useRef(null);
+  
+  const { 
+    dashboardData: cachedData, 
+    setDashboardData: setCachedData, 
+    isDashboardStale 
+  } = useAppStore();
+
   const handleCardClick = useCallback((id) => onClientClick(id), [onClientClick]);
   const clearSearch = useCallback(() => setSearchTerm(''), []);
   const setFilterAll = useCallback(() => setFilter('all'), []);
@@ -108,16 +115,23 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
   const setFilterOverdue = useCallback(() => setFilter('overdue'), []);
   const setFilterCompleted = useCallback(() => setFilter('completed'), []);
 
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = useCallback(async (force = false) => {
     if (!selectedCapital) return;
     
-    setLoading(true);
+    // Check cache unless forced
+    if (!force && cachedData && !isDashboardStale()) {
+      setDashboardData(cachedData);
+      return;
+    }
+    
+    // Only show loading if we don't have any data at all
+    if (!cachedData) setLoading(true);
+    
     try {
       const data = await fetchDashboard(selectedCapital.id);
-      console.log('Dashboard data received:', data); // Отладочная информация
+      console.log('Dashboard data received:', data);
       setDashboardData(data);
-      
-      // Проверяем и отправляем уведомления о платежах
+      setCachedData(data); // Save to store
       try {
         await notificationService.checkAndNotify(data);
       } catch (error) {

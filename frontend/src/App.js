@@ -178,6 +178,7 @@ const MainApp = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { user, logout } = useAuth();
+  const invalidateCache = useAppStore(state => state.invalidateCache);
 
   // PWA Splash Screen Animation
   useEffect(() => {
@@ -370,6 +371,7 @@ const MainApp = () => {
       c.id === updatedCapital.id ? updatedCapital : c
     ));
     setSelectedCapital(updatedCapital);
+    invalidateCache(); // Clear cache as balance changed
     showNotification('success', 'Баланс обновлен', `Баланс капитала "${updatedCapital.name}" обновлен`);
     setShowBalanceModal(false);
   };
@@ -408,6 +410,7 @@ const MainApp = () => {
 
   const handleClientAdded = (newClient) => {
     showNotification('success', 'Клиент добавлен', `${newClient.name} успешно добавлен`);
+    invalidateCache(); // Clear cache to show new client
     // Refresh capitals to update balance
     fetchCapitals();
     setCurrentPage('dashboard');
@@ -647,6 +650,7 @@ const MainApp = () => {
         onNotify={(type, title, message) => showNotification(type, title, message)}
         onClientsImported={() => {
           showNotification('success', 'Импорт завершен', 'Клиенты успешно импортированы');
+          invalidateCache(); // Clear cache after import
           fetchCapitals();
           setCurrentPage('dashboard');
         }}
