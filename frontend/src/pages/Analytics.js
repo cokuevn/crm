@@ -68,7 +68,6 @@ const Analytics = ({ selectedCapital, onBack, onClientClick }) => {
   useEffect(() => {
     if (!selectedCapital) return;
     fetchMonthPayments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCapital, includeOverdueInMonthTable]);
 
   const handleChangePaymentStatus = async (row, nextStatus) => {
