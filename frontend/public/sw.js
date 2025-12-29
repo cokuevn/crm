@@ -1,6 +1,6 @@
 // Service Worker для PWA поддержки
 const CACHE_NAME = 'crm-cache-v7'; // Обновлено: v5 - добавлен PWA install prompt и улучшена иконка
-const VERSION = '7'; // Версия для логирования
+const VERSION = '8'; // Версия для логирования
 const urlsToCache = [
   '/',
   '/index.html',
