@@ -674,6 +674,7 @@ const MainApp = () => {
       {/* Install Prompt */}
       <InstallPrompt />
     </motion.div>
+    )}
     </>
   );
 };
