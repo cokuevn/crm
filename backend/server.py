@@ -52,8 +52,6 @@ api_router = APIRouter(prefix="/api")
 async def ping():
     return {"message": "pong"}
 
-app.include_router(api_router)
-
 @app.get("/")
 async def root():
     return {"message": "Backend is alive!"}
@@ -2338,9 +2336,6 @@ async def migrate_contract_dates(current_user: str = Depends(get_current_user)):
         "total_found": len(clients)
     }
 
-# Include the router in the main app
-app.include_router(api_router)
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -2880,7 +2875,7 @@ async def ai_chat(request: dict, current_user: str = Depends(get_current_user)):
     
     return ai_response
 
-# Добавляем router снова, чтобы зарегистрировать AI endpoint если он был добавлен после первого include
+# Register all routes from the api_router at once
 app.include_router(api_router)
 
 if __name__ == "__main__":

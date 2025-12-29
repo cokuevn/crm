@@ -618,7 +618,7 @@ const Analytics = ({ selectedCapital, onBack, onClientClick }) => {
                 </div>
 
                 {monthPaymentsLoading ? (
-                  <div className="text-sm text-gray-600">Загрузка…</div>
+                  <div className="text-sm text-gray-600">Загрузка…</div>я
                 ) : monthPayments.items.length === 0 ? (
                   <div className="text-sm text-gray-600">Нет платежей в этом месяце</div>
                 ) : (
