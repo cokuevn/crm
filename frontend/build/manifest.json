@@ -1,0 +1,21 @@
+{
+  "short_name": "Comfort CRM",
+  "name": "Comfort CRM",
+  "description": "Система управления рассрочками и клиентами",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#1E40AF",
+  "background_color": "#FFFFFF",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "ru"
+}
+

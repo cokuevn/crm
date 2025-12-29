@@ -21,8 +21,9 @@ import NotificationToast from './components/ui/NotificationToast';
 import InstallPrompt from './components/InstallPrompt';
 import { autoInit, migrateContractDates } from './lib/services/systemService';
 import Skeleton from './components/ui/Skeleton';
+import { waitForAuth } from './lib/apiClient';
 
-// API helpers moved to lib/api
+// Login Component
 
 // Auth Context moved to ./contexts/AuthContext
 
@@ -153,7 +154,21 @@ const LoginPage = () => {
 const MainApp = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [capitals, setCapitals] = useState([]);
-  const [selectedCapital, setSelectedCapital] = useState(null);
+  const [selectedCapital, setSelectedCapital] = useState(() => {
+    try {
+      const saved = localStorage.getItem('selectedCapital');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  // Persist selected capital
+  useEffect(() => {
+    if (selectedCapital) {
+      localStorage.setItem('selectedCapital', JSON.stringify(selectedCapital));
+    }
+  }, [selectedCapital]);
   const [showAddCapitalModal, setShowAddCapitalModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
@@ -161,6 +176,7 @@ const MainApp = () => {
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [showSplash, setShowSplash] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { user, logout } = useAuth();
 
   // PWA Splash Screen Animation
@@ -173,6 +189,9 @@ const MainApp = () => {
 
   // PWA Support: Service Worker registration with auto-update
   useEffect(() => {
+    // Start waking up the backend immediately
+    apiClient.get('/api/ping').catch(() => {});
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker
@@ -226,6 +245,8 @@ const MainApp = () => {
   useEffect(() => {
     if (user) {
       autoInitAndFetchCapitals();
+    } else {
+      setIsInitialLoad(false);
     }
 
     // Add online listener to auto-refresh data when connection is restored
@@ -245,20 +266,68 @@ const MainApp = () => {
 
   const autoInitAndFetchCapitals = async () => {
     try {
-      await autoInit();
-      fetchCapitals();
+      setIsInitialLoad(true);
+      // Wait for auth to be fully ready before first request
+      await waitForAuth();
+      
+      // First, try to fetch existing capitals
+      let data = await listCapitals();
+      
+      // If data is empty, wait 1.5s and try one more time
+      // This helps with transient network lags or auth sync issues
+      if (!data || data.length === 0) {
+        console.warn('Capitals list empty, retrying in 1.5s...');
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        data = await listCapitals();
+      }
+      
+      if (data && data.length > 0) {
+        setCapitals(data);
+        
+        // If we have a saved selected capital, make sure it's still in the list
+        if (selectedCapital) {
+          const stillExists = data.find(c => c.id === selectedCapital.id);
+          if (stillExists) {
+            setSelectedCapital(stillExists);
+          } else {
+            setSelectedCapital(data[0]);
+          }
+        } else {
+          setSelectedCapital(data[0]);
+        }
+      } else {
+        // If no capitals, try auto-init (it will create mock data for new users)
+        console.log('No capitals found, running auto-init...');
+        await autoInit();
+        // Fetch again after init
+        const freshData = await listCapitals();
+        setCapitals(freshData || []);
+        if (freshData && freshData.length > 0) {
+          setSelectedCapital(freshData[0]);
+        }
+      }
     } catch (error) {
-      console.error('Error auto-initializing data:', error);
-      // Fallback to just fetching capitals
-      fetchCapitals();
+      console.error('Error fetching/initializing capitals:', error);
+      // Even on error, try to fetch once more just in case
+      try {
+        const data = await listCapitals();
+        setCapitals(data || []);
+      } catch (e) {}
+    } finally {
+      setIsInitialLoad(false);
     }
   };
 
   const fetchCapitals = async () => {
     try {
       const data = await listCapitals();
-      setCapitals(data);
-      if (data.length > 0 && !selectedCapital) {
+      setCapitals(data || []);
+      
+      // Update selected capital if it exists in the fresh list
+      if (selectedCapital) {
+        const fresh = data.find(c => c.id === selectedCapital.id);
+        if (fresh) setSelectedCapital(fresh);
+      } else if (data.length > 0) {
         setSelectedCapital(data[0]);
       }
     } catch (error) {
@@ -373,7 +442,13 @@ const MainApp = () => {
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'analytics':
-        return <Analytics selectedCapital={selectedCapital} onBack={() => setCurrentPage('dashboard')} />;
+        return (
+          <Analytics
+            selectedCapital={selectedCapital}
+            onBack={() => setCurrentPage('dashboard')}
+            onClientClick={handleClientClick}
+          />
+        );
       case 'expenses':
         return <Expenses selectedCapital={selectedCapital} onBack={() => setCurrentPage('dashboard')} />;
       case 'add-client':
@@ -508,8 +583,16 @@ const MainApp = () => {
         </AnimatePresence>
       )}
       
-      <motion.div 
-        className="min-h-screen bg-bg-light dark:bg-bg-dark transition-colors duration-300"
+      {isInitialLoad ? (
+        <div className="min-h-screen bg-bg-light dark:bg-bg-dark flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent mx-auto"></div>
+            <p className="text-gray-600 dark:text-gray-400 font-medium">Загрузка данных...</p>
+          </div>
+        </div>
+      ) : (
+        <motion.div 
+          className="min-h-screen bg-bg-light dark:bg-bg-dark transition-colors duration-300"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}

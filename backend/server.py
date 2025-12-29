@@ -1,6 +1,7 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Header
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Header, Query
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -14,6 +15,7 @@ import json
 import math
 from bson import ObjectId
 import certifi
+import io
 
 # Загружаем .env сразу!
 ROOT_DIR = Path(__file__).parent
@@ -229,6 +231,340 @@ def normalize_client_end_date(client_doc: dict) -> dict:
         pass
     return client_doc
 
+def _get_user_mapping() -> Dict[str, str]:
+    """
+    Temporary mapping between Firebase UID and email-based legacy IDs.
+    This mapping is duplicated in a few endpoints; we centralize it for export.
+    """
+    return {
+        "nF90MLbAVORCrePYSEL4JwIooV22": "cokuevn@gmail.com",
+        "cokuevn@gmail.com": "nF90MLbAVORCrePYSEL4JwIooV22",
+    }
+
+async def _get_capitals_for_user(current_user: str) -> List[dict]:
+    """Fetch user's capitals with legacy-id mapping support."""
+    user_mapping = _get_user_mapping()
+    if current_user in user_mapping:
+        alt = user_mapping[current_user]
+        capitals = await db.capitals.find(
+            {
+                "$or": [
+                    {"owner_id": current_user, "is_active": True},
+                    {"owner_id": alt, "is_active": True},
+                ]
+            }
+        ).to_list(1000)
+    else:
+        capitals = await db.capitals.find({"owner_id": current_user, "is_active": True}).to_list(1000)
+    return [mongo_to_dict(c) for c in capitals]
+
+def _to_float(value: Any, default: float = 0.0) -> float:
+    try:
+        if value is None:
+            return float(default)
+        if isinstance(value, bool):
+            return float(default)
+        return float(value)
+    except Exception:
+        return float(default)
+
+def _to_int(value: Any, default: int = 0) -> int:
+    try:
+        if value is None:
+            return int(default)
+        if isinstance(value, bool):
+            return int(default)
+        return int(value)
+    except Exception:
+        return int(default)
+
+def _parse_date(value: Any) -> Optional[date]:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if not isinstance(value, str):
+        return None
+    s = value.strip()
+    if not s:
+        return None
+    # Keep only date part if it includes time
+    s = s.split("T")[0].split(" ")[0]
+    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d.%m.%y", "%Y/%m/%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+def _to_iso_date(value: Any) -> Optional[str]:
+    d = _parse_date(value)
+    return d.strftime("%Y-%m-%d") if d else None
+
+def _months_between_inclusive(start: Optional[date], end: Optional[date]) -> Optional[int]:
+    if not start or not end:
+        return None
+    if end < start:
+        return None
+    return (end.year - start.year) * 12 + (end.month - start.month) + 1
+
+def _risk_level(overdue_count: int, max_overdue_days: int) -> str:
+    if max_overdue_days >= 30 or overdue_count >= 3:
+        return "high"
+    if max_overdue_days >= 7 or overdue_count >= 1:
+        return "medium"
+    return "low"
+
+def _month_start_end(month_ym: str) -> tuple[date, date]:
+    """
+    Returns (start_inclusive, next_month_start_exclusive) for a given YYYY-MM string.
+    """
+    try:
+        year_s, month_s = month_ym.split("-", 1)
+        y = int(year_s)
+        m = int(month_s)
+        start = date(y, m, 1)
+    except Exception:
+        today = date.today()
+        start = date(today.year, today.month, 1)
+    if start.month == 12:
+        next_start = date(start.year + 1, 1, 1)
+    else:
+        next_start = date(start.year, start.month + 1, 1)
+    return start, next_start
+
+def _iso_week_key(d: date) -> str:
+    iso = d.isocalendar()
+    return f"{iso.year}-W{iso.week:02d}"
+
+def _percent(part: float, total: float) -> float:
+    if total <= 0:
+        return 0.0
+    return part / total
+
+def _pctl(sorted_values: List[int], p: float) -> Optional[int]:
+    if not sorted_values:
+        return None
+    p = max(0.0, min(1.0, p))
+    idx = int(math.ceil(p * len(sorted_values)) - 1)
+    idx = max(0, min(len(sorted_values) - 1, idx))
+    return sorted_values[idx]
+
+async def _get_capital_for_user(capital_id: str, current_user: str) -> Optional[dict]:
+    """
+    v2 helper: verify capital ownership including legacy-id mapping.
+    v1 endpoint keeps its original ownership behavior.
+    """
+    capital = await db.capitals.find_one({"id": capital_id, "owner_id": current_user})
+    if capital:
+        return mongo_to_dict(capital)
+    user_mapping = _get_user_mapping()
+    if current_user in user_mapping:
+        alt = user_mapping[current_user]
+        capital = await db.capitals.find_one({"id": capital_id, "owner_id": alt})
+        if capital:
+            return mongo_to_dict(capital)
+    return None
+
+async def _compute_analytics_v2(capital_id: str, current_user: str) -> dict:
+    capital = await _get_capital_for_user(capital_id, current_user)
+    if not capital:
+        raise HTTPException(status_code=404, detail="Capital not found")
+
+    # v2: cashflow plan/fact (day/week current month), capital locked/turnover/payback, overdue aging buckets
+    today = date.today()
+    month_ym = today.strftime("%Y-%m")
+    start, next_start = _month_start_end(month_ym)
+    start_of_month_locked_cutoff = start - timedelta(days=1)
+
+    clients = await db.clients.find({"capital_id": capital_id}).to_list(20000)
+    clients = [mongo_to_dict(c) for c in clients]
+
+    # Cashflow buckets for current month
+    day_rows: Dict[str, dict] = {}
+    week_rows: Dict[str, dict] = {}
+    cursor = start
+    while cursor < next_start:
+        day_key = cursor.strftime("%Y-%m-%d")
+        day_rows[day_key] = {"period": day_key, "planned": 0.0, "actual": 0.0, "variance": 0.0}
+        wk = _iso_week_key(cursor)
+        if wk not in week_rows:
+            week_rows[wk] = {"period": wk, "planned": 0.0, "actual": 0.0, "variance": 0.0}
+        cursor += timedelta(days=1)
+
+    total_outstanding = 0.0
+    locked_now = 0.0
+    locked_start_month = 0.0
+    collections_month_actual = 0.0
+    payback_days: List[int] = []
+
+    overdue_bucket_amounts = {"1_7": 0.0, "8_30": 0.0, "31_60": 0.0, "60_plus": 0.0}
+    overdue_bucket_items: Dict[str, Dict[str, dict]] = {"1_7": {}, "8_30": {}, "31_60": {}, "60_plus": {}}
+
+    for c in clients:
+        schedule = c.get("schedule") or []
+        if not isinstance(schedule, list):
+            schedule = []
+
+        sale_price = _to_float(c.get("debt_amount") or c.get("total_amount") or 0.0, 0.0)
+        purchase_price = _to_float(c.get("purchase_amount") or 0.0, 0.0)
+        if purchase_price <= 0 and sale_price > 0:
+            purchase_price = sale_price
+
+        # Paid totals (all time)
+        total_paid_all = 0.0
+        paid_events: List[tuple[date, float]] = []
+        paid_as_of_start_month = 0.0
+
+        for p in schedule:
+            if not isinstance(p, dict):
+                continue
+            due_dt = _parse_date(p.get("payment_date"))
+            amount = _to_float(p.get("amount") or 0.0, 0.0)
+            status_val = (p.get("status") or "pending").strip().lower()
+            paid_dt = _parse_date(p.get("paid_date"))
+
+            # Planned cashflow by due date (month)
+            if due_dt and start <= due_dt < next_start:
+                dkey = due_dt.strftime("%Y-%m-%d")
+                day_rows[dkey]["planned"] += amount
+                week_rows[_iso_week_key(due_dt)]["planned"] += amount
+
+            # Actual cashflow by paid_date (fallback to due_date if missing)
+            if status_val == "paid":
+                actual_dt = paid_dt or due_dt
+                total_paid_all += amount
+                if actual_dt:
+                    paid_events.append((actual_dt, amount))
+                    if actual_dt <= start_of_month_locked_cutoff:
+                        paid_as_of_start_month += amount
+                    if start <= actual_dt < next_start:
+                        akey = actual_dt.strftime("%Y-%m-%d")
+                        day_rows[akey]["actual"] += amount
+                        week_rows[_iso_week_key(actual_dt)]["actual"] += amount
+                        collections_month_actual += amount
+
+            # Overdue aging (only unpaid, due date < today)
+            if due_dt and status_val != "paid" and due_dt < today:
+                dpd = (today - due_dt).days
+                client_id = c.get("client_id")
+                name = c.get("name")
+                product = c.get("product")
+                if 1 <= dpd <= 7:
+                    overdue_bucket_amounts["1_7"] += amount
+                    bucket = "1_7"
+                elif 8 <= dpd <= 30:
+                    overdue_bucket_amounts["8_30"] += amount
+                    bucket = "8_30"
+                elif 31 <= dpd <= 60:
+                    overdue_bucket_amounts["31_60"] += amount
+                    bucket = "31_60"
+                elif dpd >= 61:
+                    overdue_bucket_amounts["60_plus"] += amount
+                    bucket = "60_plus"
+                else:
+                    bucket = None
+
+                if bucket and client_id:
+                    entry = overdue_bucket_items[bucket].get(client_id)
+                    if not entry:
+                        entry = {
+                            "client_id": str(client_id),
+                            "name": name,
+                            "product": product,
+                            "overdue_amount": 0.0,
+                            "max_overdue_days": 0,
+                            "overdue_count": 0,
+                        }
+                        overdue_bucket_items[bucket][client_id] = entry
+                    entry["overdue_amount"] = float(entry["overdue_amount"]) + float(amount)
+                    entry["overdue_count"] = int(entry["overdue_count"]) + 1
+                    if int(dpd) > int(entry["max_overdue_days"]):
+                        entry["max_overdue_days"] = int(dpd)
+
+        remaining = max(0.0, sale_price - total_paid_all)
+        total_outstanding += remaining
+        locked_now += max(0.0, purchase_price - total_paid_all)
+        locked_start_month += max(0.0, purchase_price - paid_as_of_start_month)
+
+        # Payback per deal: first date when cumulative paid >= purchase_price
+        start_dt = _parse_date(c.get("start_date"))
+        if purchase_price > 0 and start_dt and paid_events:
+            paid_events.sort(key=lambda t: t[0])
+            cum = 0.0
+            pb_date: Optional[date] = None
+            for dt_paid, amt in paid_events:
+                if dt_paid < start_dt:
+                    continue
+                cum += amt
+                if cum + 1e-9 >= purchase_price:
+                    pb_date = dt_paid
+                    break
+            if pb_date:
+                payback_days.append((pb_date - start_dt).days)
+
+    # finalize variance and sort
+    for row in day_rows.values():
+        row["planned"] = round(float(row["planned"]), 2)
+        row["actual"] = round(float(row["actual"]), 2)
+        row["variance"] = round(float(row["actual"] - row["planned"]), 2)
+    for row in week_rows.values():
+        row["planned"] = round(float(row["planned"]), 2)
+        row["actual"] = round(float(row["actual"]), 2)
+        row["variance"] = round(float(row["actual"] - row["planned"]), 2)
+
+    cashflow_day = [day_rows[k] for k in sorted(day_rows.keys())]
+    cashflow_week = [week_rows[k] for k in sorted(week_rows.keys())]
+
+    avg_locked_month = (locked_start_month + locked_now) / 2.0
+    turnover_month = (collections_month_actual / avg_locked_month) if avg_locked_month > 0 else 0.0
+
+    payback_days_sorted = sorted([d for d in payback_days if d is not None])
+    median_pb = _pctl(payback_days_sorted, 0.5)
+    p75_pb = _pctl(payback_days_sorted, 0.75)
+
+    buckets = {}
+    for k, amt in overdue_bucket_amounts.items():
+        amt_f = round(float(amt), 2)
+        buckets[k] = {
+            "amount": amt_f,
+            "share": round(float(_percent(amt_f, total_outstanding)), 6),
+        }
+
+    items = {}
+    for k, by_client in overdue_bucket_items.items():
+        lst = list(by_client.values())
+        # sort: worst DPD first, then amount
+        lst.sort(key=lambda x: (int(x.get("max_overdue_days") or 0), float(x.get("overdue_amount") or 0.0)), reverse=True)
+        # round amounts
+        for it in lst:
+            it["overdue_amount"] = round(float(it.get("overdue_amount") or 0.0), 2)
+        items[k] = lst
+
+    return {
+        "version": "v2",
+        "month": month_ym,
+        "cashflow_day": cashflow_day,
+        "cashflow_week": cashflow_week,
+        "capital": {
+            "capital_locked_now": round(float(locked_now), 2),
+            "capital_locked_start_month": round(float(locked_start_month), 2),
+            "avg_capital_locked_month": round(float(avg_locked_month), 2),
+            "collections_month_actual": round(float(collections_month_actual), 2),
+            "turnover_month": round(float(turnover_month), 6),
+            "payback_days_median": median_pb,
+            "payback_days_p75": p75_pb,
+            "payback_deals_count": len(payback_days_sorted),
+        },
+        "overdue_aging": {
+            "total_outstanding": round(float(total_outstanding), 2),
+            "buckets": buckets,
+            "items": items,
+        },
+    }
+
 def generate_payment_schedule(start_date_str: str, monthly_payment: float, months: int) -> List[PaymentSchedule]:
     from calendar import monthrange
     
@@ -286,6 +622,240 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> str:
     
     # Fallback to demo user for requests without proper auth
     return "demo_user_uid"
+
+@api_router.get("/analytics-v2/{capital_id}")
+async def get_capital_analytics_v2(capital_id: str, current_user: str = Depends(get_current_user)):
+    return await _compute_analytics_v2(capital_id, current_user)
+
+@api_router.get("/analytics-v2/{capital_id}/month-payments")
+async def get_month_payments_v2(
+    capital_id: str,
+    month: Optional[str] = Query(default=None, description="YYYY-MM (defaults to current month)"),
+    include_overdue: bool = Query(default=False, description="Include unpaid overdue payments from previous months"),
+    current_user: str = Depends(get_current_user),
+):
+    """
+    List all scheduled payments for the given month with current status and client context.
+    Intended for Analytics UI month table. v1 analytics is not affected.
+    """
+    capital = await _get_capital_for_user(capital_id, current_user)
+    if not capital:
+        raise HTTPException(status_code=404, detail="Capital not found")
+
+    today = date.today()
+    month_ym = month if isinstance(month, str) and month.strip() else today.strftime("%Y-%m")
+    start, next_start = _month_start_end(month_ym)
+
+    clients = await db.clients.find({"capital_id": capital_id}).to_list(20000)
+    clients = [mongo_to_dict(c) for c in clients]
+
+    rows: List[dict] = []
+    for c in clients:
+        client_id = c.get("client_id")
+        if not client_id:
+            continue
+        client_name = c.get("name")
+        product = c.get("product")
+        schedule = c.get("schedule") or []
+        if not isinstance(schedule, list):
+            continue
+        for p in schedule:
+            if not isinstance(p, dict):
+                continue
+            due_dt = _parse_date(p.get("payment_date"))
+            if not due_dt:
+                continue
+            in_month = start <= due_dt < next_start
+            if not in_month and not include_overdue:
+                continue
+            amount = _to_float(p.get("amount") or 0.0, 0.0)
+            status_val = (p.get("status") or "pending").strip().lower()
+            paid_dt = _parse_date(p.get("paid_date"))
+            computed_status = "overdue" if (status_val != "paid" and due_dt < today) else status_val
+
+            if not in_month and include_overdue:
+                # include only overdue from previous months
+                if computed_status != "overdue":
+                    continue
+
+            rows.append(
+                {
+                    "id": f"{client_id}:{due_dt.strftime('%Y-%m-%d')}",
+                    "client_id": str(client_id),
+                    "client_name": client_name,
+                    "product": product,
+                    "payment_date": due_dt.strftime("%Y-%m-%d"),
+                    "amount": round(float(amount), 2),
+                    "status": status_val,
+                    "computed_status": computed_status,
+                    "paid_date": paid_dt.strftime("%Y-%m-%d") if paid_dt else None,
+                    "in_month": in_month,
+                }
+            )
+
+    rows.sort(
+        key=lambda r: (
+            r.get("payment_date") or "",
+            (r.get("computed_status") != "overdue"),
+            r.get("client_name") or "",
+            r.get("client_id") or "",
+        )
+    )
+
+    return {"month": month_ym, "count": len(rows), "items": rows}
+
+@api_router.get("/export")
+async def export_data(
+    capital_id: Optional[str] = Query(default=None, description="Export only one capital (optional)"),
+    include_pii: bool = Query(default=False, description="Deprecated: PII is never included in export"),
+    download: bool = Query(default=True, description="If true, return as file download"),
+    current_user: str = Depends(get_current_user),
+):
+    """
+    Export installments (one object per deal) for financial analytics / scoring / cashflow modeling.
+    Output is a JSON array. PII is never included.
+    """
+    _ = include_pii  # kept for backward compatibility; intentionally ignored
+    capitals = await _get_capitals_for_user(current_user)
+    if not capitals:
+        raise HTTPException(status_code=404, detail="No capitals found for user")
+
+    capital_ids = [c.get("id") for c in capitals if c.get("id")]
+    if capital_id:
+        if capital_id not in capital_ids:
+            raise HTTPException(status_code=403, detail="Access denied")
+        capital_ids = [capital_id]
+        capitals = [c for c in capitals if c.get("id") == capital_id]
+
+    clients_raw = await db.clients.find({"capital_id": {"$in": capital_ids}}).to_list(20000)
+    clients_raw = [mongo_to_dict(c) for c in clients_raw]
+
+    today = date.today()
+    installments: List[dict] = []
+
+    for raw_client in clients_raw:
+        c = normalize_client_end_date(raw_client)
+
+        installment_id = c.get("client_id")
+        if not installment_id:
+            # skip malformed records (no deal id)
+            continue
+
+        product_type = c.get("product") or ""
+
+        sale_price = _to_float(c.get("debt_amount") or c.get("total_amount") or 0.0, 0.0)
+        purchase_price = _to_float(c.get("purchase_amount") or 0.0, 0.0)
+        if purchase_price <= 0 and sale_price > 0:
+            # fallback (legacy / missing): assume purchase == sale (zero profit)
+            purchase_price = sale_price
+
+        expected_profit = sale_price - purchase_price
+        markup_percent = ((expected_profit / purchase_price) * 100.0) if purchase_price > 0 else 0.0
+
+        start_iso = _to_iso_date(c.get("start_date"))
+        end_iso = _to_iso_date(c.get("end_date"))
+        start_dt = _parse_date(c.get("start_date"))
+        end_dt = _parse_date(c.get("end_date"))
+
+        schedule = c.get("schedule") or []
+        # months: prefer schedule length, fallback to date diff
+        months = len(schedule) if isinstance(schedule, list) and schedule else (_months_between_inclusive(start_dt, end_dt) or 0)
+
+        monthly_payment = _to_float(c.get("monthly_payment") or 0.0, 0.0)
+
+        total_paid = 0.0
+        overdue_count = 0
+        max_overdue_days = 0
+        payments_out: List[dict] = []
+
+        for item in schedule if isinstance(schedule, list) else []:
+            if not isinstance(item, dict):
+                continue
+
+            due_dt = _parse_date(item.get("payment_date"))
+            due_iso = due_dt.strftime("%Y-%m-%d") if due_dt else None
+            amount = _to_float(item.get("amount") or 0.0, 0.0)
+            status_val = (item.get("status") or "pending").strip().lower()
+            paid_dt = _parse_date(item.get("paid_date"))
+
+            if status_val == "paid":
+                total_paid += amount
+
+            delay_days = 0
+            if due_dt:
+                if status_val == "paid" and paid_dt:
+                    delay_days = max(0, (paid_dt - due_dt).days)
+                elif status_val != "paid" and due_dt < today:
+                    delay_days = (today - due_dt).days
+                    overdue_count += 1
+                    if delay_days > max_overdue_days:
+                        max_overdue_days = delay_days
+
+            payments_out.append(
+                {
+                    "date": due_iso,
+                    "amount": amount,
+                    "delay_days": int(delay_days),
+                }
+            )
+
+        remaining_amount = max(0.0, sale_price - total_paid)
+
+        # "capital locked" approximation: cost basis not yet returned by payments
+        capital_locked = max(0.0, purchase_price - total_paid)
+
+        # realized profit / loss, clamped to final expected outcome
+        received_profit_raw = total_paid - purchase_price
+        if expected_profit >= 0:
+            received_profit = max(0.0, min(received_profit_raw, expected_profit))
+        else:
+            received_profit = min(0.0, max(received_profit_raw, expected_profit))
+
+        raw_status = (c.get("status") or "active").strip().lower()
+        if raw_status in ("completed", "archived") or remaining_amount <= 1e-6:
+            current_status = "closed"
+        elif overdue_count > 0:
+            current_status = "overdue"
+        else:
+            current_status = "active"
+
+        installments.append(
+            {
+                "installment_id": str(installment_id),
+                "client_id": str(installment_id),  # no separate customer entity in current model
+                "is_repeat_client": False,  # not computable with PII removed in current schema
+                "product_type": str(product_type),
+                "purchase_price": float(round(purchase_price, 2)),
+                "sale_price": float(round(sale_price, 2)),
+                "markup_percent": float(round(markup_percent, 4)),
+                "start_date": start_iso,
+                "months": int(months),
+                "monthly_payment": float(round(monthly_payment, 2)),
+                "total_paid": float(round(total_paid, 2)),
+                "remaining_amount": float(round(remaining_amount, 2)),
+                "overdue_days": int(max_overdue_days),
+                "max_overdue_days": int(max_overdue_days),
+                "overdue_count": int(overdue_count),
+                "current_status": str(current_status),
+                "capital_locked": float(round(capital_locked, 2)),
+                "expected_profit": float(round(expected_profit, 2)),
+                "received_profit": float(round(received_profit, 2)),
+                "payments": payments_out,
+            }
+        )
+
+    if not download:
+        return installments
+
+    exported_at = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    cap_suffix = capital_id if capital_id else "all_capitals"
+    filename = f"crm_installments_{cap_suffix}_{exported_at}.json"
+    raw = json.dumps(installments, ensure_ascii=False, default=str, separators=(",", ":")).encode("utf-8")
+    return StreamingResponse(
+        io.BytesIO(raw),
+        media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 # Routes
 
@@ -1151,7 +1721,7 @@ async def delete_expense(expense_id: str, current_user: str = Depends(get_curren
 # Analytics
 @api_router.get("/analytics/{capital_id}")
 async def get_capital_analytics(capital_id: str, current_user: str = Depends(get_current_user)):
-    # Verify capital ownership
+    # Verify capital ownership (v1 behavior preserved)
     capital = await db.capitals.find_one({"id": capital_id, "owner_id": current_user})
     if not capital:
         raise HTTPException(status_code=404, detail="Capital not found")
