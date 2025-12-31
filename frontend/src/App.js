@@ -22,6 +22,7 @@ import InstallPrompt from './components/InstallPrompt';
 import { autoInit, migrateContractDates } from './lib/services/systemService';
 import Skeleton from './components/ui/Skeleton';
 import { waitForAuth } from './lib/apiClient';
+import useAppStore from './store/useAppStore';
 
 // Login Component
 

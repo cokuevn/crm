@@ -1,6 +1,6 @@
 // Service Worker для PWA поддержки
-const CACHE_NAME = 'crm-cache-v7'; // Обновлено: v5 - добавлен PWA install prompt и улучшена иконка
-const VERSION = '7'; // Версия для логирования
+const CACHE_NAME = 'crm-cache-v9'; // Обновлено: v9 - улучшена производительность
+const VERSION = '9'; // Версия для логирования
 const urlsToCache = [
   '/',
   '/index.html',
@@ -51,23 +51,44 @@ self.addEventListener('fetch', (event) => {
     // Проверяем полный URL для всех запросов к бэкенду
     requestUrl.includes('/api/');
   
-  if (isApiRequest) {
-    // Для API запросов НЕ перехватываем - пропускаем напрямую в сеть
-    // Это критически важно для правильной работы CORS заголовков
-    // НЕ вызываем event.respondWith() - пусть запрос идет напрямую в сеть
+  // Пропускаем запросы к внешним аналитическим сервисам (PostHog, etc)
+  const isExternalAnalytics = 
+    url.hostname.includes('posthog.com') ||
+    url.hostname.includes('analytics') ||
+    url.hostname.includes('google-analytics');
+  
+  if (isApiRequest || isExternalAnalytics) {
+    // Для API запросов и внешних сервисов НЕ перехватываем
+    // Пропускаем напрямую в сеть для правильной работы CORS
     return;
   }
   
-  // Для статических ресурсов используем кэш
+  // Для статических ресурсов используем стратегию "Network First, Cache Fallback"
+  // Это обеспечивает актуальность данных при наличии сети
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then((response) => {
-        // Если нашли в кэше, возвращаем
-        if (response) {
-          return response;
+        // Если получили ответ, сохраняем в кэш для оффлайн использования
+        if (response && response.status === 200) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
         }
-        // Иначе запрашиваем из сети
-        return fetch(event.request);
+        return response;
+      })
+      .catch(() => {
+        // Если сеть недоступна, пытаемся вернуть из кэша
+        return caches.match(event.request).then((response) => {
+          if (response) {
+            return response;
+          }
+          // Если в кэше тоже нет, возвращаем ошибку
+          return new Response('Offline - no cached version available', {
+            status: 503,
+            statusText: 'Service Unavailable'
+          });
+        });
       })
   );
 });

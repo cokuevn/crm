@@ -8,6 +8,7 @@ import ProgressRing from '../components/ui/ProgressRing';
 import AnalyticsSummary from '../components/ui/AnalyticsSummary';
 import MonthlyProfitChart from '../components/ui/MonthlyProfitChart';
 import { Skeleton, SkeletonCircle, SkeletonText } from '../components/ui/Skeleton';
+import useAppStore from '../store/useAppStore';
 
 // Arrow Left Icon
 const ArrowLeftIcon = () => (
