@@ -1,20 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navigation from './Navigation';
 import { listCapitals, deleteCapital as deleteCapitalService } from './lib/services/capitalsService';
-import Analytics from './pages/Analytics';
-import AIChat from './features/chat/AIChat';
-import Chat from './pages/Chat';
 import ImportModal from './components/modals/ImportModal';
 import AddCapitalModal from './components/modals/AddCapitalModal';
 import BalanceModal from './components/modals/BalanceModal';
 import ConfirmDialog from './components/ui/ConfirmDialog';
-import ClientDetails from './pages/ClientDetails';
-import AddClientForm from './pages/AddClientForm';
-import Expenses from './pages/Expenses';
-import Dashboard from './pages/Dashboard';
 import { getAuthHeaders } from './lib/api';
 import apiClient from './lib/apiClient';
 import NotificationToast from './components/ui/NotificationToast';
@@ -24,11 +17,24 @@ import Skeleton from './components/ui/Skeleton';
 import { waitForAuth } from './lib/apiClient';
 import useAppStore from './store/useAppStore';
 
-// Login Component
+// Lazy loading для страниц - загружаются только когда нужны
+const Analytics = lazy(() => import('./pages/Analytics'));
+const Expenses = lazy(() => import('./pages/Expenses'));
+const ClientDetails = lazy(() => import('./pages/ClientDetails'));
+const AddClientForm = lazy(() => import('./pages/AddClientForm'));
+const Chat = lazy(() => import('./pages/Chat'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const AIChat = lazy(() => import('./features/chat/AIChat'));
 
-// Auth Context moved to ./contexts/AuthContext
-
-// Header moved into Navigation component; UI widgets moved to components/ui/*
+// Loading Component для lazy-loaded страниц
+const PageLoader = () => (
+  <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="text-center space-y-4">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto"></div>
+      <p className="text-gray-600 font-medium">Загрузка страницы...</p>
+    </div>
+  </div>
+);
 
 // Login Component
 const LoginPage = () => {
@@ -382,6 +388,17 @@ const MainApp = () => {
     setShowBalanceModal(true);
   };
 
+  // Обработчик смены капитала с автоматической перезагрузкой данных
+  const handleCapitalChange = (capital) => {
+    if (!capital || capital.id === selectedCapital?.id) return;
+    
+    setSelectedCapital(capital);
+    invalidateCache(); // Очистить кэш старого капитала
+    
+    // Немедленно перезагрузить данные для нового капитала
+    window.dispatchEvent(new CustomEvent('capital:changed', { detail: { capital } }));
+  };
+
   const handleDeleteCapital = async (capitalId) => {
     try {
       await deleteCapitalService(capitalId);
@@ -444,44 +461,50 @@ const MainApp = () => {
   };
 
   const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'analytics':
-        return (
-          <Analytics
-            selectedCapital={selectedCapital}
-            onBack={() => setCurrentPage('dashboard')}
-            onClientClick={handleClientClick}
-          />
-        );
-      case 'expenses':
-        return <Expenses selectedCapital={selectedCapital} onBack={() => setCurrentPage('dashboard')} />;
-      case 'add-client':
-        return (
-          <AddClientForm 
-            capitals={capitals}
-            selectedCapital={selectedCapital}
-            onClientAdded={handleClientAdded}
-            onBack={() => setCurrentPage('dashboard')}
-          />
-        );
-      case 'chat':
-        return <Chat selectedCapital={selectedCapital} />;
-      case 'client-details':
-        return (
-          <ClientDetails
-            clientId={selectedClientId}
-            onBack={handleBackToDashboard}
-            capitals={capitals}
-          />
-        );
-      default:
-        return (
-          <Dashboard 
-            selectedCapital={selectedCapital}
-            onClientClick={handleClientClick}
-          />
-        );
-    }
+    return (
+      <Suspense fallback={<PageLoader />}>
+        {(() => {
+          switch (currentPage) {
+            case 'analytics':
+              return (
+                <Analytics
+                  selectedCapital={selectedCapital}
+                  onBack={() => setCurrentPage('dashboard')}
+                  onClientClick={handleClientClick}
+                />
+              );
+            case 'expenses':
+              return <Expenses selectedCapital={selectedCapital} onBack={() => setCurrentPage('dashboard')} />;
+            case 'add-client':
+              return (
+                <AddClientForm 
+                  capitals={capitals}
+                  selectedCapital={selectedCapital}
+                  onClientAdded={handleClientAdded}
+                  onBack={() => setCurrentPage('dashboard')}
+                />
+              );
+            case 'chat':
+              return <Chat selectedCapital={selectedCapital} />;
+            case 'client-details':
+              return (
+                <ClientDetails
+                  clientId={selectedClientId}
+                  onBack={handleBackToDashboard}
+                  capitals={capitals}
+                />
+              );
+            default:
+              return (
+                <Dashboard 
+                  selectedCapital={selectedCapital}
+                  onClientClick={handleClientClick}
+                />
+              );
+          }
+        })()}
+      </Suspense>
+    );
   };
 
   return (
@@ -606,7 +629,7 @@ const MainApp = () => {
         onPageChange={setCurrentPage}
         capitals={capitals}
         selectedCapital={selectedCapital}
-        onCapitalChange={setSelectedCapital}
+        onCapitalChange={handleCapitalChange}
         onShowAddCapital={() => setShowAddCapitalModal(true)}
         onShowBalanceModal={handleShowBalanceModal}
         onShowImport={() => setShowImportModal(true)}
@@ -670,8 +693,10 @@ const MainApp = () => {
         onConfirm={() => handleDeleteCapital(showDeleteConfirm.id)}
       />
 
-      {/* AI Chat */}
-      <AIChat selectedCapital={selectedCapital} />
+      {/* AI Chat - тоже lazy load */}
+      <Suspense fallback={null}>
+        <AIChat selectedCapital={selectedCapital} />
+      </Suspense>
 
       {/* Notifications */}
       <NotificationToast notifications={notifications} onClose={removeNotification} />

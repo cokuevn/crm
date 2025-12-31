@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import Icons from './Icons';
 
-export default function ExpenseCard({ expense, onEdit, onDelete }) {
+const ExpenseCard = ({ expense, onEdit, onDelete }) => {
   return (
     <div className="group bg-gradient-to-br from-white to-gray-50/50 rounded-xl border border-gray-200/80 p-3 hover:shadow-lg hover:border-purple-200/60 transition-all duration-300">
       <div className="flex items-start justify-between gap-2">
@@ -38,5 +38,12 @@ export default function ExpenseCard({ expense, onEdit, onDelete }) {
       </div>
     </div>
   );
-}
+};
+
+export default memo(ExpenseCard, (prevProps, nextProps) => {
+  // Ререндер только если изменился expense
+  return prevProps.expense?.expense_id === nextProps.expense?.expense_id &&
+         prevProps.expense?.amount === nextProps.expense?.amount &&
+         prevProps.expense?.description === nextProps.expense?.description;
+});
 

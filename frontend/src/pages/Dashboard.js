@@ -158,13 +158,24 @@ const Dashboard = ({ selectedCapital, onClientClick }) => {
     setSearchTerm('');
     fetchDashboardData();
 
+    // Listen for capital change event to refresh data immediately
+    const handleCapitalChange = () => {
+      setFilter('all');
+      setSearchTerm('');
+      fetchDashboardData(true); // Force refresh
+    };
+
     // Listen for online event to refresh data
     const handleOnline = () => {
       fetchDashboardData();
     };
     
+    window.addEventListener('capital:changed', handleCapitalChange);
     window.addEventListener('app:online', handleOnline);
-    return () => window.removeEventListener('app:online', handleOnline);
+    return () => {
+      window.removeEventListener('capital:changed', handleCapitalChange);
+      window.removeEventListener('app:online', handleOnline);
+    };
   }, [selectedCapital, fetchDashboardData]);
 
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 const MonthlyProfitChart = ({ monthlyProfits = [] }) => {
   // Подготавливаем данные для графика
@@ -150,4 +150,16 @@ const MonthlyProfitChart = ({ monthlyProfits = [] }) => {
   );
 };
 
-export default MonthlyProfitChart;
+export default memo(MonthlyProfitChart, (prevProps, nextProps) => {
+  // Ререндер только если изменился массив monthlyProfits
+  const prevLength = prevProps.monthlyProfits?.length || 0;
+  const nextLength = nextProps.monthlyProfits?.length || 0;
+  
+  if (prevLength !== nextLength) return false;
+  
+  // Проверяем содержимое массива
+  return prevProps.monthlyProfits?.every((item, index) => {
+    const nextItem = nextProps.monthlyProfits?.[index];
+    return item?.month === nextItem?.month && item?.profit === nextItem?.profit;
+  }) ?? true;
+});

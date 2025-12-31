@@ -29,6 +29,14 @@ const Expenses = ({ selectedCapital, onBack }) => {
     if (selectedCapital) {
       fetchExpenses();
     }
+
+    // Listen for capital change event to refresh data immediately
+    const handleCapitalChange = () => {
+      if (selectedCapital) fetchExpenses();
+    };
+
+    window.addEventListener('capital:changed', handleCapitalChange);
+    return () => window.removeEventListener('capital:changed', handleCapitalChange);
   }, [selectedCapital]);
 
   const fetchExpenses = async () => {

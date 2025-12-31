@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 const ProgressRing = ({ progress, size = 120, strokeWidth = 8, color = 'emerald' }) => {
   const radius = (size - strokeWidth) / 2;
@@ -45,5 +45,10 @@ const ProgressRing = ({ progress, size = 120, strokeWidth = 8, color = 'emerald'
   );
 };
 
-export default ProgressRing;
+export default memo(ProgressRing, (prevProps, nextProps) => {
+  // Ререндер только если изменились progress или color
+  return prevProps.progress === nextProps.progress && 
+         prevProps.color === nextProps.color &&
+         prevProps.size === nextProps.size;
+});
 

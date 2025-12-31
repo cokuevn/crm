@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { fetchAnalytics as fetchAnalyticsService, fetchAnalyticsV2, fetchMonthPaymentsV2 } from '../lib/services/analyticsService';
 import { updatePaymentStatus as updatePaymentStatusApi } from '../lib/services/clientsService';
 import { exportElementToPdf } from '../lib/utils/pdf';
@@ -41,7 +41,17 @@ const Analytics = ({ selectedCapital, onBack, onClientClick }) => {
     isAnalyticsStale
   } = useAppStore();
 
-  useEffect(() => { if (selectedCapital) fetchAnalytics(); }, [selectedCapital]);
+  useEffect(() => { 
+    if (selectedCapital) fetchAnalytics(); 
+
+    // Listen for capital change event to refresh data immediately
+    const handleCapitalChange = () => {
+      if (selectedCapital) fetchAnalytics(true); // Force refresh
+    };
+
+    window.addEventListener('capital:changed', handleCapitalChange);
+    return () => window.removeEventListener('capital:changed', handleCapitalChange);
+  }, [selectedCapital]);
 
   const fetchAnalytics = async (force = false) => {
     try {
@@ -210,27 +220,28 @@ const Analytics = ({ selectedCapital, onBack, onClientClick }) => {
     );
   }
 
-  const collectionRate = analytics.collection_rate || 0;
-  const paymentCompletionRate = analytics.payment_completion_rate || 0;
-  const activeClients = analytics.active_clients ?? analytics.total_clients; // fallback
-  const finishedClients = analytics.completed_clients ?? 0;
+  // Мемоизация вычислений для предотвращения лишних ререндеров
+  const collectionRate = useMemo(() => analytics?.collection_rate || 0, [analytics]);
+  const paymentCompletionRate = useMemo(() => analytics?.payment_completion_rate || 0, [analytics]);
+  const activeClients = useMemo(() => analytics?.active_clients ?? analytics?.total_clients, [analytics]);
+  const finishedClients = useMemo(() => analytics?.completed_clients ?? 0, [analytics]);
 
-  const financialSummary = {
-    totalAmount: analytics.total_amount || 0,
-    totalPaid: analytics.total_paid || 0,
-    toPay: (analytics.total_amount || 0) - (analytics.total_paid || 0),
+  const financialSummary = useMemo(() => ({
+    totalAmount: analytics?.total_amount || 0,
+    totalPaid: analytics?.total_paid || 0,
+    toPay: (analytics?.total_amount || 0) - (analytics?.total_paid || 0),
     efficiency: collectionRate,
-  };
+  }), [analytics, collectionRate]);
 
-  const isV2 = analyticsV2?.version === 'v2';
-  const v2CashflowDay = Array.isArray(analyticsV2?.cashflow_day) ? analyticsV2.cashflow_day : [];
-  const v2CashflowWeek = Array.isArray(analyticsV2?.cashflow_week) ? analyticsV2.cashflow_week : [];
-  const v2Capital = analyticsV2?.capital || {};
-  const v2Aging = analyticsV2?.overdue_aging || {};
-  const v2Buckets = v2Aging?.buckets || {};
-  const v2BucketItems = v2Aging?.items || {};
-  const cashflowRows = cashflowGranularity === 'week' ? v2CashflowWeek : v2CashflowDay;
-  const cashflowTitle = cashflowGranularity === 'week' ? 'Недели' : 'Дни';
+  const isV2 = useMemo(() => analyticsV2?.version === 'v2', [analyticsV2]);
+  const v2CashflowDay = useMemo(() => Array.isArray(analyticsV2?.cashflow_day) ? analyticsV2.cashflow_day : [], [analyticsV2]);
+  const v2CashflowWeek = useMemo(() => Array.isArray(analyticsV2?.cashflow_week) ? analyticsV2.cashflow_week : [], [analyticsV2]);
+  const v2Capital = useMemo(() => analyticsV2?.capital || {}, [analyticsV2]);
+  const v2Aging = useMemo(() => analyticsV2?.overdue_aging || {}, [analyticsV2]);
+  const v2Buckets = useMemo(() => v2Aging?.buckets || {}, [v2Aging]);
+  const v2BucketItems = useMemo(() => v2Aging?.items || {}, [v2Aging]);
+  const cashflowRows = useMemo(() => cashflowGranularity === 'week' ? v2CashflowWeek : v2CashflowDay, [cashflowGranularity, v2CashflowWeek, v2CashflowDay]);
+  const cashflowTitle = useMemo(() => cashflowGranularity === 'week' ? 'Недели' : 'Дни', [cashflowGranularity]);
 
   const handleExportPdf = async () => {
     if (!reportRef.current) return;

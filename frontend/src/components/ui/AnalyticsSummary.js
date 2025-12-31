@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 
-export default function AnalyticsSummary({ icon, bgColor = 'bg-blue-100', textColor = 'text-blue-600', label, value }) {
+const AnalyticsSummary = ({ icon, bgColor = 'bg-blue-100', textColor = 'text-blue-600', label, value }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
       <div className="flex items-center gap-3">
@@ -12,5 +12,7 @@ export default function AnalyticsSummary({ icon, bgColor = 'bg-blue-100', textCo
       </div>
     </div>
   );
-}
+};
+
+export default memo(AnalyticsSummary);
 
