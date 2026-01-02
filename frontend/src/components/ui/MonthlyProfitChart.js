@@ -1,12 +1,52 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useMemo } from 'react';
 
 const MonthlyProfitChart = ({ monthlyProfits = [] }) => {
-  // Подготавливаем данные для графика
-  const chartData = monthlyProfits.map(item => ({
-    ...item,
-    month: item.month || '',
-    profit: item.profit || 0
-  })).sort((a, b) => a.month.localeCompare(b.month));
+  // Группируем данные по годам
+  const dataByYear = useMemo(() => {
+    const grouped = {};
+    monthlyProfits.forEach(item => {
+      if (!item.month) return;
+      const year = item.month.split('-')[0];
+      if (!grouped[year]) grouped[year] = [];
+      grouped[year].push({
+        ...item,
+        month: item.month || '',
+        profit: item.profit || 0
+      });
+    });
+    
+    // Сортируем данные внутри каждого года
+    Object.keys(grouped).forEach(year => {
+      grouped[year].sort((a, b) => a.month.localeCompare(b.month));
+    });
+    
+    return grouped;
+  }, [monthlyProfits]);
+
+  // Список доступных годов (сортированный по убыванию)
+  const availableYears = useMemo(() => 
+    Object.keys(dataByYear).sort((a, b) => b.localeCompare(a)),
+    [dataByYear]
+  );
+
+  // Текущий выбранный год (по умолчанию самый свежий)
+  const [selectedYear, setSelectedYear] = useState(() => availableYears[0] || new Date().getFullYear().toString());
+
+  // Обновляем selectedYear если доступные годы изменились
+  React.useEffect(() => {
+    if (availableYears.length > 0 && !availableYears.includes(selectedYear) && selectedYear !== 'all') {
+      setSelectedYear(availableYears[0]);
+    }
+  }, [availableYears, selectedYear]);
+
+  // Данные для выбранного года (или всех годов)
+  const chartData = useMemo(() => {
+    if (selectedYear === 'all') {
+      // Все данные за все годы
+      return Object.values(dataByYear).flat().sort((a, b) => a.month.localeCompare(b.month));
+    }
+    return dataByYear[selectedYear] || [];
+  }, [dataByYear, selectedYear]);
 
   // Находим максимальное значение для масштабирования
   const maxProfit = Math.max(...chartData.map(item => item.profit), 0);
@@ -30,6 +70,16 @@ const MonthlyProfitChart = ({ monthlyProfits = [] }) => {
     if (profit < 0) return 'bg-red-500';
     return 'bg-gray-400';
   };
+
+  // Статистика для всех лет
+  const totalStats = useMemo(() => {
+    const allData = Object.values(dataByYear).flat();
+    return {
+      profitMonths: allData.filter(item => item.profit > 0).length,
+      lossMonths: allData.filter(item => item.profit < 0).length,
+      totalProfit: allData.reduce((sum, item) => sum + item.profit, 0)
+    };
+  }, [dataByYear]);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
@@ -101,45 +151,108 @@ const MonthlyProfitChart = ({ monthlyProfits = [] }) => {
               <div className="text-xl font-bold text-green-600">
                 {chartData.filter(item => item.profit > 0).length}
               </div>
-              <div className="text-xs text-green-700">Месяцев с прибылью</div>
+              <div className="text-xs text-green-700">
+                Месяцев с прибылью {selectedYear !== 'all' ? `(${selectedYear})` : '(всего)'}
+              </div>
             </div>
             <div className="text-center p-3 bg-red-50 rounded-lg">
               <div className="text-xl font-bold text-red-600">
                 {chartData.filter(item => item.profit < 0).length}
               </div>
-              <div className="text-xs text-red-700">Месяцев с убытком</div>
+              <div className="text-xs text-red-700">
+                Месяцев с убытком {selectedYear !== 'all' ? `(${selectedYear})` : '(всего)'}
+              </div>
             </div>
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <div className="text-xl font-bold text-gray-900">
                 {chartData.reduce((sum, item) => sum + item.profit, 0).toLocaleString('ru-RU')}₽
               </div>
-              <div className="text-xs text-gray-700">Общая прибыль</div>
+              <div className="text-xs text-gray-700">
+                {selectedYear !== 'all' ? `Прибыль ${selectedYear}` : 'Общая прибыль'}
+              </div>
             </div>
           </div>
 
           {/* Таблица с деталями */}
           <div className="mt-6">
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Детализация по месяцам</h4>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-sm font-medium text-gray-900">Детализация по месяцам</h4>
+              
+              {/* Табы переключения годов */}
+              {availableYears.length > 1 && (
+                <div className="flex items-center gap-2">
+                  {availableYears.map(year => (
+                    <button
+                      key={year}
+                      onClick={() => setSelectedYear(year)}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                        selectedYear === year
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setSelectedYear('all')}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                      selectedYear === 'all'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Все годы
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="max-h-64 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-white">
+                <thead className="sticky top-0 bg-white z-10">
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-2 px-2 text-gray-600">Месяц</th>
                     <th className="text-right py-2 px-2 text-gray-600">Прибыль</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {chartData.map((item, index) => (
-                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                      <td className="py-2 px-2 text-gray-900">{formatMonth(item.month)}</td>
-                      <td className={`py-2 px-2 text-right font-medium ${
-                        item.profit > 0 ? 'text-green-600' : 
-                        item.profit < 0 ? 'text-red-600' : 'text-gray-400'
-                      }`}>
-                        {item.profit > 0 ? '+' : ''}{item.profit.toLocaleString('ru-RU')}₽
-                      </td>
-                    </tr>
-                  ))}
+                  {selectedYear === 'all' ? (
+                    // Показываем все годы
+                    Object.keys(dataByYear).sort((a, b) => b.localeCompare(a)).map(year => (
+                      <React.Fragment key={year}>
+                        <tr className="bg-gray-50">
+                          <td colSpan="2" className="py-2 px-2 font-bold text-gray-900 border-t-2 border-gray-300">
+                            {year} год
+                          </td>
+                        </tr>
+                        {dataByYear[year].map((item, index) => (
+                          <tr key={`${year}-${index}`} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                            <td className="py-2 px-2 text-gray-900">{formatMonth(item.month)}</td>
+                            <td className={`py-2 px-2 text-right font-medium ${
+                              item.profit > 0 ? 'text-green-600' : 
+                              item.profit < 0 ? 'text-red-600' : 'text-gray-400'
+                            }`}>
+                              {item.profit > 0 ? '+' : ''}{item.profit.toLocaleString('ru-RU')}₽
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    ))
+                  ) : (
+                    // Показываем только выбранный год
+                    chartData.map((item, index) => (
+                      <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="py-2 px-2 text-gray-900">{formatMonth(item.month)}</td>
+                        <td className={`py-2 px-2 text-right font-medium ${
+                          item.profit > 0 ? 'text-green-600' : 
+                          item.profit < 0 ? 'text-red-600' : 'text-gray-400'
+                        }`}>
+                          {item.profit > 0 ? '+' : ''}{item.profit.toLocaleString('ru-RU')}₽
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
