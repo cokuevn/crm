@@ -1,6 +1,6 @@
 // Service Worker для PWA поддержки
 const CACHE_NAME = 'crm-cache-v9'; // Обновлено: v9 - улучшена производительность
-const VERSION = '9'; // Версия для логирования
+const VERSION = '10'; // Версия для логирования
 const urlsToCache = [
   '/',
   '/index.html',
