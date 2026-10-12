@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Header, Query
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Header, Query, Body
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -72,6 +72,44 @@ class UserRole(str, Enum):
     admin = "admin"
     user = "user"
 
+class MemberRole(str, Enum):
+    """Роли в организации"""
+    owner = "owner"           # Владелец организации (полный доступ)
+    admin = "admin"           # Администратор (почти полный доступ)
+    manager = "manager"       # Менеджер (ограниченный доступ)
+    viewer = "viewer"         # Только просмотр
+
+class Department(str, Enum):
+    """Отделы/специализации менеджеров"""
+    collections = "collections"   # Работа с просрочками
+    sales = "sales"              # Продажи, новые клиенты
+    analytics = "analytics"      # Аналитика
+    finance = "finance"          # Финансы
+    general = "general"          # Общий
+
+class TaskType(str, Enum):
+    """Типы задач"""
+    collection = "collection"       # Работа с просрочками
+    evaluation = "evaluation"       # Оценка клиентов
+    call = "call"                   # Звонок клиенту
+    visit = "visit"                 # Визит к клиенту
+    follow_up = "follow_up"         # Повторная связь
+    other = "other"
+
+class TaskPriority(str, Enum):
+    """Приоритет задачи"""
+    low = "low"
+    medium = "medium"
+    high = "high"
+    urgent = "urgent"
+
+class TaskStatus(str, Enum):
+    """Статус задачи"""
+    pending = "pending"
+    in_progress = "in_progress"
+    completed = "completed"
+    cancelled = "cancelled"
+
 # Models
 class User(BaseModel):
     uid: str
@@ -83,11 +121,16 @@ class User(BaseModel):
 class Capital(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
-    owner_id: str  # uid
+    owner_id: Optional[str] = None  # uid (устаревшее поле, для совместимости)
+    organization_id: Optional[str] = None  # ID организации (новое поле)
     description: Optional[str] = None
     balance: float = 0.0  # Баланс капитала
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = True
+    
+    # Опционально: ограничить доступ только определенным менеджерам
+    restricted_access: bool = False
+    allowed_users: List[str] = []  # Если restricted_access=true
 
 class PaymentSchedule(BaseModel):
     payment_date: str  # Changed from date to str for MongoDB compatibility
@@ -96,6 +139,14 @@ class PaymentSchedule(BaseModel):
     paid_date: Optional[str] = None  # Changed from date to str
 
 MAX_PAYMENT_MONTHS = 600  # Safety limit to prevent runaway schedules
+
+# Activity Log Entry (needed for Client model)
+class ActivityLogEntry(BaseModel):
+    """Запись в журнале активности клиента"""
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    user_id: str
+    action: str
+    details: Dict[str, Any] = {}
 
 class Client(BaseModel):
     client_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -118,6 +169,15 @@ class Client(BaseModel):
     status: ClientStatus = ClientStatus.active
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # НОВЫЕ ПОЛЯ для системы менеджеров
+    organization_id: Optional[str] = None  # ID организации (для быстрого поиска)
+    assigned_to: Optional[str] = None  # Назначенный менеджер (user_id)
+    assigned_at: Optional[datetime] = None  # Когда назначен
+    assigned_by: Optional[str] = None  # Кто назначил
+    activity_log: List[ActivityLogEntry] = []  # История работы с клиентом
+    tags: List[str] = []  # Теги (например, "просрочка", "приоритет")
+    notes: Optional[str] = None  # Заметки менеджера
     
     @property
     def effective_debt_amount(self) -> float:
@@ -206,6 +266,210 @@ class UserProfile(BaseModel):
     email: str
     role: UserRole
     display_name: Optional[str] = None
+
+# ============================================================================
+# НОВЫЕ МОДЕЛИ ДЛЯ СИСТЕМЫ ОРГАНИЗАЦИЙ И МЕНЕДЖЕРОВ
+# ============================================================================
+
+# Organization Models
+class OrganizationSettings(BaseModel):
+    """Настройки организации"""
+    timezone: str = "UTC"
+    currency: str = "USD"
+    allow_negative_balance: bool = False
+    features: Dict[str, bool] = {}
+
+class Organization(BaseModel):
+    """Организация/Компания"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    owner_id: str  # Исторический владелец (для миграции)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    settings: OrganizationSettings = Field(default_factory=OrganizationSettings)
+    is_active: bool = True
+
+class OrganizationCreate(BaseModel):
+    """Создание организации"""
+    name: str
+    settings: Optional[OrganizationSettings] = None
+
+class OrganizationUpdate(BaseModel):
+    """Обновление организации"""
+    name: Optional[str] = None
+    settings: Optional[OrganizationSettings] = None
+    is_active: Optional[bool] = None
+
+# Organization Member Models
+class OrganizationMember(BaseModel):
+    """Член организации (владелец, админ, менеджер)"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str
+    user_id: str  # Firebase UID
+    role: MemberRole
+    permissions: List[str] = []
+    department: Department = Department.general
+    assigned_capitals: List[str] = []  # Пустой = доступ ко всем
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: str
+    is_active: bool = True
+    metadata: Dict[str, Any] = {}
+
+class OrganizationMemberCreate(BaseModel):
+    """Создание/приглашение члена организации"""
+    user_email: str  # Email для приглашения
+    role: MemberRole
+    permissions: Optional[List[str]] = None
+    department: Optional[Department] = Department.general
+    assigned_capitals: Optional[List[str]] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+class OrganizationMemberUpdate(BaseModel):
+    """Обновление члена организации"""
+    role: Optional[MemberRole] = None
+    permissions: Optional[List[str]] = None
+    department: Optional[Department] = None
+    assigned_capitals: Optional[List[str]] = None
+    is_active: Optional[bool] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+# Task Models
+class TaskResult(BaseModel):
+    """Результаты выполнения задачи"""
+    contacted: int = 0
+    promised_payment: int = 0
+    paid: int = 0
+    no_contact: int = 0
+    notes: Optional[str] = None
+
+class TaskComment(BaseModel):
+    """Комментарий к задаче"""
+    user_id: str
+    text: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+class Task(BaseModel):
+    """Задача для менеджера"""
+    task_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str
+    title: str
+    description: Optional[str] = None
+    type: TaskType
+    priority: TaskPriority = TaskPriority.medium
+    status: TaskStatus = TaskStatus.pending
+    created_by: str
+    assigned_to: str
+    related_clients: List[str] = []
+    client_filters: Optional[Dict[str, Any]] = None
+    due_date: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    completed_at: Optional[datetime] = None
+    result: Optional[TaskResult] = None
+    comments: List[TaskComment] = []
+
+class TaskCreate(BaseModel):
+    """Создание задачи"""
+    title: str
+    description: Optional[str] = None
+    type: TaskType
+    priority: Optional[TaskPriority] = TaskPriority.medium
+    assigned_to: str
+    related_clients: Optional[List[str]] = None
+    client_filters: Optional[Dict[str, Any]] = None
+    due_date: Optional[datetime] = None
+
+class TaskUpdate(BaseModel):
+    """Обновление задачи"""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    type: Optional[TaskType] = None
+    priority: Optional[TaskPriority] = None
+    status: Optional[TaskStatus] = None
+    assigned_to: Optional[str] = None
+    related_clients: Optional[List[str]] = None
+    due_date: Optional[datetime] = None
+    result: Optional[TaskResult] = None
+
+# Activity Log Models
+class ActivityLog(BaseModel):
+    """Журнал активности/аудит"""
+    log_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    organization_id: str
+    user_id: str
+    action: str
+    entity_type: str  # client, capital, payment, etc.
+    entity_id: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    changes: Optional[Dict[str, Any]] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    metadata: Dict[str, Any] = {}
+
+# ============================================================================
+# КОНСТАНТЫ РАЗРЕШЕНИЙ И ПРЕДУСТАНОВЛЕННЫЕ РОЛИ
+# ============================================================================
+
+# Предустановленные наборы разрешений для ролей
+ROLE_PERMISSIONS = {
+    "owner": [
+        # Полный доступ ко всему
+        "clients.*", "payments.*", "capitals.*", "expenses.*",
+        "analytics.*", "tasks.*", "members.*"
+    ],
+    
+    "admin": [
+        # Почти полный доступ, кроме критичных операций
+        "clients.*", "payments.*", "capitals.view", "capitals.view_balance",
+        "expenses.view", "expenses.create",
+        "analytics.*",
+        "tasks.*",
+        "members.view", "members.invite", "members.edit"
+    ],
+    
+    "manager": [
+        # Ограниченный доступ к своим клиентам и задачам
+        "clients.view_assigned", "clients.edit",
+        "payments.view", "payments.create",
+        "capitals.view",
+        "analytics.view_basic",
+        "tasks.view_assigned", "tasks.manage_assigned"
+    ],
+    
+    "viewer": [
+        # Только просмотр
+        "clients.view", "payments.view", "capitals.view",
+        "expenses.view", "analytics.view_basic", "tasks.view"
+    ]
+}
+
+# Специализированные роли менеджеров
+SPECIALIZED_ROLES = {
+    "manager_collections": [
+        # Менеджер по просрочкам
+        "clients.view_all", "clients.edit",
+        "payments.view", "payments.create",
+        "tasks.view_assigned", "tasks.manage_assigned",
+        "analytics.view_basic"
+    ],
+    
+    "manager_sales": [
+        # Менеджер по продажам/новым клиентам
+        "clients.view_all", "clients.create", "clients.edit",
+        "payments.view",
+        "tasks.view_assigned", "tasks.manage_assigned",
+        "analytics.view_basic"
+    ],
+    
+    "manager_finance": [
+        # Финансовый менеджер
+        "clients.view", "payments.*",
+        "capitals.view", "capitals.view_balance",
+        "expenses.*",
+        "analytics.view_financial",
+        "tasks.view_assigned"
+    ]
+}
 
 # Helper functions
 def mongo_to_dict(mongo_doc):
@@ -621,6 +885,146 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> str:
     # Fallback to demo user for requests without proper auth
     return "demo_user_uid"
 
+# ============================================================================
+# ФУНКЦИИ ДЛЯ РАБОТЫ С ОРГАНИЗАЦИЯМИ И РАЗРЕШЕНИЯМИ
+# ============================================================================
+
+async def get_user_organization(user_id: str, org_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """
+    Получить организацию пользователя и его членство
+    Если org_id не указан, возвращает первую активную организацию
+    """
+    query = {
+        "user_id": user_id,
+        "is_active": True
+    }
+    
+    if org_id:
+        query["organization_id"] = org_id
+    
+    member = await db.organization_members.find_one(query)
+    
+    if not member:
+        return None
+    
+    org = await db.organizations.find_one({
+        "id": member["organization_id"],
+        "is_active": True
+    })
+    
+    if not org:
+        return None
+    
+    return {
+        "organization": Organization(**mongo_to_dict(org)),
+        "member": OrganizationMember(**mongo_to_dict(member))
+    }
+
+async def get_user_permissions(user_id: str, org_id: str) -> List[str]:
+    """Получить список разрешений пользователя в организации"""
+    member = await db.organization_members.find_one({
+        "user_id": user_id,
+        "organization_id": org_id,
+        "is_active": True
+    })
+    
+    if not member:
+        return []
+    
+    # Если owner - возвращаем все разрешения
+    if member.get("role") == "owner":
+        return ["*"]
+    
+    return member.get("permissions", [])
+
+def has_permission(user_perms: List[str], required: str) -> bool:
+    """
+    Проверить, есть ли у пользователя нужное разрешение
+    Поддерживает wildcard (например, clients.* включает clients.view)
+    """
+    # Полный доступ
+    if "*" in user_perms:
+        return True
+    
+    # Точное совпадение
+    if required in user_perms:
+        return True
+    
+    # Проверить wildcard (например, clients.* включает clients.view)
+    entity = required.split(".")[0]
+    if f"{entity}.*" in user_perms:
+        return True
+    
+    return False
+
+async def check_permission(user_id: str, org_id: str, required_permission: str) -> bool:
+    """Проверить разрешение пользователя в организации"""
+    perms = await get_user_permissions(user_id, org_id)
+    return has_permission(perms, required_permission)
+
+async def get_organization_header(x_organization_id: Optional[str] = Header(None, alias="X-Organization-ID")) -> Optional[str]:
+    """Dependency для получения organization_id из заголовка"""
+    return x_organization_id
+
+class PermissionChecker:
+    """Dependency для проверки разрешений пользователя"""
+    
+    def __init__(self, required_permissions: List[str]):
+        self.required_permissions = required_permissions
+    
+    async def __call__(
+        self,
+        current_user: str = Depends(get_current_user),
+        org_id: Optional[str] = Depends(get_organization_header)
+    ) -> Dict[str, Any]:
+        # Получить членство пользователя в организации
+        user_org = await get_user_organization(current_user, org_id)
+        
+        if not user_org:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this organization"
+            )
+        
+        member = user_org["member"]
+        
+        # Если owner - полный доступ
+        if member.role == MemberRole.owner:
+            return user_org
+        
+        # Проверить каждое требуемое разрешение
+        user_permissions = member.permissions
+        for required in self.required_permissions:
+            if not has_permission(user_permissions, required):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Permission denied: {required}"
+                )
+        
+        return user_org
+
+async def log_activity(
+    organization_id: str,
+    user_id: str,
+    action: str,
+    entity_type: str,
+    entity_id: str,
+    changes: Optional[Dict[str, Any]] = None,
+    metadata: Optional[Dict[str, Any]] = None
+):
+    """Записать действие в журнал активности"""
+    log = ActivityLog(
+        organization_id=organization_id,
+        user_id=user_id,
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        changes=changes,
+        metadata=metadata or {}
+    )
+    
+    await db.activity_logs.insert_one(log.dict())
+
 @api_router.get("/analytics-v2/{capital_id}")
 async def get_capital_analytics_v2(capital_id: str, current_user: str = Depends(get_current_user)):
     return await _compute_analytics_v2(capital_id, current_user)
@@ -857,6 +1261,582 @@ async def export_data(
 
 # Routes
 
+# ============================================================================
+# ORGANIZATIONS API
+# ============================================================================
+
+@api_router.get("/organizations/my")
+async def get_my_organizations(current_user: str = Depends(get_current_user)):
+    """Получить список организаций, в которых состоит пользователь"""
+    
+    # Получить email текущего пользователя
+    current_user_doc = await db.users.find_one({"uid": current_user})
+    current_email = current_user_doc.get("email") if current_user_doc else None
+    
+    # Искать членство по user_id ИЛИ по приглашенному email
+    query = {
+        "is_active": True,
+        "$or": [
+            {"user_id": current_user}
+        ]
+    }
+    
+    # Если есть email, ищем также по приглашенному email (включая pending)
+    if current_email:
+        query["$or"].extend([
+            {"metadata.invited_email": current_email},
+            {"user_id": "pending", "metadata.invited_email": current_email}
+        ])
+    
+    members = await db.organization_members.find(query).to_list(100)
+    
+    # Обновить user_id для приглашенных пользователей при первом входе
+    for member in members:
+        if member.get("user_id") == "pending" or member.get("metadata", {}).get("invitation_pending"):
+            if current_email and member.get("metadata", {}).get("invited_email") == current_email:
+                # Обновить user_id
+                await db.organization_members.update_one(
+                    {"id": member["id"]},
+                    {
+                        "$set": {
+                            "user_id": current_user,
+                            "metadata.invitation_pending": False
+                        }
+                    }
+                )
+                member["user_id"] = current_user
+    
+    if not members:
+        return []
+    
+    org_ids = [m["organization_id"] for m in members]
+    orgs = await db.organizations.find({
+        "id": {"$in": org_ids},
+        "is_active": True
+    }).to_list(100)
+    
+    result = []
+    for org_doc in orgs:
+        org = mongo_to_dict(org_doc)
+        # Найти роль пользователя в этой организации
+        member = next((m for m in members if m["organization_id"] == org["id"]), None)
+        result.append({
+            **org,
+            "my_role": member.get("role") if member else None,
+            "my_permissions": member.get("permissions", []) if member else []
+        })
+    
+    return result
+
+@api_router.post("/organizations", response_model=Organization)
+async def create_organization(
+    org: OrganizationCreate,
+    current_user: str = Depends(get_current_user)
+):
+    """Создать новую организацию (доступно всем пользователям)"""
+    
+    # Проверяем, не является ли пользователь уже менеджером в другой организации
+    existing_membership = await db.organization_members.find_one({
+        "user_id": current_user,
+        "is_active": True,
+        "role": {"$in": ["manager", "viewer"]}
+    })
+    
+    if existing_membership:
+        raise HTTPException(
+            status_code=403,
+            detail="Вы являетесь менеджером в другой организации. Менеджеры не могут создавать свои организации."
+        )
+    
+    # Создать организацию
+    org_obj = Organization(
+        **org.dict(),
+        owner_id=current_user
+    )
+    
+    await db.organizations.insert_one(org_obj.dict())
+    
+    # Создать членство с ролью owner
+    member = OrganizationMember(
+        organization_id=org_obj.id,
+        user_id=current_user,
+        role=MemberRole.owner,
+        permissions=["*"],  # Полный доступ
+        created_by=current_user
+    )
+    
+    await db.organization_members.insert_one(member.dict())
+    
+    return org_obj
+
+@api_router.get("/organizations/{org_id}", response_model=Organization)
+async def get_organization(
+    org_id: str,
+    current_user: str = Depends(get_current_user)
+):
+    """Получить информацию об организации"""
+    # Проверить членство
+    member = await db.organization_members.find_one({
+        "user_id": current_user,
+        "organization_id": org_id,
+        "is_active": True
+    })
+    
+    if not member:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    org = await db.organizations.find_one({"id": org_id})
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    return Organization(**mongo_to_dict(org))
+
+@api_router.put("/organizations/{org_id}", response_model=Organization)
+async def update_organization(
+    org_id: str,
+    updates: OrganizationUpdate,
+    user_org: dict = Depends(PermissionChecker(["members.edit"]))
+):
+    """Обновить организацию (требуется роль owner/admin)"""
+    org = user_org["organization"]
+    
+    update_dict = {k: v for k, v in updates.dict(exclude_unset=True).items() if v is not None}
+    
+    if update_dict:
+        update_dict["updated_at"] = datetime.utcnow()
+        await db.organizations.update_one(
+            {"id": org.id},
+            {"$set": update_dict}
+        )
+        
+        # Получить обновленную организацию
+        updated_org = await db.organizations.find_one({"id": org.id})
+        return Organization(**mongo_to_dict(updated_org))
+    
+    return org
+
+# ============================================================================
+# ORGANIZATION MEMBERS API
+# ============================================================================
+
+@api_router.get("/organizations/{org_id}/members")
+async def get_organization_members(
+    org_id: str,
+    user_org: dict = Depends(PermissionChecker(["members.view"]))
+):
+    """Получить список членов организации"""
+    members = await db.organization_members.find({
+        "organization_id": org_id,
+        "is_active": True
+    }).to_list(100)
+    
+    # Получить информацию о пользователях
+    user_ids = [m["user_id"] for m in members]
+    users = await db.users.find({"uid": {"$in": user_ids}}).to_list(100)
+    users_dict = {u["uid"]: u for u in users}
+    
+    result = []
+    for m in members:
+        member_dict = mongo_to_dict(m)
+        user_info = users_dict.get(m["user_id"])
+        if user_info:
+            member_dict["user_email"] = user_info.get("email")
+            member_dict["user_display_name"] = user_info.get("display_name")
+        result.append(member_dict)
+    
+    return result
+
+@api_router.post("/organizations/{org_id}/members")
+async def invite_member(
+    org_id: str,
+    member_create: OrganizationMemberCreate,
+    current_user: str = Depends(get_current_user),
+    user_org: dict = Depends(PermissionChecker(["members.invite"]))
+):
+    """Пригласить нового члена в организацию"""
+    
+    # НЕ создаем пользователя заранее - будем искать по email при входе
+    # Просто создаем членство с email
+    
+    # Проверить, не является ли email уже членом по email (для приглашенных)
+    existing_member_by_email = await db.organization_members.find_one({
+        "metadata.invited_email": member_create.user_email,
+        "organization_id": org_id
+    })
+    
+    if existing_member_by_email and existing_member_by_email.get("is_active"):
+        raise HTTPException(status_code=400, detail="User with this email is already invited")
+    
+    # Проверить существующего пользователя
+    user = await db.users.find_one({"email": member_create.user_email})
+    user_id = user["uid"] if user else None
+    
+    # Если пользователь существует, проверить членство
+    if user_id:
+        existing_member = await db.organization_members.find_one({
+            "user_id": user_id,
+            "organization_id": org_id
+        })
+        
+        if existing_member:
+            if existing_member.get("is_active"):
+                raise HTTPException(status_code=400, detail="User is already a member")
+            # Реактивировать
+            await db.organization_members.update_one(
+                {"id": existing_member["id"]},
+                {"$set": {"is_active": True}}
+            )
+            return OrganizationMember(**mongo_to_dict(existing_member))
+    
+    # Получить разрешения для роли
+    permissions = member_create.permissions
+    if not permissions:
+        permissions = ROLE_PERMISSIONS.get(member_create.role.value, [])
+    
+    # Создать членство БЕЗ user_id (будет добавлен при первом входе)
+    member = OrganizationMember(
+        organization_id=org_id,
+        user_id=user_id or "pending",  # pending пока не зарегистрировался
+        role=member_create.role,
+        permissions=permissions,
+        department=member_create.department or Department.general,
+        assigned_capitals=member_create.assigned_capitals or [],
+        created_by=current_user,
+        metadata={
+            **(member_create.metadata or {}),
+            "invited_email": member_create.user_email,  # Сохраняем email для поиска
+            "invitation_pending": user_id is None
+        }
+    )
+    
+    await db.organization_members.insert_one(member.dict())
+    
+    return member
+
+@api_router.put("/organizations/{org_id}/members/{member_id}")
+async def update_member(
+    org_id: str,
+    member_id: str,
+    updates: OrganizationMemberUpdate,
+    user_org: dict = Depends(PermissionChecker(["members.edit"]))
+):
+    """Обновить члена организации"""
+    # Найти члена
+    member = await db.organization_members.find_one({
+        "id": member_id,
+        "organization_id": org_id
+    })
+    
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Обновить
+    update_dict = {k: v for k, v in updates.dict(exclude_unset=True).items() if v is not None}
+    
+    if update_dict:
+        await db.organization_members.update_one(
+            {"id": member_id},
+            {"$set": update_dict}
+        )
+    
+    updated_member = await db.organization_members.find_one({"id": member_id})
+    return OrganizationMember(**mongo_to_dict(updated_member))
+
+@api_router.delete("/organizations/{org_id}/members/{member_id}")
+async def remove_member(
+    org_id: str,
+    member_id: str,
+    user_org: dict = Depends(PermissionChecker(["members.edit"]))
+):
+    """Удалить члена из организации (деактивировать)"""
+    result = await db.organization_members.update_one(
+        {"id": member_id, "organization_id": org_id},
+        {"$set": {"is_active": False}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    return {"message": "Member removed successfully"}
+
+# ============================================================================
+# TASKS API
+# ============================================================================
+
+@api_router.get("/tasks")
+async def get_tasks(
+    status: Optional[TaskStatus] = None,
+    assigned_to_me: bool = False,
+    current_user: str = Depends(get_current_user),
+    org_id: Optional[str] = Depends(get_organization_header)
+):
+    """Получить список задач"""
+    user_org = await get_user_organization(current_user, org_id)
+    
+    if not user_org:
+        return []
+    
+    org = user_org["organization"]
+    member = user_org["member"]
+    
+    # Построить запрос
+    query = {"organization_id": org.id}
+    
+    # Проверить разрешения
+    if has_permission(member.permissions, "tasks.view_all") or member.role == MemberRole.owner:
+        # Видит все задачи
+        pass
+    elif has_permission(member.permissions, "tasks.view_assigned"):
+        # Видит только свои задачи
+        query["$or"] = [
+            {"assigned_to": current_user},
+            {"created_by": current_user}
+        ]
+    else:
+        raise HTTPException(status_code=403, detail="Permission denied: tasks.view")
+    
+    if status:
+        query["status"] = status
+    
+    if assigned_to_me:
+        query["assigned_to"] = current_user
+    
+    tasks = await db.tasks.find(query).to_list(1000)
+    
+    return [Task(**mongo_to_dict(task)) for task in tasks]
+
+@api_router.post("/tasks", response_model=Task)
+async def create_task(
+    task: TaskCreate,
+    current_user: str = Depends(get_current_user),
+    user_org: dict = Depends(PermissionChecker(["tasks.create", "tasks.assign"]))
+):
+    """Создать задачу для менеджера"""
+    org = user_org["organization"]
+    
+    # Проверить, что назначаемый пользователь - член организации
+    assignee = await db.organization_members.find_one({
+        "user_id": task.assigned_to,
+        "organization_id": org.id,
+        "is_active": True
+    })
+    
+    if not assignee:
+        raise HTTPException(
+            status_code=400,
+            detail="Assigned user is not a member of this organization"
+        )
+    
+    # Если указаны фильтры клиентов, найти подходящих
+    related_clients = task.related_clients or []
+    if task.client_filters:
+        # Построить запрос на основе фильтров
+        query = {"organization_id": org.id}
+        
+        if task.client_filters.get("status"):
+            query["status"] = task.client_filters["status"]
+        
+        if task.client_filters.get("capital_ids"):
+            query["capital_id"] = {"$in": task.client_filters["capital_ids"]}
+        
+        # TODO: Добавить больше фильтров (overdue_days_min и т.д.)
+        
+        clients = await db.clients.find(query).to_list(100)
+        related_clients = [c["client_id"] for c in clients]
+        
+        # Назначить этих клиентов менеджеру
+        if related_clients:
+            await db.clients.update_many(
+                {"client_id": {"$in": related_clients}},
+                {
+                    "$set": {
+                        "assigned_to": task.assigned_to,
+                        "assigned_at": datetime.utcnow(),
+                        "assigned_by": current_user
+                    }
+                }
+            )
+    
+    # Создать задачу
+    task_obj = Task(
+        **task.dict(),
+        organization_id=org.id,
+        created_by=current_user,
+        related_clients=related_clients
+    )
+    
+    await db.tasks.insert_one(task_obj.dict())
+    
+    # Записать в лог
+    await log_activity(
+        organization_id=org.id,
+        user_id=current_user,
+        action="task.create",
+        entity_type="task",
+        entity_id=task_obj.task_id,
+        metadata={"assigned_to": task.assigned_to, "title": task.title}
+    )
+    
+    return task_obj
+
+@api_router.get("/tasks/{task_id}", response_model=Task)
+async def get_task(
+    task_id: str,
+    current_user: str = Depends(get_current_user),
+    org_id: Optional[str] = Depends(get_organization_header)
+):
+    """Получить задачу"""
+    user_org = await get_user_organization(current_user, org_id)
+    
+    if not user_org:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    task = await db.tasks.find_one({
+        "task_id": task_id,
+        "organization_id": user_org["organization"].id
+    })
+    
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Проверить доступ
+    member = user_org["member"]
+    if not (
+        has_permission(member.permissions, "tasks.view_all") or
+        task.get("assigned_to") == current_user or
+        task.get("created_by") == current_user or
+        member.role == MemberRole.owner
+    ):
+        raise HTTPException(status_code=403, detail="Access denied to this task")
+    
+    return Task(**mongo_to_dict(task))
+
+@api_router.put("/tasks/{task_id}", response_model=Task)
+async def update_task(
+    task_id: str,
+    updates: TaskUpdate,
+    current_user: str = Depends(get_current_user),
+    org_id: Optional[str] = Depends(get_organization_header)
+):
+    """Обновить задачу"""
+    user_org = await get_user_organization(current_user, org_id)
+    
+    if not user_org:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    task = await db.tasks.find_one({
+        "task_id": task_id,
+        "organization_id": user_org["organization"].id
+    })
+    
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Проверить права
+    member = user_org["member"]
+    can_edit = (
+        has_permission(member.permissions, "tasks.edit") or
+        (task.get("assigned_to") == current_user and has_permission(member.permissions, "tasks.manage_assigned")) or
+        member.role == MemberRole.owner
+    )
+    
+    if not can_edit:
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
+    # Обновить
+    update_dict = {k: v for k, v in updates.dict(exclude_unset=True).items() if v is not None}
+    
+    if update_dict:
+        update_dict["updated_at"] = datetime.utcnow()
+        
+        # Если меняется статус на completed, установить completed_at
+        if updates.status == TaskStatus.completed and not task.get("completed_at"):
+            update_dict["completed_at"] = datetime.utcnow()
+        
+        await db.tasks.update_one(
+            {"task_id": task_id},
+            {"$set": update_dict}
+        )
+    
+    updated_task = await db.tasks.find_one({"task_id": task_id})
+    return Task(**mongo_to_dict(updated_task))
+
+@api_router.post("/tasks/{task_id}/comments")
+async def add_task_comment(
+    task_id: str,
+    comment_text: str,
+    current_user: str = Depends(get_current_user),
+    org_id: Optional[str] = Depends(get_organization_header)
+):
+    """Добавить комментарий к задаче"""
+    user_org = await get_user_organization(current_user, org_id)
+    
+    if not user_org:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    task = await db.tasks.find_one({
+        "task_id": task_id,
+        "organization_id": user_org["organization"].id
+    })
+    
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Создать комментарий
+    comment = TaskComment(
+        user_id=current_user,
+        text=comment_text
+    )
+    
+    # Добавить в массив комментариев
+    await db.tasks.update_one(
+        {"task_id": task_id},
+        {"$push": {"comments": comment.dict()}}
+    )
+    
+    return {"message": "Comment added successfully", "comment": comment}
+
+@api_router.post("/tasks/{task_id}/complete")
+async def complete_task(
+    task_id: str,
+    result: TaskResult,
+    current_user: str = Depends(get_current_user),
+    org_id: Optional[str] = Depends(get_organization_header)
+):
+    """Отметить задачу как завершенную"""
+    user_org = await get_user_organization(current_user, org_id)
+    
+    if not user_org:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    task = await db.tasks.find_one({
+        "task_id": task_id,
+        "organization_id": user_org["organization"].id
+    })
+    
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Проверить, что это назначенная задача
+    if task.get("assigned_to") != current_user:
+        raise HTTPException(status_code=403, detail="You can only complete tasks assigned to you")
+    
+    # Обновить задачу
+    await db.tasks.update_one(
+        {"task_id": task_id},
+        {
+            "$set": {
+                "status": TaskStatus.completed,
+                "completed_at": datetime.utcnow(),
+                "result": result.dict(),
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    updated_task = await db.tasks.find_one({"task_id": task_id})
+    return Task(**mongo_to_dict(updated_task))
+
 # User management
 @api_router.post("/users", response_model=User)
 async def create_user(user: UserProfile):
@@ -875,6 +1855,130 @@ async def get_current_user_info(current_user: str = Depends(get_current_user)):
         return user_obj
     return User(**mongo_to_dict(user))
 
+@api_router.post("/users/ensure-organization")
+async def ensure_user_organization(
+    current_user: str = Depends(get_current_user),
+    request_data: dict = Body(default={})
+):
+    """
+    Убедиться что у пользователя есть организация
+    Если нет - создать автоматически (для владельцев)
+    Если пользователь - приглашенный менеджер, связать с приглашением
+    """
+    # Получить email из тела запроса (если есть)
+    email_from_request = request_data.get("email") if request_data else None
+    
+    logger.info(f"ensure_user_organization called for user: {current_user}, email from request: {email_from_request}")
+    
+    # Получить пользователя, создать если не существует
+    user = await db.users.find_one({"uid": current_user})
+    if not user:
+        logger.info(f"User {current_user} not found, creating user")
+        # Используем email из запроса, если есть
+        user_email = email_from_request or "demo@example.com"
+        user_obj = User(uid=current_user, email=user_email, display_name="Demo User")
+        await db.users.insert_one(user_obj.dict())
+        user = await db.users.find_one({"uid": current_user})
+    elif email_from_request and user.get("email") == "demo@example.com":
+        # Обновить email, если был дефолтный
+        logger.info(f"Updating user email from {user.get('email')} to {email_from_request}")
+        await db.users.update_one(
+            {"uid": current_user},
+            {"$set": {"email": email_from_request}}
+        )
+        user = await db.users.find_one({"uid": current_user})
+    
+    logger.info(f"User found/created: {user.get('email') if user else 'None'}")
+    
+    # Проверить, есть ли членство в организациях
+    existing_membership = await db.organization_members.find_one({
+        "user_id": current_user,
+        "is_active": True
+    })
+    
+    logger.info(f"Existing membership: {existing_membership is not None}")
+    
+    # Если уже есть членство - вернуть информацию об организации
+    if existing_membership:
+        org = await db.organizations.find_one({"id": existing_membership["organization_id"]})
+        return {
+            "organization": mongo_to_dict(org),
+            "role": existing_membership.get("role"),
+            "already_exists": True
+        }
+    
+    # Проверить приглашение по email
+    email = user.get("email")
+    logger.info(f"Checking invitations for email: {email}")
+    
+    # Если email дефолтный, ищем приглашения по user_id (если есть)
+    if email == "demo@example.com":
+        # Ищем приглашения, которые могут быть связаны с этим user_id
+        # Сначала попробуем найти приглашение, которое уже было обновлено
+        existing_invitation = await db.organization_members.find_one({
+            "user_id": current_user,
+            "is_active": True
+        })
+        
+        if existing_invitation:
+            logger.info(f"Found existing invitation for user_id: {current_user}")
+            org = await db.organizations.find_one({"id": existing_invitation["organization_id"]})
+            return {
+                "organization": mongo_to_dict(org),
+                "role": existing_invitation.get("role"),
+                "already_exists": True
+            }
+        
+        # Если не найдено, ищем все pending приглашения и пробуем связать
+        # (это для случая, когда пользователь только что зарегистрировался)
+        logger.info("User has default email, checking all pending invitations...")
+    
+    if email:
+        # Ищем приглашения с pending или без user_id по email
+        invitations = await db.organization_members.find({
+            "metadata.invited_email": email,
+            "is_active": True,
+            "$or": [
+                {"user_id": "pending"},
+                {"user_id": {"$exists": False}}
+            ]
+        }).to_list(100)
+        
+        logger.info(f"Found {len(invitations)} pending invitations for email: {email}")
+        
+        if invitations:
+            # Обновить ВСЕ приглашения, связав с user_id
+            for invitation in invitations:
+                await db.organization_members.update_one(
+                    {"id": invitation["id"]},
+                    {
+                        "$set": {
+                            "user_id": current_user,
+                            "metadata.invitation_pending": False
+                        }
+                    }
+                )
+            
+            # Вернуть информацию о первой организации
+            invitation = invitations[0]
+            org = await db.organizations.find_one({"id": invitation["organization_id"]})
+            return {
+                "organization": mongo_to_dict(org),
+                "role": invitation.get("role"),
+                "already_exists": False,
+                "invited": True
+            }
+    
+    # НЕ создаем организацию автоматически!
+    # Пользователь должен создать её вручную через UI
+    return {
+        "organization": None,
+        "role": None,
+        "already_exists": False,
+        "needs_creation": True,
+        "message": "No organization found. Please create one or wait for invitation."
+    }
+
 # Capital management
 @api_router.post("/capitals", response_model=Capital)
 async def create_capital(capital: CapitalCreate, current_user: str = Depends(get_current_user)):
@@ -885,13 +1989,59 @@ async def create_capital(capital: CapitalCreate, current_user: str = Depends(get
 
 @api_router.get("/capitals", response_model=List[Capital])
 async def get_user_capitals(current_user: str = Depends(get_current_user)):
-    # Маппинг между Firebase UID и email для пользователя
+    # Проверяем, является ли пользователь членом организации
+    member = await db.organization_members.find_one({
+        "user_id": current_user,
+        "is_active": True
+    })
+    
+    if member:
+        # Пользователь - член организации
+        org = await db.organizations.find_one({"id": member["organization_id"]})
+        
+        if org:
+            # Пробуем найти капиталы по organization_id (если миграция выполнена)
+            org_capitals = await db.capitals.find({
+                "organization_id": org["id"],
+                "is_active": True
+            }).to_list(100)
+            
+            if org_capitals:
+                # Капиталы мигрированы - используем их
+                logger.info(f"Found {len(org_capitals)} capitals for organization {org['id']}")
+                assigned = member.get("assigned_capitals", [])
+                logger.info(f"Member assigned_capitals: {assigned}")
+                if assigned and len(assigned) > 0:
+                    capitals = [c for c in org_capitals if c["id"] in assigned]
+                    logger.info(f"Filtered to {len(capitals)} assigned capitals")
+                else:
+                    capitals = org_capitals
+                    logger.info(f"Showing all {len(capitals)} capitals (no assigned_capitals filter)")
+            else:
+                # Капиталы НЕ мигрированы - ищем по owner_id организации
+                logger.info(f"Searching capitals by owner_id: {org['owner_id']}")
+                capitals = await db.capitals.find({
+                    "owner_id": org["owner_id"],
+                    "is_active": True
+                }).to_list(100)
+                logger.info(f"Found {len(capitals)} capitals for organization")
+                
+                assigned = member.get("assigned_capitals", [])
+                logger.info(f"Member assigned_capitals: {assigned}")
+                if assigned and len(assigned) > 0:
+                    capitals = [c for c in capitals if c["id"] in assigned]
+                    logger.info(f"Filtered to {len(capitals)} assigned capitals")
+                else:
+                    logger.info(f"Showing all {len(capitals)} capitals (no assigned_capitals filter)")
+            
+            return [Capital(**mongo_to_dict(capital)) for capital in capitals]
+    
+    # Старая логика для пользователей без организаций (обратная совместимость)
     user_mapping = {
         "nF90MLbAVORCrePYSEL4JwIooV22": "cokuevn@gmail.com",
         "cokuevn@gmail.com": "nF90MLbAVORCrePYSEL4JwIooV22",
     }
     
-    # Используем $or для поиска по обоим ID одним запросом (более эффективно)
     if current_user in user_mapping:
         alternate_id = user_mapping[current_user]
         capitals = await db.capitals.find({
@@ -1747,10 +2897,12 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
     today = date.today()
     current_month = today.strftime("%Y-%m")
     
-    # Initialize 12 months of data (current year)
+    # Initialize current year with all 12 months (so current year always shows)
     for month in range(1, 13):
         month_key = f"{today.year}-{month:02d}"
         monthly_profits[month_key] = 0
+    
+    # Other years will be added dynamically based on actual contract dates
     
     for client in clients:
         # Use debt_amount if available, otherwise fall back to total_amount
@@ -1768,13 +2920,15 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
             contract_date = datetime.strptime(contract_date_str, "%Y-%m-%d")
             contract_month = contract_date.strftime("%Y-%m")
             
-            # Add profit to the contract month
-            if contract_month in monthly_profits:
-                monthly_profits[contract_month] += client_profit
+            # Add profit to the contract month (initialize if not exists)
+            if contract_month not in monthly_profits:
+                monthly_profits[contract_month] = 0
+            monthly_profits[contract_month] += client_profit
         except (ValueError, TypeError):
             # If no valid date, add to current month
-            if current_month in monthly_profits:
-                monthly_profits[current_month] += client_profit
+            if current_month not in monthly_profits:
+                monthly_profits[current_month] = 0
+            monthly_profits[current_month] += client_profit
         
         # Calculate from schedule
         for schedule_item in client.get("schedule", []):
@@ -1825,20 +2979,19 @@ async def get_capital_analytics(capital_id: str, current_user: str = Depends(get
     total_expenses = sum(expense.get("amount", 0) for expense in expenses)
     
     # Convert monthly_profits to list format for frontend
+    # Sort months chronologically and return all available data
     monthly_profits_list = []
-    for month in range(1, 13):
-        month_key = f"{today.year}-{month:02d}"
-        profit = monthly_profits.get(month_key, 0)
-        
+    for month_key in sorted(monthly_profits.keys()):
         try:
-            month_name = datetime(today.year, month, 1).strftime("%B")
+            year, month = month_key.split('-')
+            month_name = datetime(int(year), int(month), 1).strftime("%B")
         except:
-            month_name = f"Месяц {month}"
+            month_name = month_key
             
         monthly_profits_list.append({
             "month": month_key,
             "month_name": month_name,
-            "profit": profit
+            "profit": monthly_profits[month_key]
         })
     
     return {
@@ -2136,39 +3289,72 @@ async def get_dashboard_data(capital_id: Optional[str] = None, current_user: str
     if capital_id:
         logger.info(f"Dashboard request - capital_id: {capital_id}")
     
-    # Получаем капиталы пользователя - ищем по текущему owner_id и альтернативным идентификаторам
-    # Используем $or для поиска по обоим ID одновременно (более эффективно)
-    user_mapping = {
-        "nF90MLbAVORCrePYSEL4JwIooV22": "cokuevn@gmail.com",
-        "cokuevn@gmail.com": "nF90MLbAVORCrePYSEL4JwIooV22",
-    }
+    # Проверяем членство в организации
+    member = await db.organization_members.find_one({
+        "user_id": current_user,
+        "is_active": True
+    })
     
-    # Строим запрос для поиска капиталов
-    if current_user in user_mapping:
-        alternate_id = user_mapping[current_user]
-        # Ищем капиталы по обоим ID одним запросом (более эффективно)
-        user_capitals = await db.capitals.find({
-            "$or": [
-                {"owner_id": current_user, "is_active": True},
-                {"owner_id": alternate_id, "is_active": True}
-            ]
-        }).to_list(100)
+    if member:
+        # Пользователь - член организации
+        org = await db.organizations.find_one({"id": member["organization_id"]})
+        
+        if org:
+            # Пробуем найти капиталы по organization_id
+            org_capitals = await db.capitals.find({
+                "organization_id": org["id"],
+                "is_active": True
+            }).to_list(100)
+            
+            if org_capitals:
+                # Капиталы мигрированы
+                if member.get("assigned_capitals") and len(member["assigned_capitals"]) > 0:
+                    user_capitals = [c for c in org_capitals if c["id"] in member["assigned_capitals"]]
+                else:
+                    user_capitals = org_capitals
+            else:
+                # Капиталы НЕ мигрированы - ищем по owner_id
+                user_capitals = await db.capitals.find({
+                    "owner_id": org["owner_id"],
+                    "is_active": True
+                }).to_list(100)
+                
+                if member.get("assigned_capitals") and len(member["assigned_capitals"]) > 0:
+                    user_capitals = [c for c in user_capitals if c["id"] in member["assigned_capitals"]]
+        else:
+            user_capitals = []
     else:
-        # Если маппинга нет, ищем только по current_user
-        user_capitals = await db.capitals.find({"owner_id": current_user, "is_active": True}).to_list(100)
+        # Старая логика для пользователей без организаций
+        user_mapping = {
+            "nF90MLbAVORCrePYSEL4JwIooV22": "cokuevn@gmail.com",
+            "cokuevn@gmail.com": "nF90MLbAVORCrePYSEL4JwIooV22",
+        }
+        
+        if current_user in user_mapping:
+            alternate_id = user_mapping[current_user]
+            user_capitals = await db.capitals.find({
+                "$or": [
+                    {"owner_id": current_user, "is_active": True},
+                    {"owner_id": alternate_id, "is_active": True}
+                ]
+            }).to_list(100)
+        else:
+            user_capitals = await db.capitals.find({"owner_id": current_user, "is_active": True}).to_list(100)
     
     capital_ids = [cap["id"] for cap in user_capitals]
     
-    if capital_id and capital_id not in capital_ids:
-        # Проверяем, существует ли вообще такой капитал в базе (только при отказе, для отладки)
-        capital_exists = await db.capitals.find_one({"id": capital_id}, {"owner_id": 1})  # Только owner_id для экономии памяти
-        if capital_exists:
-            logger.warning(f"Access denied: capital {capital_id} belongs to {capital_exists.get('owner_id')}, user: {current_user}")
-        else:
-            logger.warning(f"Access denied: capital {capital_id} does not exist")
-        raise HTTPException(status_code=403, detail="Access denied")
-    
+    # Для менеджеров - разрешаем доступ к капиталам организации без строгой проверки
     query_capital_ids = [capital_id] if capital_id else capital_ids
+    
+    # Если нет доступных капиталов, возвращаем пустые данные
+    if not query_capital_ids:
+        return {
+            "today": [],
+            "tomorrow": [],
+            "overdue": [],
+            "all_clients": [],
+            "completed_clients": []
+        }
     
     try:
         # Get all clients except completed ones for general dashboard

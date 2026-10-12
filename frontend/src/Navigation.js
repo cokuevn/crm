@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useMemo, useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
-import { Users, BarChart3, CreditCard, UserPlus, Menu, X, MessageCircle, RefreshCw, Download, Bell, BellOff } from 'lucide-react';
+import { Users, BarChart3, CreditCard, UserPlus, Menu, X, MessageCircle, RefreshCw, Download, Bell, BellOff, Building2, ClipboardList } from 'lucide-react';
 import Icons from './components/ui/Icons';
 import Button from './components/ui/Button';
 import AnimatedActionMenu from './components/ui/AnimatedActionMenu';
@@ -35,6 +35,16 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
 
   const goChat = useCallback(() => {
     onPageChange('chat');
+    setIsMobileMenuOpen(false);
+  }, [onPageChange]);
+
+  const goOrganizations = useCallback(() => {
+    onPageChange('organizations');
+    setIsMobileMenuOpen(false);
+  }, [onPageChange]);
+
+  const goTasks = useCallback(() => {
+    onPageChange('tasks');
     setIsMobileMenuOpen(false);
   }, [onPageChange]);
 
@@ -319,6 +329,8 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
               <Button onClick={goAnalytics} variant={currentPage === 'analytics' ? 'primary' : 'ghost'} size="md" iconSize="sm" className={currentPage === 'analytics' ? 'shadow-md shadow-blue-500/20' : ''} leadingIcon={<Icons.NavAnalytics />}>Аналитика</Button>
               <Button onClick={goExpenses} variant={currentPage === 'expenses' ? 'primary' : 'ghost'} size="md" iconSize="sm" className={currentPage === 'expenses' ? 'shadow-md shadow-blue-500/20' : ''} leadingIcon={<Icons.NavExpenses />}>Расходы</Button>
               <Button onClick={goAddClient} variant={currentPage === 'add-client' ? 'primary' : 'ghost'} size="md" iconSize="sm" className={currentPage === 'add-client' ? 'shadow-md shadow-blue-500/20' : ''} leadingIcon={<Icons.Plus />}>Клиент</Button>
+              <Button onClick={goOrganizations} variant={currentPage === 'organizations' || currentPage === 'organization-members' ? 'primary' : 'ghost'} size="md" iconSize="sm" className={currentPage === 'organizations' || currentPage === 'organization-members' ? 'shadow-md shadow-blue-500/20' : ''} leadingIcon={<Building2 size={18} />}>Организации</Button>
+              <Button onClick={goTasks} variant={currentPage === 'tasks' ? 'primary' : 'ghost'} size="md" iconSize="sm" className={currentPage === 'tasks' ? 'shadow-md shadow-blue-500/20' : ''} leadingIcon={<ClipboardList size={18} />}>Задачи</Button>
             </div>
           </div>
 
@@ -473,6 +485,30 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
                     <UserPlus size={20} />
                     <span>Добавить клиента</span>
             </button>
+
+                  <button
+                    onClick={goOrganizations}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg transition-all touch-safe ${
+                      currentPage === 'organizations' || currentPage === 'organization-members'
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <Building2 size={20} />
+                    <span>Организации</span>
+                  </button>
+
+                  <button
+                    onClick={goTasks}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg transition-all touch-safe ${
+                      currentPage === 'tasks'
+                        ? 'bg-primary-600 text-white'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <ClipboardList size={20} />
+                    <span>Задачи</span>
+                  </button>
                 </div>
 
                 {/* Capital Info & Management */}
@@ -671,18 +707,18 @@ const Navigation = ({ currentPage, onPageChange, capitals, selectedCapital, onCa
             </span>
           </button>
 
-          {/* Chat Tab */}
+          {/* Tasks Tab */}
           <button
-            onClick={goChat}
+            onClick={goTasks}
             className={`flex flex-col items-center justify-center touch-safe px-3 py-2 rounded-lg transition-all ${
-              currentPage === 'chat'
-                ? 'text-purple-600 dark:text-purple-400'
+              currentPage === 'tasks'
+                ? 'text-primary-600 dark:text-primary-400'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            <MessageCircle size={24} strokeWidth={currentPage === 'chat' ? 2.5 : 2} />
-            <span className={`text-xs mt-1 font-medium ${currentPage === 'chat' ? 'text-purple-600 dark:text-purple-400' : ''}`}>
-              Чат
+            <ClipboardList size={24} strokeWidth={currentPage === 'tasks' ? 2.5 : 2} />
+            <span className={`text-xs mt-1 font-medium ${currentPage === 'tasks' ? 'text-primary-600 dark:text-primary-400' : ''}`}>
+              Задачи
             </span>
           </button>
       </div>

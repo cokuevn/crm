@@ -16,6 +16,7 @@ import { autoInit, migrateContractDates } from './lib/services/systemService';
 import Skeleton from './components/ui/Skeleton';
 import { waitForAuth } from './lib/apiClient';
 import useAppStore from './store/useAppStore';
+import organizationService from './lib/services/organizationService';
 
 // Lazy loading для страниц - загружаются только когда нужны
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -25,6 +26,11 @@ const AddClientForm = lazy(() => import('./pages/AddClientForm'));
 const Chat = lazy(() => import('./pages/Chat'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const AIChat = lazy(() => import('./features/chat/AIChat'));
+// Новые страницы для системы менеджеров
+const Organizations = lazy(() => import('./pages/Organizations'));
+const OrganizationMembers = lazy(() => import('./pages/OrganizationMembers'));
+const Tasks = lazy(() => import('./pages/Tasks'));
+const ManagerDashboard = lazy(() => import('./pages/ManagerDashboard'));
 
 // Loading Component для lazy-loaded страниц
 const PageLoader = () => (
@@ -161,6 +167,19 @@ const LoginPage = () => {
 const MainApp = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [capitals, setCapitals] = useState([]);
+  const [userRole, setUserRole] = useState(null); // owner, admin, manager, viewer
+  const [userOrganizations, setUserOrganizations] = useState([]);
+
+  // Слушаем события смены страницы
+  useEffect(() => {
+    const handlePageChange = (e) => {
+      if (e.detail) {
+        setCurrentPage(e.detail);
+      }
+    };
+    window.addEventListener('page-change', handlePageChange);
+    return () => window.removeEventListener('page-change', handlePageChange);
+  }, []);
   const [selectedCapital, setSelectedCapital] = useState(() => {
     try {
       const saved = localStorage.getItem('selectedCapital');
@@ -252,7 +271,8 @@ const MainApp = () => {
 
   useEffect(() => {
     if (user) {
-      autoInitAndFetchCapitals();
+      // ВАЖНО: Сначала проверяем роль и приглашения, ПОТОМ загружаем капиталы
+      initializeUser();
     } else {
       setIsInitialLoad(false);
     }
@@ -272,19 +292,75 @@ const MainApp = () => {
     return () => window.removeEventListener('online', handleOnline);
   }, [user]);
 
+  const initializeUser = async () => {
+    try {
+      setIsInitialLoad(true);
+      // Сначала проверяем/создаем организацию
+      const role = await checkUserRole();
+      
+      // Если менеджер - не загружаем капиталы через autoInit
+      if (role !== 'manager') {
+        // Потом загружаем капиталы (только для владельцев)
+        await autoInitAndFetchCapitals();
+      } else {
+        // Для менеджеров загружаем капиталы отдельно
+        await fetchCapitals();
+      }
+    } catch (error) {
+      console.error('Error initializing user:', error);
+    } finally {
+      setIsInitialLoad(false);
+    }
+  };
+
+  const checkUserRole = async () => {
+    try {
+      // Убедиться что у пользователя есть организация или приглашение
+      // Отправляем email для правильного поиска приглашений
+      const userEmail = user?.email || null;
+      const result = await apiClient.post('/api/users/ensure-organization', {
+        email: userEmail
+      });
+      console.log('Organization check result:', result.data);
+      
+      // Проверяем организации пользователя
+      const orgs = await organizationService.getMyOrganizations();
+      console.log('User organizations:', orgs);
+      setUserOrganizations(orgs);
+      
+      if (orgs.length > 0) {
+        // Определяем роль пользователя (берем роль из первой организации)
+        const role = orgs[0].my_role;
+        setUserRole(role);
+        
+        console.log('✅ User role determined:', role);
+        console.log('✅ Will show ManagerDashboard:', role === 'manager');
+        
+        // Если менеджер - не вызываем autoInit
+        return role;
+      } else {
+        console.log('⚠️ No organizations found for user');
+        setUserRole(null);
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('❌ Ошибка проверки организации:', error);
+      setUserRole(null);
+      return null;
+    }
+  };
+
   const autoInitAndFetchCapitals = async () => {
     try {
       setIsInitialLoad(true);
       // Wait for auth to be fully ready before first request
       await waitForAuth();
       
-      // First, try to fetch existing capitals
+      // Просто загружаем капиталы, НЕ создаем автоматически!
       let data = await listCapitals();
       
-      // If data is empty, wait 1.5s and try one more time
-      // This helps with transient network lags or auth sync issues
       if (!data || data.length === 0) {
-        console.warn('Capitals list empty, retrying in 1.5s...');
         await new Promise(resolve => setTimeout(resolve, 1500));
         data = await listCapitals();
       }
@@ -292,7 +368,6 @@ const MainApp = () => {
       if (data && data.length > 0) {
         setCapitals(data);
         
-        // If we have a saved selected capital, make sure it's still in the list
         if (selectedCapital) {
           const stillExists = data.find(c => c.id === selectedCapital.id);
           if (stillExists) {
@@ -304,19 +379,12 @@ const MainApp = () => {
           setSelectedCapital(data[0]);
         }
       } else {
-        // If no capitals, try auto-init (it will create mock data for new users)
-        console.log('No capitals found, running auto-init...');
-        await autoInit();
-        // Fetch again after init
-        const freshData = await listCapitals();
-        setCapitals(freshData || []);
-        if (freshData && freshData.length > 0) {
-          setSelectedCapital(freshData[0]);
-        }
+        // НЕ создаем автоматически ничего!
+        console.log('No capitals found. User needs to create organization first.');
+        setCapitals([]);
       }
     } catch (error) {
-      console.error('Error fetching/initializing capitals:', error);
-      // Even on error, try to fetch once more just in case
+      console.error('Error fetching capitals:', error);
       try {
         const data = await listCapitals();
         setCapitals(data || []);
@@ -494,7 +562,33 @@ const MainApp = () => {
                   capitals={capitals}
                 />
               );
+            case 'organizations':
+              return <Organizations />;
+            case 'organization-members':
+              return <OrganizationMembers />;
+            case 'tasks':
+              return <Tasks />;
+            case 'manager-dashboard':
+              return <ManagerDashboard />;
             default:
+              // Показываем разный дашборд в зависимости от роли
+              // Проверяем роль из state или из организаций
+              const roleFromOrgs = userOrganizations.length > 0 ? userOrganizations[0]?.my_role : null;
+              const isManager = userRole === 'manager' || roleFromOrgs === 'manager';
+              
+              console.log('🔍 Dashboard check:', { 
+                userRole, 
+                roleFromOrgs,
+                isManager, 
+                orgs: userOrganizations,
+                orgsLength: userOrganizations.length
+              });
+              
+              if (isManager) {
+                console.log('✅ Showing ManagerDashboard');
+                return <ManagerDashboard />;
+              }
+              console.log('✅ Showing regular Dashboard (role:', userRole || roleFromOrgs || 'unknown', ')');
               return (
                 <Dashboard 
                   selectedCapital={selectedCapital}
