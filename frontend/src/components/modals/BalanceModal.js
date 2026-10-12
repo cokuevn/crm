@@ -50,7 +50,12 @@ const BalanceModal = ({ isOpen, onClose, capital, onBalanceUpdated }) => {
     setError('');
 
     try {
-      const updated = await updateCapitalBalance(capital.id, parseFloat(balance));
+      const nextBalance = parseFloat(balance);
+      if (Number.isNaN(nextBalance)) {
+        setError('Введите корректное число');
+        return;
+      }
+      const updated = await updateCapitalBalance(capital.id, nextBalance);
       onBalanceUpdated?.(updated);
       onClose();
     } catch (error) {
@@ -83,7 +88,7 @@ const BalanceModal = ({ isOpen, onClose, capital, onBalanceUpdated }) => {
             <p className="text-sm text-blue-800 font-medium">
               Капитал: {capital.name}
             </p>
-            <p className="text-sm text-blue-600">
+            <p className={`text-sm ${(capital.balance || 0) < 0 ? 'text-red-600' : 'text-blue-600'}`}>
               Текущий баланс: {capital.balance?.toLocaleString() || 0}₽
             </p>
           </div>
@@ -107,11 +112,11 @@ const BalanceModal = ({ isOpen, onClose, capital, onBalanceUpdated }) => {
               value={balance}
               onChange={(e) => setBalance(e.target.value)}
               className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-              placeholder="100000"
+              placeholder="-50000"
               required
-              min="0"
               step="0.01"
             />
+            <p className="mt-2 text-xs text-gray-500">Можно указать отрицательное значение</p>
           </div>
 
           <div className="flex justify-end space-x-3">
