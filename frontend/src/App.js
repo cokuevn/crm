@@ -394,18 +394,31 @@ const MainApp = () => {
     }
   };
 
-  const fetchCapitals = async () => {
+  const fetchCapitals = async (preferredId = null) => {
     try {
       const data = await listCapitals();
-      setCapitals(data || []);
-      
-      // Update selected capital if it exists in the fresh list
-      if (selectedCapital) {
-        const fresh = data.find(c => c.id === selectedCapital.id);
-        if (fresh) setSelectedCapital(fresh);
-      } else if (data.length > 0) {
-        setSelectedCapital(data[0]);
-      }
+      const list = data || [];
+
+      setCapitals(prev => {
+        if (preferredId && !list.some(c => c.id === preferredId)) {
+          const pending = prev.find(c => c.id === preferredId);
+          if (pending) return [...list, pending];
+        }
+        return list;
+      });
+
+      setSelectedCapital(prev => {
+        if (preferredId) {
+          const preferred = list.find(c => c.id === preferredId);
+          if (preferred) return preferred;
+          if (prev?.id === preferredId) return prev;
+        }
+        if (prev) {
+          const fresh = list.find(c => c.id === prev.id);
+          if (fresh) return fresh;
+        }
+        return list.length > 0 ? list[0] : null;
+      });
     } catch (error) {
       console.error('Error fetching capitals:', error);
     }
@@ -434,11 +447,11 @@ const MainApp = () => {
   };
 
   const handleCapitalAdded = (newCapital) => {
-    console.log('New capital added:', newCapital);
-    setCapitals(prev => [...prev, newCapital]);
+    if (!newCapital?.id) return;
+    setCapitals(prev => (prev.some(c => c.id === newCapital.id) ? prev : [...prev, newCapital]));
     setSelectedCapital(newCapital);
     showNotification('success', 'Капитал создан', `${newCapital.name} успешно создан`);
-    fetchCapitals();
+    fetchCapitals(newCapital.id);
   };
 
   const handleBalanceUpdated = (updatedCapital) => {
@@ -458,8 +471,9 @@ const MainApp = () => {
 
   // Обработчик смены капитала с автоматической перезагрузкой данных
   const handleCapitalChange = (capital) => {
-    if (!capital || capital.id === selectedCapital?.id) return;
-    
+    if (!capital) return;
+    if (capital.id === selectedCapital?.id) return;
+
     setSelectedCapital(capital);
     invalidateCache(); // Очистить кэш старого капитала
     

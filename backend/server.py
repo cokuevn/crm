@@ -1983,8 +1983,23 @@ async def ensure_user_organization(
 @api_router.post("/capitals", response_model=Capital)
 async def create_capital(capital: CapitalCreate, current_user: str = Depends(get_current_user)):
     capital_dict = capital.dict()
-    capital_obj = Capital(**capital_dict, owner_id=current_user)
+    organization_id = None
+    user_org = await get_user_organization(current_user)
+    if user_org:
+        organization_id = user_org["organization"].id
+
+    capital_obj = Capital(**capital_dict, owner_id=current_user, organization_id=organization_id)
     await db.capitals.insert_one(capital_obj.dict())
+
+    # If the member has a restricted capital list, grant access to the one they just created
+    if user_org:
+        member = user_org["member"]
+        if member.assigned_capitals:
+            await db.organization_members.update_one(
+                {"id": member.id},
+                {"$addToSet": {"assigned_capitals": capital_obj.id}}
+            )
+
     return capital_obj
 
 @api_router.get("/capitals", response_model=List[Capital])
@@ -2000,40 +2015,29 @@ async def get_user_capitals(current_user: str = Depends(get_current_user)):
         org = await db.organizations.find_one({"id": member["organization_id"]})
         
         if org:
-            # Пробуем найти капиталы по organization_id (если миграция выполнена)
             org_capitals = await db.capitals.find({
-                "organization_id": org["id"],
-                "is_active": True
-            }).to_list(100)
-            
-            if org_capitals:
-                # Капиталы мигрированы - используем их
-                logger.info(f"Found {len(org_capitals)} capitals for organization {org['id']}")
-                assigned = member.get("assigned_capitals", [])
-                logger.info(f"Member assigned_capitals: {assigned}")
-                if assigned and len(assigned) > 0:
-                    capitals = [c for c in org_capitals if c["id"] in assigned]
-                    logger.info(f"Filtered to {len(capitals)} assigned capitals")
-                else:
-                    capitals = org_capitals
-                    logger.info(f"Showing all {len(capitals)} capitals (no assigned_capitals filter)")
-            else:
-                # Капиталы НЕ мигрированы - ищем по owner_id организации
-                logger.info(f"Searching capitals by owner_id: {org['owner_id']}")
-                capitals = await db.capitals.find({
-                    "owner_id": org["owner_id"],
-                    "is_active": True
-                }).to_list(100)
-                logger.info(f"Found {len(capitals)} capitals for organization")
-                
-                assigned = member.get("assigned_capitals", [])
-                logger.info(f"Member assigned_capitals: {assigned}")
-                if assigned and len(assigned) > 0:
-                    capitals = [c for c in capitals if c["id"] in assigned]
-                    logger.info(f"Filtered to {len(capitals)} assigned capitals")
-                else:
-                    logger.info(f"Showing all {len(capitals)} capitals (no assigned_capitals filter)")
-            
+                "is_active": True,
+                "$or": [
+                    {"organization_id": org["id"]},
+                    {"owner_id": org["owner_id"]},
+                    {"owner_id": current_user},
+                ],
+            }).to_list(200)
+
+            seen = set()
+            capitals = []
+            for capital in org_capitals:
+                capital_id = capital.get("id")
+                if capital_id and capital_id not in seen:
+                    seen.add(capital_id)
+                    capitals.append(capital)
+
+            assigned = member.get("assigned_capitals") or []
+            logger.info(f"Found {len(capitals)} capitals for organization {org['id']}, assigned={assigned}")
+            if assigned:
+                capitals = [c for c in capitals if c.get("id") in assigned]
+                logger.info(f"Filtered to {len(capitals)} assigned capitals")
+
             return [Capital(**mongo_to_dict(capital)) for capital in capitals]
     
     # Старая логика для пользователей без организаций (обратная совместимость)
